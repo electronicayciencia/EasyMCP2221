@@ -36,6 +36,8 @@ CMD_WRITE_FLASH_DATA              = 0xB1
 CMD_SEND_FLASH_ACCESS_PASSWORD    = 0xB2
 CMD_RESET_CHIP                    = 0x70
 
+CMD_RESULT_OK = 0
+
 # Flash data constants
 FLASH_DATA_CHIP_SETTINGS          = 0x00
 FLASH_DATA_GP_SETTINGS            = 0x01
@@ -45,6 +47,11 @@ FLASH_DATA_USB_SERIALNUM          = 0x04
 FLASH_DATA_CHIP_SERIALNUM         = 0x05
 
 # GPIO constants
+GPIO_GP0 = 0
+GPIO_GP1 = 1
+GPIO_GP2 = 2
+GPIO_GP3 = 3
+
 ALTER_GPIO_CONF    = 1 << 7 # bit 7: alters the current GP designation
 PRESERVE_GPIO_CONF = 0 << 7
 GPIO_OUT_VAL_1  = 1 << 4
@@ -266,10 +273,7 @@ class PyMCP2221A:
         # print ("Read")
         # print (buf)
 
-    #######################################################################
-    # GPIO Init
-    #######################################################################
-    def GPIO_Init(self,
+    def GPIO_Config(self,
         clk_output = PRESERVE_CLK_OUTPUT,
         dac_ref    = PRESERVE_DAC_REF,
         dac_value  = PRESERVE_DAC_VALUE,
@@ -280,6 +284,7 @@ class PyMCP2221A:
         gp2 = None,
         gp3 = None
         ):
+        """ Configure Runtime GPIO pins and parameters. """
 
         if clk_output: clk_output |= ALTER_CLK_OUTPUT
         if dac_ref:    dac_ref    |= ALTER_DAC_REF
@@ -316,148 +321,91 @@ class PyMCP2221A:
         cmd[9]  = gp1         # GP1 settings
         cmd[10] = gp2         # GP2 settings
         cmd[11] = gp3         # GP3 settings
-        print(cmd)
+
         self.send_cmd(cmd)
 
-        status = self.send_cmd([CMD_GET_SRAM_SETTINGS])
-        self.GPIO_0_BIT = (status[22 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_0_DIR = (status[22 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_0_MODE = status[22 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_1_BIT = (status[23 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_1_DIR = (status[23 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_1_MODE = status[23 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_2_BIT = (status[24 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_2_DIR = (status[24 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_2_MODE = status[24 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_3_BIT = (status[25 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_3_DIR = (status[25 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_3_MODE = status[25 + 1] & 0x07  # GPIO MODE = 0x00
-
 
     #######################################################################
-    # GPIO Set Direction and Set Value commands
+    # GPIO commands
     #######################################################################
-    def GPIO_SetDirection(self, pin, direction):
+    def GPIO_SetAsInput(self,
+        gp0 = None,
+        gp1 = None,
+        gp2 = None,
+        gp3 = None):
 
-        buf = self.compile_packet([0x00, CMD_SET_GPIO_OUTPUT_VALUES])
-        offset = (pin + 1) * 4
-        buf[offset + 1] = 0x01  # set pin direction
-        buf[offset + 1 + 1] = direction  # to this
-        self.mcp2221a.write(buf)
+        ALTER_DIRECTION = 1
+        PRESERVE_DIRECTION = 0
+        GPIO_ERROR = 0xEE
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-        if rbuf[1] != 0x00:
-            raise RuntimeError("GPIO_SetDirection Failed")
+        buf = [0] * 18
+        buf[0]  = CMD_SET_GPIO_OUTPUT_VALUES
+        buf[4]  = PRESERVE_DIRECTION if gp0 is None else ALTER_DIRECTION
+        buf[5]  = gp0 or 0
+        buf[8]  = PRESERVE_DIRECTION if gp1 is None else ALTER_DIRECTION
+        buf[9]  = gp1 or 0
+        buf[12] = PRESERVE_DIRECTION if gp2 is None else ALTER_DIRECTION
+        buf[13] = gp2 or 0
+        buf[16] = PRESERVE_DIRECTION if gp3 is None else ALTER_DIRECTION
+        buf[17] = gp3 or 0
 
-    def GPIO_SetValue(self, pin, value):
+        r = self.send_cmd(buf)
 
-        buf = self.compile_packet([0x00, CMD_SET_GPIO_OUTPUT_VALUES])
-        offset = ((pin + 1) * 4) - 1
-        buf[offset - 1 + 1] = 0x01  # set pin value
-        buf[offset + 1] = value  # to this
-        self.mcp2221a.write(buf)
+        if gp0 is not None and r[4] == GPIO_ERROR:
+            raise RuntimeError("Pin GP0 not assigned to GPIO function.")
+        elif gp1 is not None and r[8] == GPIO_ERROR:
+            raise RuntimeError("Pin GP1 not assigned to GPIO function.")
+        elif gp2 is not None and r[12] == GPIO_ERROR:
+            raise RuntimeError("Pin GP2 not assigned to GPIO function.")
+        elif gp3 is not None and r[16] == GPIO_ERROR:
+            raise RuntimeError("Pin GP3 not assigned to GPIO function.")
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-        if rbuf[1] != 0x00:
-            raise RuntimeError("GPIO_SetValue Failed")
 
-    #######################################################################
-    # Read GPIO Data command
-    #######################################################################
+    def GPIO_SetValue(self,
+        gp0 = None,
+        gp1 = None,
+        gp2 = None,
+        gp3 = None):
+
+        ALTER_VALUE = 1
+        PRESERVE_VALUE = 0
+        GPIO_ERROR = 0xEE
+
+        buf = [0] * 18
+        buf[0]  = CMD_SET_GPIO_OUTPUT_VALUES
+        buf[2]  = PRESERVE_VALUE if gp0 is None else ALTER_VALUE
+        buf[3]  = gp0 or 0
+        buf[6]  = PRESERVE_VALUE if gp1 is None else ALTER_VALUE
+        buf[7]  = gp1 or 0
+        buf[10] = PRESERVE_VALUE if gp2 is None else ALTER_VALUE
+        buf[11] = gp2 or 0
+        buf[14] = PRESERVE_VALUE if gp3 is None else ALTER_VALUE
+        buf[15] = gp3 or 0
+
+        r = self.send_cmd(buf)
+
+        if gp0 is not None and r[3] == GPIO_ERROR:
+            raise RuntimeError("Pin GP0 not assigned to GPIO function.")
+        elif gp1 is not None and r[7] == GPIO_ERROR:
+            raise RuntimeError("Pin GP1 not assigned to GPIO function.")
+        elif gp2 is not None and r[11] == GPIO_ERROR:
+            raise RuntimeError("Pin GP2 not assigned to GPIO function.")
+        elif gp3 is not None and r[15] == GPIO_ERROR:
+            raise RuntimeError("Pin GP3 not assigned to GPIO function.")
+
+
     def GPIO_Read(self):
+        """ Read all GPIO pins and return a tuple (gp0, gp1, gp2, gp3).
+        Value is None if that pin is not set for GPIO operation. """
 
-        buf = self.compile_packet([0x00, CMD_GET_GPIO_VALUES])
-        self.mcp2221a.write(buf)
+        r = self.send_cmd([CMD_GET_GPIO_VALUES])
+        gp0 = r[2] if r[2] != 0xEE else None
+        gp1 = r[4] if r[4] != 0xEE else None
+        gp2 = r[6] if r[6] != 0xEE else None
+        gp3 = r[8] if r[8] != 0xEE else None
 
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
-        self.GPIO_0_INPUT = buf[2]
-        self.GPIO_0_DIR = buf[3]
-        self.GPIO_1_INPUT = buf[4]
-        self.GPIO_1_DIR = buf[5]
-        self.GPIO_2_INPUT = buf[6]
-        self.GPIO_2_DIR = buf[7]
-        self.GPIO_3_INPUT = buf[8]
-        self.GPIO_3_DIR = buf[9]
-        return buf
+        return (gp0, gp1, gp2, gp3)
 
-    # Return the GPIO value as an integer instead of tuple
-    def GPIO_GetValue(self, pin):
-        rbuf = self.GPIO_Read()
-        offset = (pin + 1) * 2
-        if rbuf[offset] == 0xEE:
-            raise RuntimeError("GPIO_GetValue Failed, pin is not set for GPIO operation")
-        return rbuf[offset]
-
-    #######################################################################
-    # GPIO Outpu/Input Data
-    #######################################################################
-    def GPIO_0_Output(self, bit):
-        self.GPIO_0_BIT = bit  # 1:Hi 0:LOW
-        self.GPIO_0_OutputMode()
-        self.GPIO_SetValue(pin=0, value=self.GPIO_0_BIT)
-
-    def GPIO_0_InputMode(self):
-        self.GPIO_0_DIR = DIR_INPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=0, direction=self.GPIO_0_DIR)
-
-    def GPIO_0_OutputMode(self):
-        self.GPIO_0_DIR = DIR_OUTPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=0, direction=self.GPIO_0_DIR)
-
-    def GPIO_0_Input(self):
-        self.GPIO_Read()
-        return self.GPIO_0_INPUT, self.GPIO_0_DIR
-
-    def GPIO_1_Output(self, bit):
-        self.GPIO_1_BIT = bit  # 1:Hi 0:LOW
-        self.GPIO_1_OutputMode()
-        self.GPIO_SetValue(pin=1, value=self.GPIO_1_BIT)
-
-    def GPIO_1_InputMode(self):
-        self.GPIO_1_DIR = DIR_INPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=1, direction=self.GPIO_1_DIR)
-
-    def GPIO_1_OutputMode(self):
-        self.GPIO_1_DIR = DIR_OUTPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=1, direction=self.GPIO_1_DIR)
-
-    def GPIO_1_Input(self):
-        self.GPIO_Read()
-        return self.GPIO_1_INPUT, self.GPIO_1_DIR
-
-    def GPIO_2_Output(self, bit):
-        self.GPIO_2_BIT = bit  # 1:Hi 0:LOW
-        self.GPIO_2_OutputMode()
-        self.GPIO_SetValue(pin=2, value=self.GPIO_2_BIT)
-
-    def GPIO_2_InputMode(self):
-        self.GPIO_2_DIR = DIR_INPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=2, direction=self.GPIO_2_DIR)
-
-    def GPIO_2_OutputMode(self):
-        self.GPIO_2_DIR = DIR_OUTPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=2, direction=self.GPIO_2_DIR)
-
-    def GPIO_2_Input(self):
-        self.GPIO_Read()
-        return self.GPIO_2_INPUT, self.GPIO_2_DIR
-
-    def GPIO_3_Output(self, bit):
-        self.GPIO_3_BIT = bit  # 1:Hi 0:LOW
-        self.GPIO_3_OutputMode()
-        self.GPIO_SetValue(pin=3, value=self.GPIO_3_BIT)
-
-    def GPIO_3_InputMode(self):
-        self.GPIO_3_DIR = DIR_INPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=3, direction=self.GPIO_3_DIR)
-
-    def GPIO_3_OutputMode(self):
-        self.GPIO_3_DIR = DIR_OUTPUT  # 0:OutPut 1:Input
-        self.GPIO_SetDirection(pin=3, direction=self.GPIO_3_DIR)
-
-    def GPIO_3_Input(self):
-        self.GPIO_Read()
-        return self.GPIO_3_INPUT, self.GPIO_3_DIR
 
     #######################################################################
     # Clock Out Value & Duty
