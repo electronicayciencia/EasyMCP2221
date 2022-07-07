@@ -13,7 +13,9 @@ import os
 DEV_DEFAULT_VID = 0x04D8
 DEV_DEFAULT_PID = 0x00DD
 
-PACKET_SIZE = 65
+PACKET_SIZE_65 = 65 # for compile_packet function
+
+PACKET_SIZE = 64
 DIR_OUTPUT  = 0
 DIR_INPUT   = 1
 
@@ -38,14 +40,11 @@ FLASH_DATA_GP_SETTINGS            = 0x01
 FLASH_DATA_USB_MANUFACTURER       = 0x02
 FLASH_DATA_USB_PRODUCT            = 0x03
 FLASH_DATA_USB_SERIALNUM          = 0x04
-FLASH_DATA_CHIP_FACTORY_SETTINGS  = 0x05
+FLASH_DATA_CHIP_SERIALNUM         = 0x05
 
 
 class PyMCP2221A:
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
-        self.mcp2221a = hid.device()
-        self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
-
         self.CLKDUTY_0  = 0x00
         self.CLKDUTY_25 = 0x08
         self.CLKDUTY_50 = 0x10
@@ -60,14 +59,31 @@ class PyMCP2221A:
         self.CLKDIV_64  = 0x06  # 750KHz
         self.CLKDIV_128 = 0x07  # 375KHz
 
+        self.mcp2221a = hid.device()
+        self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
+
+
+    # Obsolete
     def compile_packet(self, buf):
         """
         :param list buf:
         """
-        assert len(buf) <= PACKET_SIZE
+        assert len(buf) <= PACKET_SIZE_65
 
-        buf = buf + [0 for i in range(PACKET_SIZE - len(buf))]
+        buf = buf + [0 for i in range(PACKET_SIZE_65 - len(buf))]
         return buf
+
+
+    def send_cmd(self, buf):
+        REPORT_NUM = 0x00
+        padding = [0x00] * (PACKET_SIZE - len(buf))
+        self.mcp2221a.write([REPORT_NUM] + buf + padding)
+        
+        if buf[0] == CMD_RESET_CHIP:
+            return none
+        else:
+            return self.mcp2221a.read(PACKET_SIZE)
+
 
     #######################################################################
     # HID DeviceDriver Info
@@ -90,7 +106,7 @@ class PyMCP2221A:
                                    I2C_Speed_SetVal_Byte])
 
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
         print(chr(buf[46]))
         print(chr(buf[47]))
@@ -102,17 +118,71 @@ class PyMCP2221A:
     #######################################################################
 
     def Read_Flash_Data(self):
+    
+        CHIP_SETTINGS_STR   = "Chip settings"
+        GP_SETTINGS_STR     = "GP settings"
+        USB_VENDOR_STR      = "USB Manufacturer"
+        USB_PRODUCT_STR     = "USB Product"
+        USB_SERIAL_STR      = "USB Serial"
+        USB_FACT_SERIAL_STR = "Factory Serial"
+    
+        data = {
+            CHIP_SETTINGS_STR:    self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SETTINGS]),
+            GP_SETTINGS_STR:      self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_GP_SETTINGS]),
+            USB_VENDOR_STR:       self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_MANUFACTURER]),
+            USB_PRODUCT_STR:      self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_PRODUCT]),
+            USB_SERIAL_STR:       self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_SERIALNUM]),
+            USB_FACT_SERIAL_STR:  self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SERIALNUM]),
+        }
 
-        buf = self.compile_packet([0x00, CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SETTINGS])
-        # print ("Write")
-        # print (buf)
-        self.mcp2221a.write(buf)
+        data[USB_VENDOR_STR]      = self.parse_wchar_structure(data[USB_VENDOR_STR])
+        data[USB_PRODUCT_STR]     = self.parse_wchar_structure(data[USB_PRODUCT_STR])
+        data[USB_SERIAL_STR]      = self.parse_wchar_structure(data[USB_SERIAL_STR])
+        data[USB_FACT_SERIAL_STR] = self.parse_factory_serial(data[USB_FACT_SERIAL_STR])
+        data[CHIP_SETTINGS_STR]   = self.parse_chip_settings_struct(data[CHIP_SETTINGS_STR])
+        data[GP_SETTINGS_STR]     = self.parse_gp_settings_struct(data[GP_SETTINGS_STR])
 
-        buf = self.mcp2221a.read(PACKET_SIZE)
-        # print ("Read")
-        # print (buf)
+        return data
 
-    #######################################################################
+    def parse_wchar_structure(self, buf):
+        cmd_echo  = buf[0]
+        cmd_error = buf[1]
+        strlen    = buf[2] - 2
+        three     = buf[3]
+        w_str     = buf[4:4+strlen]
+        str = bytes(w_str).decode('utf-16')
+        return str
+        
+    def parse_factory_serial(self, buf):
+        cmd_echo  = buf[0]
+        cmd_error = buf[1]
+        strlen    = buf[2]
+        three     = buf[3]
+        str       = buf[4:4+strlen]
+        str = bytes(str).decode('ascii')
+        return str
+
+    def parse_chip_settings_struct(self, buf):
+        # "CDC serial number enumeration enable"
+        # "Chip configuration security"
+        # "Clock output divider value"
+        # "DAC reference voltage"
+        data = {
+            "USB VID": "0x{:02X}{:02X}".format(buf[9], buf[8]),
+            "USB PID": "0x{:02X}{:02X}".format(buf[11], buf[10]) ,
+            "USB requested number of mA": buf[13] * 2,
+            "raw": buf[0:14],
+        }
+        return data
+
+    def parse_gp_settings_struct(self, buf):
+        data = {
+            "raw": buf[0:7]
+        }
+        return data
+
+
+   #######################################################################
     # Write Flash Data
     #######################################################################
 
@@ -125,7 +195,7 @@ class PyMCP2221A:
         # Write_USB_Product_Settings      = 0x03
         # Write_USB_SerialNum_Settings    = 0x04
         # buf = [0x00,0xB1,Write_Deta_Setting_Byte]
-        # buf = buf + [0 for i in range(PACKET_SIZE-len(buf))]
+        # buf = buf + [0 for i in range(PACKET_SIZE_65-len(buf))]
         # !!!! Be careful when making changes !!!!
         # buf[6+1] =  0xD8    # VID (Lower)
         # buf[7+1] =  0x04    # VID (Higher)
@@ -135,7 +205,7 @@ class PyMCP2221A:
         # print ("Write")
         # print (buf)
         # h.write(buf)
-        # buf = h.read(PACKET_SIZE)
+        # buf = h.read(PACKET_SIZE_65)
         # print ("Read")
         # print (buf)
 
@@ -146,7 +216,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -173,7 +243,7 @@ class PyMCP2221A:
         # for(i in range(64)):
         #    buf[i] = rbuf[i] | buf[i]
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # GPIO Set Direction and Set Value commands
@@ -186,7 +256,7 @@ class PyMCP2221A:
         buf[offset + 1 + 1] = direction  # to this
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         if rbuf[1] != 0x00:
             raise RuntimeError("GPIO_SetDirection Failed")
 
@@ -198,7 +268,7 @@ class PyMCP2221A:
         buf[offset + 1] = value  # to this
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         if rbuf[1] != 0x00:
             raise RuntimeError("GPIO_SetValue Failed")
 
@@ -210,7 +280,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_GPIO_VALUES])
         self.mcp2221a.write(buf)
 
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
         self.GPIO_0_INPUT = buf[2]
         self.GPIO_0_DIR = buf[3]
         self.GPIO_1_INPUT = buf[4]
@@ -315,7 +385,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])  # Get SRAM Settings
 
         self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])  # Set SRAM Settings
         buf[2 + 1] = 0x80 | duty | (0x07 & value)  # Clock Output Divider value
@@ -330,7 +400,7 @@ class PyMCP2221A:
         buf[10 + 1] = rbuf[24]  # GP2 settings
         buf[11 + 1] = rbuf[25]  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # ADC 1
@@ -339,7 +409,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -354,7 +424,7 @@ class PyMCP2221A:
         buf[10 + 1] = rbuf[24]  # GP2 settings
         buf[11 + 1] = rbuf[25]  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # ADC 2
@@ -364,7 +434,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -379,7 +449,7 @@ class PyMCP2221A:
         buf[10 + 1] = 0x02  # GP2 settings
         buf[11 + 1] = rbuf[25]  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # ADC 3
@@ -389,7 +459,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
 
         self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -404,7 +474,7 @@ class PyMCP2221A:
         buf[10 + 1] = rbuf[24]  # GP2 settings
         buf[11 + 1] = 0x02  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # ADC Deta Get
@@ -414,7 +484,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
         self.mcp2221a.write(buf)
 
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
         # for i in range(len(buf)):
         #    print ("[%d]: 0x{:02x}".format(buf[i]) % (i))
         self.ADC_1_data = buf[50] | (buf[51] << 8)  # ADC Data (16-bit) values
@@ -428,7 +498,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -443,7 +513,7 @@ class PyMCP2221A:
         buf[10 + 1] = 0x03  # GP2 settings
         buf[11 + 1] = rbuf[25]  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # DAC 2
@@ -453,7 +523,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -468,7 +538,7 @@ class PyMCP2221A:
         buf[10 + 1] = rbuf[24]  # GP2 settings
         buf[11 + 1] = 0x03  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # DAC Output
@@ -478,7 +548,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
         buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
         buf[2 + 1] = rbuf[5]  # Clock Output Divider value
@@ -493,7 +563,7 @@ class PyMCP2221A:
         buf[10 + 1] = rbuf[24]  # GP2 settings
         buf[11 + 1] = rbuf[25]  # GP3 settings
         self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE)
+        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
     # I2C Init
@@ -508,7 +578,7 @@ class PyMCP2221A:
         buf[4 + 1] = int((12000000 / speed) - 3)
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         # print("Init")
         if (rbuf[22] == 0):
             raise RuntimeError("SCL is low.")
@@ -524,7 +594,7 @@ class PyMCP2221A:
         buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
         self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         return rbuf[8]
 
     #######################################################################
@@ -536,7 +606,7 @@ class PyMCP2221A:
         buf[2 + 1] = 0x10  # Cancel current I2C/SMBus transfer (sub-command)
         self.mcp2221a.write(buf)
 
-        self.mcp2221a.read(PACKET_SIZE)
+        self.mcp2221a.read(PACKET_SIZE_65)
         # time.sleep(0.1)
 
     #######################################################################
@@ -583,7 +653,7 @@ class PyMCP2221A:
             buf[4 + 1 + i] = data[
                 i]  # The I2C/SMBus system clock divider that will be used to establish the communication speed
         self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         time.sleep(0.008)
 
     #######################################################################
@@ -615,7 +685,7 @@ class PyMCP2221A:
         buf[2 + 1] = (size & 0xFF00) >> 8  # Read LEN
         buf[3 + 1] = 0xFF & (addrs << 1)  # addrs
         self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         if (rbuf[1] != 0x00):
             # print("[0x91:0x{:02x},0x{:02x},0x{:02x}]".format(rbuf[1],rbuf[2],rbuf[3]))
             self.I2C_Cancel()
@@ -628,7 +698,7 @@ class PyMCP2221A:
         buf[2 + 1] = 0x00
         buf[3 + 1] = 0x00
         self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE)
+        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
         if (rbuf[1] != 0x00):
             # print("[0x40:0x{:02x},0x{:02x},0x{:02x}]".format(rbuf[1],rbuf[2],rbuf[3]))
             self.I2C_Cancel()
