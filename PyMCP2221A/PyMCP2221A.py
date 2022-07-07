@@ -19,6 +19,7 @@ PACKET_SIZE = 64
 DIR_OUTPUT  = 0
 DIR_INPUT   = 1
 
+# Commands
 CMD_STATUS_SET_PARAMETERS         = 0x10
 CMD_SET_GPIO_OUTPUT_VALUES        = 0x50
 CMD_GET_GPIO_VALUES               = 0x51
@@ -35,12 +36,72 @@ CMD_WRITE_FLASH_DATA              = 0xB1
 CMD_SEND_FLASH_ACCESS_PASSWORD    = 0xB2
 CMD_RESET_CHIP                    = 0x70
 
+# Flash data constants
 FLASH_DATA_CHIP_SETTINGS          = 0x00
 FLASH_DATA_GP_SETTINGS            = 0x01
 FLASH_DATA_USB_MANUFACTURER       = 0x02
 FLASH_DATA_USB_PRODUCT            = 0x03
 FLASH_DATA_USB_SERIALNUM          = 0x04
 FLASH_DATA_CHIP_SERIALNUM         = 0x05
+
+# GPIO constants
+ALTER_GPIO_CONF    = 1 << 7 # bit 7: alters the current GP designation
+PRESERVE_GPIO_CONF = 0 << 7
+GPIO_OUT_VAL_1  = 1 << 4
+GPIO_OUT_VAL_0  = 0 << 4
+GPIO_DIR_IN     = 1 << 3
+GPIO_DIR_OUT    = 0 << 3
+GPIO_FUNC_GPIO  = 0b000
+GPIO_FUNC_DEDICATED = 0b001
+GPIO_FUNC_ALT_0  = 0b010
+GPIO_FUNC_ALT_1  = 0b011
+GPIO_FUNC_ALT_2  = 0b100
+
+ALTER_INT_CONF    = 1 << 7 # Enable the modification of the interrupt detection conditions
+PRESERVE_INT_CONF = 0 << 7
+INT_POS_EDGE_ENABLE  = 0b11 << 3
+INT_POS_EDGE_DISABLE = 0b10 << 3
+INT_NEG_EDGE_ENABLE  = 0b11 << 1
+INT_NEG_EDGE_DISABLE = 0b10 << 1
+INT_FLAG_CLEAR    = 1
+INT_FLAG_PRESERVE = 0
+
+ALTER_ADC_REF    = 1 << 7 # Enable loading of a new ADC reference
+PRESERVE_ADC_REF = 0 << 7
+ADC_VRM_OFF  = 0b00 << 1
+ADC_VRM_1024 = 0b01 << 1
+ADC_VRM_2048 = 0b10 << 1
+ADC_VRM_4096 = 0b11 << 1
+ADC_REF_VRM  = 1
+ADC_REF_VDD  = 0
+
+ALTER_DAC_REF    = 1 << 7 # Enable loading of a new DAC reference
+PRESERVE_DAC_REF = 0 << 7
+DAC_VRM_OFF  = 0b00 << 1
+DAC_VRM_1024 = 0b01 << 1
+DAC_VRM_2048 = 0b10 << 1
+DAC_VRM_4096 = 0b11 << 1
+DAC_REF_VRM  = 1
+DAC_REF_VDD  = 0
+
+ALTER_DAC_VALUE    = 1 << 7 # Enable loading of a new DAC value
+PRESERVE_DAC_VALUE = 0 << 7
+
+ALTER_CLK_OUTPUT    = 1 << 7 # Enable loading of a new clock divider
+PRESERVE_CLK_OUTPUT = 0 << 7
+CLK_DUTY_0  = 0b00 << 3
+CLK_DUTY_25 = 0b01 << 3
+CLK_DUTY_50 = 0b10 << 3
+CLK_DUTY_75 = 0b11 << 3
+CLK_DIV_0 = 0b000
+CLK_DIV_1 = 0b001
+CLK_DIV_2 = 0b010
+CLK_DIV_3 = 0b011
+CLK_DIV_4 = 0b100
+CLK_DIV_5 = 0b101
+CLK_DIV_6 = 0b110
+CLK_DIV_7 = 0b111
+
 
 
 class PyMCP2221A:
@@ -78,7 +139,7 @@ class PyMCP2221A:
         REPORT_NUM = 0x00
         padding = [0x00] * (PACKET_SIZE - len(buf))
         self.mcp2221a.write([REPORT_NUM] + buf + padding)
-        
+
         if buf[0] == CMD_RESET_CHIP:
             return none
         else:
@@ -118,14 +179,14 @@ class PyMCP2221A:
     #######################################################################
 
     def Read_Flash_Data(self):
-    
+
         CHIP_SETTINGS_STR   = "Chip settings"
         GP_SETTINGS_STR     = "GP settings"
         USB_VENDOR_STR      = "USB Manufacturer"
         USB_PRODUCT_STR     = "USB Product"
         USB_SERIAL_STR      = "USB Serial"
         USB_FACT_SERIAL_STR = "Factory Serial"
-    
+
         data = {
             CHIP_SETTINGS_STR:    self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SETTINGS]),
             GP_SETTINGS_STR:      self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_GP_SETTINGS]),
@@ -152,7 +213,7 @@ class PyMCP2221A:
         w_str     = buf[4:4+strlen]
         str = bytes(w_str).decode('utf-16')
         return str
-        
+
     def parse_factory_serial(self, buf):
         cmd_echo  = buf[0]
         cmd_error = buf[1]
@@ -163,10 +224,6 @@ class PyMCP2221A:
         return str
 
     def parse_chip_settings_struct(self, buf):
-        # "CDC serial number enumeration enable"
-        # "Chip configuration security"
-        # "Clock output divider value"
-        # "DAC reference voltage"
         data = {
             "USB VID": "0x{:02X}{:02X}".format(buf[9], buf[8]),
             "USB PID": "0x{:02X}{:02X}".format(buf[11], buf[10]) ,
@@ -212,38 +269,70 @@ class PyMCP2221A:
     #######################################################################
     # GPIO Init
     #######################################################################
-    def GPIO_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
+    def GPIO_Init(self,
+        clk_output = PRESERVE_CLK_OUTPUT,
+        dac_ref    = PRESERVE_DAC_REF,
+        dac_value  = PRESERVE_DAC_VALUE,
+        adc_ref    = PRESERVE_ADC_REF,
+        int_conf   = PRESERVE_INT_CONF,
+        gp0 = None,
+        gp1 = None,
+        gp2 = None,
+        gp3 = None
+        ):
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
+        if clk_output: clk_output |= ALTER_CLK_OUTPUT
+        if dac_ref:    dac_ref    |= ALTER_DAC_REF
+        if dac_value:  dac_value  |= ALTER_DAC_VALUE
+        if adc_ref:    adc_ref    |= ALTER_ADC_REF
+        if int_conf:   int_conf   |= ALTER_INT_CONF
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = rbuf[6]  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = 0x00  # ADC Voltage Reference
-        # buf[6+1] = 0x00     #   Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0x80  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
+        if (gp0 is None and
+            gp1 is None and
+            gp2 is None and
+            gp3 is None):
+            alter_gpio_conf = PRESERVE_GPIO_CONF
+            gp0 = gp1 = gp2 = gp3 = 0
 
-        self.GPIO_0_BIT = (rbuf[22 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_0_DIR = (rbuf[22 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_0_MODE = rbuf[22 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_1_BIT = (rbuf[23 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_1_DIR = (rbuf[23 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_1_MODE = rbuf[23 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_2_BIT = (rbuf[24 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_2_DIR = (rbuf[24 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_2_MODE = rbuf[24 + 1] & 0x07  # GPIO MODE = 0x00
-        self.GPIO_3_BIT = (rbuf[25 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
-        self.GPIO_3_DIR = (rbuf[25 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
-        self.GPIO_3_MODE = rbuf[25 + 1] & 0x07  # GPIO MODE = 0x00
+        else:
+            alter_gpio_conf = ALTER_GPIO_CONF
+            # Preserve GPx for non specified pins
+            status = self.send_cmd([CMD_GET_SRAM_SETTINGS])
+            if gp0 is None: gp0 = status[22]
+            if gp1 is None: gp1 = status[23]
+            if gp2 is None: gp2 = status[24]
+            if gp3 is None: gp3 = status[25]
 
-        # for(i in range(64)):
-        #    buf[i] = rbuf[i] | buf[i]
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
+        cmd = [0] * 12
+        cmd[0]  = CMD_SET_SRAM_SETTINGS
+        cmd[1]  = 0   # don't care
+        cmd[2]  = clk_output  # Clock Output Divider value
+        cmd[3]  = dac_ref     # DAC Voltage Reference
+        cmd[4]  = dac_value   # Set DAC output value
+        cmd[5]  = adc_ref     # ADC Voltage Reference
+        cmd[6]  = int_conf    # Setup the interrupt detection mechanism and clear the detection flag
+        cmd[7]  = alter_gpio_conf  # Alter GPIO configuration
+        cmd[8]  = gp0         # GP0 settings
+        cmd[9]  = gp1         # GP1 settings
+        cmd[10] = gp2         # GP2 settings
+        cmd[11] = gp3         # GP3 settings
+        print(cmd)
+        self.send_cmd(cmd)
+
+        status = self.send_cmd([CMD_GET_SRAM_SETTINGS])
+        self.GPIO_0_BIT = (status[22 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
+        self.GPIO_0_DIR = (status[22 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
+        self.GPIO_0_MODE = status[22 + 1] & 0x07  # GPIO MODE = 0x00
+        self.GPIO_1_BIT = (status[23 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
+        self.GPIO_1_DIR = (status[23 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
+        self.GPIO_1_MODE = status[23 + 1] & 0x07  # GPIO MODE = 0x00
+        self.GPIO_2_BIT = (status[24 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
+        self.GPIO_2_DIR = (status[24 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
+        self.GPIO_2_MODE = status[24 + 1] & 0x07  # GPIO MODE = 0x00
+        self.GPIO_3_BIT = (status[25 + 1] >> 4) & 0x01  # 1:Hi 0:LOW
+        self.GPIO_3_DIR = (status[25 + 1] >> 3) & 0x01  # 0:OutPut 1:Input
+        self.GPIO_3_MODE = status[25 + 1] & 0x07  # GPIO MODE = 0x00
+
 
     #######################################################################
     # GPIO Set Direction and Set Value commands
