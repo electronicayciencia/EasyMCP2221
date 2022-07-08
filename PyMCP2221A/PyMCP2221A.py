@@ -20,7 +20,7 @@ DIR_OUTPUT  = 0
 DIR_INPUT   = 1
 
 # Commands
-CMD_STATUS_SET_PARAMETERS         = 0x10
+CMD_POLL_STATUS_SET_PARAMETERS    = 0x10
 CMD_SET_GPIO_OUTPUT_VALUES        = 0x50
 CMD_GET_GPIO_VALUES               = 0x51
 CMD_SET_SRAM_SETTINGS             = 0x60
@@ -63,6 +63,9 @@ GPIO_FUNC_DEDICATED = 0b001
 GPIO_FUNC_ALT_0  = 0b010
 GPIO_FUNC_ALT_1  = 0b011
 GPIO_FUNC_ALT_2  = 0b100
+GPIO_FUNC_ADC = GPIO_FUNC_ALT_0
+GPIO_FUNC_DAC = GPIO_FUNC_ALT_1
+
 
 ALTER_INT_CONF    = 1 << 7 # Enable the modification of the interrupt detection conditions
 PRESERVE_INT_CONF = 0 << 7
@@ -174,7 +177,7 @@ class PyMCP2221A:
         I2C_Cancel_Bit = 0
         I2C_Speed_SetUp_Bit = 0
         I2C_Speed_SetVal_Byte = 0
-        buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS, 0x00,
+        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS, 0x00,
                                    I2C_Cancel_Bit << 4,
                                    I2C_Speed_SetUp_Bit << 5,
                                    I2C_Speed_SetVal_Byte])
@@ -289,7 +292,12 @@ class PyMCP2221A:
         gp1        = None,
         gp2        = None,
         gp3        = None):
-        """ Configure Runtime GPIO pins and parameters. """
+        """
+        Configure Runtime GPIO pins and parameters.
+        This function unexpectedly resets:
+            GPIO values set via CMD_SET_GPIO_OUTPUT_VALUES.
+            Vrm (not affected if ref = VDD)
+        """
 
         if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
         if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF
@@ -413,6 +421,9 @@ class PyMCP2221A:
 
         return (gp0, gp1, gp2, gp3)
 
+    #######################################################################
+    # CLOCK
+    #######################################################################
 
     def Clock_Config(self, duty, freq):
         """
@@ -453,103 +464,85 @@ class PyMCP2221A:
 
 
     #######################################################################
-    # ADC 1
+    # ADC
     #######################################################################
-    def ADC_1_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
+    def ADC_Channel(self, pin):
+        """
+        Configure pin as an analog input channel.
+        pin valid values are "GP1", "GP2" and "GP3".
+        """
+        if pin == "GP1":
+            self.GPIO_Config(gp1 = GPIO_FUNC_ADC)
+        elif pin == "GP2":
+            self.GPIO_Config(gp2 = GPIO_FUNC_ADC)
+        elif pin == "GP3":
+            self.GPIO_Config(gp3 = GPIO_FUNC_ADC)
+        else:
+            raise ValueError("Accepted values for pin are 'GP1', 'GP2' or 'GP3'.")
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = rbuf[6]  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = 0x00  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0xFF  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = 0x02  # GP1 settings
-        buf[10 + 1] = rbuf[24]  # GP2 settings
-        buf[11 + 1] = rbuf[25]  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
+    def ADC_Config(self, ref):
+        """
+        Configure ADC reference.
+        ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+        You also need to set GP2/3 function to GPIO_FUNC_ADC using ADC_Channel.
+        """
+        if ref == "OFF":
+            ref = ADC_REF_VRM
+            vrm = ADC_VRM_OFF
+        elif ref == "1.024V":
+            ref = ADC_REF_VRM
+            vrm = ADC_VRM_1024
+        elif ref == "2.048V":
+            ref = ADC_REF_VRM
+            vrm = ADC_VRM_2048
+        elif ref == "4.096V":
+            ref = ADC_REF_VRM
+            vrm = ADC_VRM_4096
+        elif ref == "VDD":
+            ref = ADC_REF_VDD
+            vrm = ADC_VRM_OFF
+        else:
+            raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-    #######################################################################
-    # ADC 2
-    #######################################################################
+        self.GPIO_Config(adc_ref = ref | vrm)
 
-    def ADC_2_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
+    def ADC_Read(self):
+        """
+        Read all 3 ADC and return a tuple (gp1, gp2, gp3).
+        Each value is 10 bit (0 to 1023).
+        Analog value is read regardless of pin funcion.
+        """
+        buf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+        adc1 = buf[50] + 256*buf[51]
+        adc2 = buf[52] + 256*buf[53]
+        adc3 = buf[54] + 256*buf[55]
+        return (adc1, adc2, adc3)
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = rbuf[6]  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0x80  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = rbuf[23]  # GP1 settings
-        buf[10 + 1] = 0x02  # GP2 settings
-        buf[11 + 1] = rbuf[25]  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
-
-    #######################################################################
-    # ADC 3
-    #######################################################################
-
-    def ADC_3_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-
-        self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = rbuf[6]  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0x80  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = rbuf[23]  # GP1 settings
-        buf[10 + 1] = rbuf[24]  # GP2 settings
-        buf[11 + 1] = 0x02  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
 
     #######################################################################
-    # ADC Deta Get
+    # DAC
     #######################################################################
+    def DAC_Channel(self, pin):
+        """
+        Configure DAC pin to use.
+        pin valid values are "GP2" and "GP3"
+        """
+        if pin == "GP2":
+            self.GPIO_Config(gp2 = GPIO_FUNC_DAC)
+        elif pin == "GP3":
+            self.GPIO_Config(gp3 = GPIO_FUNC_DAC)
+        else:
+            raise ValueError("Accepted values for pin are 'GP2' and 'GP3'.")
 
-    def ADC_DataRead(self):
-        buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
-        self.mcp2221a.write(buf)
 
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
-        # for i in range(len(buf)):
-        #    print ("[%d]: 0x{:02x}".format(buf[i]) % (i))
-        self.ADC_1_data = buf[50] | (buf[51] << 8)  # ADC Data (16-bit) values
-        self.ADC_2_data = buf[52] | (buf[53] << 8)  # ADC Data (16-bit) values
-        self.ADC_3_data = buf[54] | (buf[55] << 8)  # ADC Data (16-bit) values
-
-    #######################################################################
-    # DAC 1
-    #######################################################################
     def DAC_Config(self, ref, out = 0):
         """
         Configure DAC reference.
         ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
         out valid values are from 0 to 31.
-        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_ALT_1.
+        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_DAC using DAC_Channel.
         """
         if ref == "OFF":
             ref = DAC_REF_VRM
@@ -577,7 +570,7 @@ class PyMCP2221A:
             dac_value = out)
 
 
-    def DAC_Out(self, out):
+    def DAC_Write(self, out):
         """
         Configure DAC output.
         out valid values are from 0 to 31.
@@ -591,37 +584,12 @@ class PyMCP2221A:
 
 
     #######################################################################
-    # DAC Output
-    #######################################################################
-
-    def DAC_Datawrite(self, value):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
-
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = 0x00  # DAC Voltage Reference
-        buf[4 + 1] = 0x80 | (0x1F & value)  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0xFF  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = rbuf[23]  # GP1 settings
-        buf[10 + 1] = rbuf[24]  # GP2 settings
-        buf[11 + 1] = rbuf[25]  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
-
-    #######################################################################
     # I2C Init
     #######################################################################
     def I2C_Init(self, speed=100000):  # speed = 100000
         self.MCP2221_I2C_SLEEP = float(os.environ.get("MCP2221_I2C_SLEEP", 0))
 
-        buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
+        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
         buf[2 + 1] = 0x00  # Cancel current I2C/SMBus transfer (sub-command)
         buf[3 + 1] = 0x20  # Set I2C/SMBus communication speed (sub-command)
         # The I2C/SMBus system clock divider that will be used to establish the communication speed
@@ -641,7 +609,7 @@ class PyMCP2221A:
     # I2C State Check
     #######################################################################
     def I2C_State_Check(self):
-        buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
+        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
         self.mcp2221a.write(buf)
 
         rbuf = self.mcp2221a.read(PACKET_SIZE_65)
@@ -652,7 +620,7 @@ class PyMCP2221A:
     #######################################################################
 
     def I2C_Cancel(self):
-        buf = self.compile_packet([0x00, CMD_STATUS_SET_PARAMETERS])
+        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
         buf[2 + 1] = 0x10  # Cancel current I2C/SMBus transfer (sub-command)
         self.mcp2221a.write(buf)
 
