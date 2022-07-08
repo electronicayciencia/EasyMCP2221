@@ -414,7 +414,7 @@ class PyMCP2221A:
         return (gp0, gp1, gp2, gp3)
 
 
-    def Clock_Conf(self, duty, freq):
+    def Clock_Config(self, duty, freq):
         """
         Configure the clock output.
         Duty valid values are 0, 25, 50, 75.
@@ -544,51 +544,51 @@ class PyMCP2221A:
     #######################################################################
     # DAC 1
     #######################################################################
-    def DAC_1_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
+    def DAC_Config(self, ref, out = 0):
+        """
+        Configure DAC reference.
+        ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+        out valid values are from 0 to 31.
+        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_ALT_1.
+        """
+        if ref == "OFF":
+            ref = DAC_REF_VRM
+            vrm = DAC_VRM_OFF
+        elif ref == "1.024V":
+            ref = DAC_REF_VRM
+            vrm = DAC_VRM_1024
+        elif ref == "2.048V":
+            ref = DAC_REF_VRM
+            vrm = DAC_VRM_2048
+        elif ref == "4.096V":
+            ref = DAC_REF_VRM
+            vrm = DAC_VRM_4096
+        elif ref == "VDD":
+            ref = DAC_REF_VDD
+            vrm = DAC_VRM_OFF
+        else:
+            raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
+        if out < 0 or out > 31:
+            raise ValueError("Accepted values for out are from 0 to 31.")
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = 0x00  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0xFF  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = rbuf[23]  # GP1 settings
-        buf[10 + 1] = 0x03  # GP2 settings
-        buf[11 + 1] = rbuf[25]  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
+        self.GPIO_Config(
+            dac_ref = ref | vrm,
+            dac_value = out)
 
-    #######################################################################
-    # DAC 2
-    #######################################################################
 
-    def DAC_2_Init(self):
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])
-        self.mcp2221a.write(buf)
+    def DAC_Out(self, out):
+        """
+        Configure DAC output.
+        out valid values are from 0 to 31.
+        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_ALT_1.
+        """
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
+        if out < 0 or out > 31:
+            raise ValueError("Accepted values for out are from 0 to 31.")
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])
-        buf[2 + 1] = rbuf[5]  # Clock Output Divider value
-        buf[3 + 1] = 0x00  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0xFF  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = rbuf[23]  # GP1 settings
-        buf[10 + 1] = rbuf[24]  # GP2 settings
-        buf[11 + 1] = 0x03  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
+        self.GPIO_Config(dac_value = out)
+
 
     #######################################################################
     # DAC Output
