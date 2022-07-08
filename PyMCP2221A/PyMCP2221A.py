@@ -335,6 +335,48 @@ class PyMCP2221A:
     #######################################################################
     # GPIO commands
     #######################################################################
+    def GPIO_Input(self, pin):
+        """
+        Set pin as GPIO Input.
+        Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.
+        This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
+        """
+        if pin == "GP0":
+            self.GPIO_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+        elif pin == "GP1":
+            self.GPIO_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+        elif pin == "GP2":
+            self.GPIO_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+        elif pin == "GP3":
+            self.GPIO_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+        else:
+            raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
+
+
+    def GPIO_Output(self, pin, value):
+        """
+        Set pin as GPIO Output with a value.
+        Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.
+        Value could be True or False.
+        This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
+        """
+        if value:
+            val = GPIO_OUT_VAL_1
+        else:
+            val = GPIO_OUT_VAL_0
+
+        if pin == "GP0":
+            self.GPIO_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+        elif pin == "GP1":
+            self.GPIO_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+        elif pin == "GP2":
+            self.GPIO_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+        elif pin == "GP3":
+            self.GPIO_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+        else:
+            raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
+
+
     def GPIO_FastSetAsInput(self,
         gp0 = None,
         gp1 = None,
@@ -424,6 +466,16 @@ class PyMCP2221A:
     #######################################################################
     # CLOCK
     #######################################################################
+    def Clock_Channel(self, pin):
+        """
+        Configure pin as clock output channel.
+        pin valid values is only "GP1".
+        """
+        if pin == "GP1":
+            self.GPIO_Config(gp1 = GPIO_FUNC_DEDICATED)
+        else:
+            raise ValueError("Accepted values for pin is only 'GP1'.")
+
 
     def Clock_Config(self, duty, freq):
         """
