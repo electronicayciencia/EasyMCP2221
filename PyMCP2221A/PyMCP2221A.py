@@ -118,6 +118,12 @@ CLK_FREQ_6MHz   = CLK_DIV_3
 CLK_FREQ_12MHz  = CLK_DIV_2
 CLK_FREQ_24MHz  = CLK_DIV_1
 
+I2C_CMD_CANCEL_CURRENT_TRANSFER = 0x10
+I2C_CMD_SET_BUS_SPEED = 0x20
+
+RESET_CHIP_SURE           = 0xAB
+RESET_CHIP_VERY_SURE      = 0xCD
+RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 
 class PyMCP2221A:
@@ -452,8 +458,10 @@ class PyMCP2221A:
 
 
     def GPIO_Read(self):
-        """ Read all GPIO pins and return a tuple (gp0, gp1, gp2, gp3).
-        Value is None if that pin is not set for GPIO operation. """
+        """
+        Read all GPIO pins and return a tuple (gp0, gp1, gp2, gp3).
+        Value is None if that pin is not set for GPIO operation.
+        """
 
         r = self.send_cmd([CMD_GET_GPIO_VALUES])
         gp0 = r[2] if r[2] != 0xEE else None
@@ -466,7 +474,7 @@ class PyMCP2221A:
     #######################################################################
     # CLOCK
     #######################################################################
-    def Clock_Channel(self, pin):
+    def Clock_Channel(self, pin = "GP1"):
         """
         Configure pin as clock output channel.
         pin valid values is only "GP1".
@@ -785,12 +793,47 @@ class PyMCP2221A:
                 rdata[i] = rbuf[4 + i]
             return rdata
 
+
+    #######################################################################
+    # UART
+    #######################################################################
+    def UART_RX_Led(self):
+        """
+        Set GP0 to indicate UART RX activity.
+        """
+        self.GPIO_Config(gp0 = GPIO_FUNC_DEDICATED)
+
+
+    def UART_TX_Led(self):
+        """
+        Set GP1 to indicate UART TX activity.
+        """
+        self.GPIO_Config(gp1 = GPIO_FUNC_DEDICATED)
+
+
+
+    #######################################################################
+    # USB INTERRUPTIONS
+    #######################################################################
+    def USB_Config_Led(self):
+        """
+        Set GP2 to indicate USB device configured status.
+        """
+        self.GPIO_Config(gp2 = GPIO_FUNC_DEDICATED)
+
+
     #######################################################################
     # reset
     #######################################################################
     def Reset(self):
-        print("Reset")
-        buf = self.compile_packet([0x00, CMD_RESET_CHIP, 0xAB, 0xCD, 0xEF])
+        """
+        Reset device.
+        """
+        buf = [0] * 4
+        buf[0] = CMD_RESET_CHIP
+        buf[1] = RESET_CHIP_SURE
+        buf[2] = RESET_CHIP_VERY_SURE
+        buf[3] = RESET_CHIP_VERY_VERY_SURE
+        self.send_cmd(buf)
 
-        self.mcp2221a.write(buf)
         time.sleep(1)
