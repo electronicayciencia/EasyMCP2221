@@ -157,10 +157,17 @@ class PyMCP2221A:
         return buf
 
 
-    def send_cmd(self, buf):
+    def send_cmd(self, buf, sleep = 0):
+        """
+        Write a USB command.
+        buf: bytes to write
+        sleep: delay (senconds) between writing the command and reading the response.
+        """
         REPORT_NUM = 0x00
         padding = [0x00] * (PACKET_SIZE - len(buf))
         self.mcp2221a.write([REPORT_NUM] + buf + padding)
+
+        time.sleep(sleep)
 
         if buf[0] == CMD_RESET_CHIP:
             return none
@@ -644,95 +651,127 @@ class PyMCP2221A:
 
 
     #######################################################################
-    # I2C Init
+    # I2C
     #######################################################################
-    def I2C_Init(self, speed=100000):  # speed = 100000
-        self.MCP2221_I2C_SLEEP = float(os.environ.get("MCP2221_I2C_SLEEP", 0))
+    def I2C_Led(self):
+        """
+        Set GP3 to indicate I2C activity.
+        """
+        self.GPIO_Config(gp3 = GPIO_FUNC_DEDICATED)
 
-        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
-        buf[2 + 1] = 0x00  # Cancel current I2C/SMBus transfer (sub-command)
-        buf[3 + 1] = 0x20  # Set I2C/SMBus communication speed (sub-command)
-        # The I2C/SMBus system clock divider that will be used to establish the communication speed
-        buf[4 + 1] = int((12000000 / speed) - 3)
-        self.mcp2221a.write(buf)
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-        # print("Init")
-        if (rbuf[22] == 0):
-            raise RuntimeError("SCL is low.")
-        if (rbuf[23] == 0):
-            raise RuntimeError("SDA is low.")
+    def I2C_Speed(self, speed=100000):
+        """
+        Set I2C bus speed.
+        Default bus speed is 100kHz.
+        Acceptable values for speed are between 47kHz and 500kHz.
+        """
+        bus_speed = round(12_000_000 / speed) - 2
 
-        # time.sleep(0.001)
+        if bus_speed < 0 or bus_speed > 255:
+            raise ValueError("Speed must be between 47kHz and 500kHz.")
 
-    #######################################################################
-    # I2C State Check
-    #######################################################################
-    def I2C_State_Check(self):
-        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
-        self.mcp2221a.write(buf)
+        buf = [0] * 5
+        buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
+        buf[1] = 0
+        buf[2] = 0
+        buf[3] = I2C_CMD_SET_BUS_SPEED
+        buf[4] = bus_speed
 
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-        return rbuf[8]
+        rbuf = self.send_cmd(buf)
 
-    #######################################################################
-    # I2C Cancel
-    #######################################################################
+        if (rbuf[3] != 0x20):
+            print("0x%02x" % rbuf[3])
+            raise RuntimeError("I2C speed is not valid or bus is busy.")
+
+
+    def I2C_Timeout(self):
+        """
+        Check bus timeout state.
+        Return true if timeout detected.
+        """
+        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+
+        if rbuf[8]:
+            return True
+        else:
+            return False
+
 
     def I2C_Cancel(self):
-        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS])
-        buf[2 + 1] = 0x10  # Cancel current I2C/SMBus transfer (sub-command)
-        self.mcp2221a.write(buf)
-
-        self.mcp2221a.read(PACKET_SIZE_65)
-        # time.sleep(0.1)
-
-    #######################################################################
-    # I2C Write
-    #######################################################################
-    def I2C_Write(self, addrs, data):
-        """ Writes a block of data with Start and Stop c condition on bus
-        :param int addrs: 7-bit I2C slave address
-        :param list data: list of int
-
-        Referring to MCP2221A Datasheet(Rev.B 2017), section 3.1.5
         """
-        buf = self.compile_packet([0x00, CMD_I2C_WRITE_DATA])
-        self._i2c_write(addrs, data, buf)
-
-    def I2C_Write_Repeated(self, addrs, data):
-        """ Writes a block of data with Repeated Start and Stop conditions on bus
-        :param int addrs: 7-bit I2C slave address
-        :param list data: list of int
-
-        Referring to MCP2221A Datasheet(Rev.B 2017), section 3.1.6
+        Send Cancel Current Transfer command to I2C engine.
         """
-        buf = self.compile_packet([0x00, CMD_I2C_WRITE_DATA_REPEATED_START])
-        self._i2c_write(addrs, data, buf)
+        buf = [0] * 5
+        buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
+        buf[1] = 0
+        buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
 
-    def I2C_Write_No_Stop(self, addrs, data):
-        """ Writes a block of data with Start condition on bus
-        :param int addrs: 7-bit I2C slave address
-        :param list data: list of int
+        # More than one time is needed to clear timeout status.
+        rbuf = self.send_cmd(buf, sleep = 0.1)
+        rbuf = self.send_cmd(buf, sleep = 0.1)
 
-        Referring to MCP2221A Datasheet(Rev.B 2017), section 3.1.7
+        if (rbuf[22] == 0):
+            raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if (rbuf[23] == 0):
+            raise RuntimeError("SDA is low. I2C bus is busy or missing pull-up resistor.")
+
+
+
+    def I2C_Write(self, addr, data, kind = "regular"):
         """
-        buf = self.compile_packet([0x00, CMD_I2C_WRITE_DATA_NO_STOP])
-        self._i2c_write(addrs, data, buf)
+        Writes a block of data on I2C bus.
+        addr: I2C slave device base address
+        data: bytes to write (max length 65536)
+        kind: one of
+          regular: start - data - stop
+          restart: repeated start - data - stop
+          nonstop: start - data
+        """
 
-    def _i2c_write(self, addrs, data, buf):
+        if addr < 0 or addr > 127:
+            raise ValueError("Slave address not valid.")
 
-        buf[1 + 1] = (len(data) & 0x00FF)  # Cancel current I2C/SMBus transfer (sub-command)
-        buf[2 + 1] = (len(data) & 0xFF00) >> 8  # Set I2C/SMBus communication speed (sub-command)
-        # The I2C/SMBus system clock divider that will be used to establish the communication speed
-        buf[3 + 1] = 0xFF & (addrs << 1)
-        for i in range(len(data)):
-            # print ("{:d}: 0x{:02x}".format(i,data[i]))
-            buf[4 + 1 + i] = data[
-                i]  # The I2C/SMBus system clock divider that will be used to establish the communication speed
-        self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-        time.sleep(0.008)
+        if len(data) > 2**16:
+            raise ValueError("Data too long (max. 65536).")
+
+        if kind == "regular":
+            cmd = CMD_I2C_WRITE_DATA
+        elif kind == "restart":
+            cmd = CMD_I2C_WRITE_DATA_REPEATED_START
+        elif kind == "nonstop":
+            cmd = CMD_I2C_WRITE_DATA_NO_STOP
+        else:
+            raise ValueError("Invalid kind of transfer. Allowed: 'regular', 'restart', 'nonstop'.")
+
+        buf = [0] * 4
+        buf[0] = cmd
+        buf[1] = len(data)      & 0xFF
+        buf[2] = len(data) >> 8 & 0xFF
+        buf[3] = addr << 1      & 0xFF
+
+        # send data in 60 bytes chunks
+        for i in range(0, len(data), 60):
+            first_byte = i
+            last_byte  = min(i+60, len(data))
+            r = self.send_cmd(buf + list(data)[first_byte:last_byte])
+
+            # Buffer may not fully empty in the last chunck
+            while last_byte < len(data) and self._i2c_buffer_counter() > 0:
+                time.sleep(10e-6)
+
+        if r[1] != 0:
+            raise RuntimeError("I2C write error, engine may be busy.")
+
+    def _i2c_buffer_counter(self):
+        """
+        Get the internal databuffer counter.
+        Useful to know when to send more data.
+        """
+        return self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])[13]
+
+
 
     #######################################################################
     # I2C Read
@@ -834,6 +873,4 @@ class PyMCP2221A:
         buf[1] = RESET_CHIP_SURE
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
-        self.send_cmd(buf)
-
-        time.sleep(1)
+        self.send_cmd(buf, sleep = 1)
