@@ -100,7 +100,6 @@ CLK_DUTY_0  = 0b00 << 3
 CLK_DUTY_25 = 0b01 << 3
 CLK_DUTY_50 = 0b10 << 3
 CLK_DUTY_75 = 0b11 << 3
-CLK_DIV_0 = 0b000
 CLK_DIV_1 = 0b001
 CLK_DIV_2 = 0b010
 CLK_DIV_3 = 0b011
@@ -108,6 +107,13 @@ CLK_DIV_4 = 0b100
 CLK_DIV_5 = 0b101
 CLK_DIV_6 = 0b110
 CLK_DIV_7 = 0b111
+CLK_FREQ_375kHz = CLK_DIV_7
+CLK_FREQ_750kHz = CLK_DIV_6
+CLK_FREQ_1_5MHz = CLK_DIV_5
+CLK_FREQ_3MHz   = CLK_DIV_4
+CLK_FREQ_6MHz   = CLK_DIV_3
+CLK_FREQ_12MHz  = CLK_DIV_2
+CLK_FREQ_24MHz  = CLK_DIV_1
 
 
 
@@ -274,33 +280,26 @@ class PyMCP2221A:
         # print (buf)
 
     def GPIO_Config(self,
-        clk_output = PRESERVE_CLK_OUTPUT,
-        dac_ref    = PRESERVE_DAC_REF,
-        dac_value  = PRESERVE_DAC_VALUE,
-        adc_ref    = PRESERVE_ADC_REF,
-        int_conf   = PRESERVE_INT_CONF,
-        gp0 = None,
-        gp1 = None,
-        gp2 = None,
-        gp3 = None
-        ):
+        clk_output = None,
+        dac_ref    = None,
+        dac_value  = None,
+        adc_ref    = None,
+        int_conf   = None,
+        gp0        = None,
+        gp1        = None,
+        gp2        = None,
+        gp3        = None):
         """ Configure Runtime GPIO pins and parameters. """
 
-        if clk_output: clk_output |= ALTER_CLK_OUTPUT
-        if dac_ref:    dac_ref    |= ALTER_DAC_REF
-        if dac_value:  dac_value  |= ALTER_DAC_VALUE
-        if adc_ref:    adc_ref    |= ALTER_ADC_REF
-        if int_conf:   int_conf   |= ALTER_INT_CONF
+        if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
+        if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF
+        if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
+        if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF
+        if int_conf   is not None: int_conf   |= ALTER_INT_CONF
 
-        if (gp0 is None and
-            gp1 is None and
-            gp2 is None and
-            gp3 is None):
-            alter_gpio_conf = PRESERVE_GPIO_CONF
-            gp0 = gp1 = gp2 = gp3 = 0
-
-        else:
-            alter_gpio_conf = ALTER_GPIO_CONF
+        new_gpconf = None
+        if (gp0, gp1, gp2, gp3) != (None, None, None, None):
+            new_gpconf = ALTER_GPIO_CONF
             # Preserve GPx for non specified pins
             status = self.send_cmd([CMD_GET_SRAM_SETTINGS])
             if gp0 is None: gp0 = status[22]
@@ -311,16 +310,16 @@ class PyMCP2221A:
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
         cmd[1]  = 0   # don't care
-        cmd[2]  = clk_output  # Clock Output Divider value
-        cmd[3]  = dac_ref     # DAC Voltage Reference
-        cmd[4]  = dac_value   # Set DAC output value
-        cmd[5]  = adc_ref     # ADC Voltage Reference
-        cmd[6]  = int_conf    # Setup the interrupt detection mechanism and clear the detection flag
-        cmd[7]  = alter_gpio_conf  # Alter GPIO configuration
-        cmd[8]  = gp0         # GP0 settings
-        cmd[9]  = gp1         # GP1 settings
-        cmd[10] = gp2         # GP2 settings
-        cmd[11] = gp3         # GP3 settings
+        cmd[2]  = clk_output or PRESERVE_CLK_OUTPUT # Clock Output Divider value
+        cmd[3]  = dac_ref    or PRESERVE_DAC_REF    # DAC Voltage Reference
+        cmd[4]  = dac_value  or PRESERVE_DAC_VALUE  # Set DAC output value
+        cmd[5]  = adc_ref    or PRESERVE_ADC_REF    # ADC Voltage Reference
+        cmd[6]  = int_conf   or PRESERVE_INT_CONF   # Setup the interrupt detection
+        cmd[7]  = new_gpconf or PRESERVE_GPIO_CONF  # Alter GPIO configuration
+        cmd[8]  = gp0        or PRESERVE_GPIO_CONF  # GP0 settings
+        cmd[9]  = gp1        or PRESERVE_GPIO_CONF  # GP1 settings
+        cmd[10] = gp2        or PRESERVE_GPIO_CONF  # GP2 settings
+        cmd[11] = gp3        or PRESERVE_GPIO_CONF  # GP3 settings
 
         self.send_cmd(cmd)
 
@@ -328,11 +327,15 @@ class PyMCP2221A:
     #######################################################################
     # GPIO commands
     #######################################################################
-    def GPIO_SetAsInput(self,
+    def GPIO_FastSetAsInput(self,
         gp0 = None,
         gp1 = None,
         gp2 = None,
         gp3 = None):
+        """
+        Define a pin as an input but not writes to SRAM.
+        Any call to GPIO_Conf to configure any other pins will reset this settings.
+        """
 
         ALTER_DIRECTION = 1
         PRESERVE_DIRECTION = 0
@@ -352,20 +355,24 @@ class PyMCP2221A:
         r = self.send_cmd(buf)
 
         if gp0 is not None and r[4] == GPIO_ERROR:
-            raise RuntimeError("Pin GP0 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP0 is not assigned to GPIO function.")
         elif gp1 is not None and r[8] == GPIO_ERROR:
-            raise RuntimeError("Pin GP1 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP1 is not assigned to GPIO function.")
         elif gp2 is not None and r[12] == GPIO_ERROR:
-            raise RuntimeError("Pin GP2 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP2 is not assigned to GPIO function.")
         elif gp3 is not None and r[16] == GPIO_ERROR:
-            raise RuntimeError("Pin GP3 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP3 is not assigned to GPIO function.")
 
 
-    def GPIO_SetValue(self,
+    def GPIO_FastSetValue(self,
         gp0 = None,
         gp1 = None,
         gp2 = None,
         gp3 = None):
+        """
+        Set pin output values but not write it to SRAM.
+        Any call to GPIO_Conf to configure any other pins will reset this settings.
+        """
 
         ALTER_VALUE = 1
         PRESERVE_VALUE = 0
@@ -385,13 +392,13 @@ class PyMCP2221A:
         r = self.send_cmd(buf)
 
         if gp0 is not None and r[3] == GPIO_ERROR:
-            raise RuntimeError("Pin GP0 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP0 is not assigned to GPIO function.")
         elif gp1 is not None and r[7] == GPIO_ERROR:
-            raise RuntimeError("Pin GP1 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP1 is not assigned to GPIO function.")
         elif gp2 is not None and r[11] == GPIO_ERROR:
-            raise RuntimeError("Pin GP2 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP2 is not assigned to GPIO function.")
         elif gp3 is not None and r[15] == GPIO_ERROR:
-            raise RuntimeError("Pin GP3 not assigned to GPIO function.")
+            raise RuntimeError("Pin GP3 is not assigned to GPIO function.")
 
 
     def GPIO_Read(self):
@@ -407,37 +414,43 @@ class PyMCP2221A:
         return (gp0, gp1, gp2, gp3)
 
 
-    #######################################################################
-    # Clock Out Value & Duty
-    #######################################################################
-    def ClockOut(self, duty, value):
+    def Clock_Conf(self, duty, freq):
         """
-        :param int duty:    Bit 4-3: Duty cycle
-                            00 | 0% duty cycle
-                            01 | 25% duty cycle
-                            10 | 50% duty cycle
-                            11 | 75% duty cycle
-        :param int value:   Bit 2-0: Clock divider value
+        Configure the clock output.
+        Duty valid values are 0, 25, 50, 75.
+        Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz.
+        To output clock signal, you also need to set GP1 function to GPIO_FUNC_DEDICATED.
         """
-        buf = self.compile_packet([0x00, CMD_GET_SRAM_SETTINGS])  # Get SRAM Settings
+        if duty == 0:
+            duty = CLK_DUTY_0
+        elif duty == 25:
+            duty = CLK_DUTY_25
+        elif duty == 50:
+            duty = CLK_DUTY_50
+        elif duty == 75:
+            duty = CLK_DUTY_75
+        else:
+            raise ValueError("Accepted values for duty are 0, 25, 50, 75.")
 
-        self.mcp2221a.write(buf)
-        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
+        if freq == "375kHz":
+            div = CLK_FREQ_375kHz
+        elif freq == "750kHz":
+            div = CLK_FREQ_750kHz
+        elif freq == "1.5MHz":
+            div = CLK_FREQ_1_5MHz
+        elif freq == "3MHz":
+            div = CLK_FREQ_3MHz
+        elif freq == "6MHz":
+            div = CLK_FREQ_6MHz
+        elif freq == "12MHz":
+            div = CLK_FREQ_12MHz
+        elif freq == "24MHz":
+            div = CLK_FREQ_24MHz
+        else:
+            raise ValueError("Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz")
 
-        buf = self.compile_packet([0x00, CMD_SET_SRAM_SETTINGS])  # Set SRAM Settings
-        buf[2 + 1] = 0x80 | duty | (0x07 & value)  # Clock Output Divider value
-        buf[3 + 1] = rbuf[6]  # DAC Voltage Reference
-        buf[4 + 1] = 0x00  # Set DAC output value
-        buf[5 + 1] = rbuf[7]  # ADC Voltage Reference
-        buf[6 + 1] = 0x00  # Setup the interrupt detection mechanism and clear the detection flag
-        buf[7 + 1] = 0x80  # Alter GPIO configuration: alters the current GP designation
-        #   datasheet says this should be 1, but should actually be 0x80
-        buf[8 + 1] = rbuf[22]  # GP0 settings
-        buf[9 + 1] = 0x01  # GP1 settings - 001 Dedicated function operation (Clock Output)
-        buf[10 + 1] = rbuf[24]  # GP2 settings
-        buf[11 + 1] = rbuf[25]  # GP3 settings
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
+        self.GPIO_Config(clk_output = duty | div)
+
 
     #######################################################################
     # ADC 1
