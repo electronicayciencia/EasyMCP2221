@@ -13,8 +13,6 @@ import os
 DEV_DEFAULT_VID = 0x04D8
 DEV_DEFAULT_PID = 0x00DD
 
-PACKET_SIZE_65 = 65 # for compile_packet function
-
 PACKET_SIZE = 64
 DIR_OUTPUT  = 0
 DIR_INPUT   = 1
@@ -130,35 +128,9 @@ RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 class PyMCP2221A:
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
-        self.CLKDUTY_0  = 0x00
-        self.CLKDUTY_25 = 0x08
-        self.CLKDUTY_50 = 0x10
-        self.CLKDUTY_75 = 0x18
-
-        # self.CLKDIV_1 = 0x00    # 48MHz  Dont work.
-        self.CLKDIV_2   = 0x01  # 24MHz
-        self.CLKDIV_4   = 0x02  # 12MHz
-        self.CLKDIV_8   = 0x03  # 6MHz
-        self.CLKDIV_16  = 0x04  # 3MHz
-        self.CLKDIV_32  = 0x05  # 1.5MHz
-        self.CLKDIV_64  = 0x06  # 750KHz
-        self.CLKDIV_128 = 0x07  # 375KHz
-
+        self.debug_packets = False
         self.mcp2221a = hid.device()
         self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
-
-        self.debug_packets = False
-
-
-    # Obsolete
-    def compile_packet(self, buf):
-        """
-        :param list buf:
-        """
-        assert len(buf) <= PACKET_SIZE_65
-
-        buf = buf + [0 for i in range(PACKET_SIZE_65 - len(buf))]
-        return buf
 
 
     def send_cmd(self, buf, sleep = 0):
@@ -195,30 +167,10 @@ class PyMCP2221A:
         print("Product: %s" % self.mcp2221a.get_product_string())
         print("Serial No: %s" % self.mcp2221a.get_serial_number_string())
 
-    #######################################################################
-    # Command Structure
-    #######################################################################
-    def Command_Structure(self, I2C_Cancel_Bit, I2C_Speed_SetUp_Bit, I2C_Speed_SetVal_Byte):
-        I2C_Cancel_Bit = 0
-        I2C_Speed_SetUp_Bit = 0
-        I2C_Speed_SetVal_Byte = 0
-        buf = self.compile_packet([0x00, CMD_POLL_STATUS_SET_PARAMETERS, 0x00,
-                                   I2C_Cancel_Bit << 4,
-                                   I2C_Speed_SetUp_Bit << 5,
-                                   I2C_Speed_SetVal_Byte])
-
-        self.mcp2221a.write(buf)
-        buf = self.mcp2221a.read(PACKET_SIZE_65)
-
-        print(chr(buf[46]))
-        print(chr(buf[47]))
-        print(chr(buf[48]))
-        print(chr(buf[49]))
 
     #######################################################################
     # Read Flash Data
     #######################################################################
-
     def Read_Flash_Data(self):
 
         CHIP_SETTINGS_STR   = "Chip settings"
@@ -285,27 +237,11 @@ class PyMCP2221A:
     #######################################################################
 
     def Write_Flash_Data(self, data):
+        """
+        Unimplemented.
+        """
         pass
-        # Write_Deta_Setting_Byte = 0x00
-        # Write_Chip_Settings             = 0x00
-        # Write_GP_Settings               = 0x01
-        # Write_USB_Manufacturer_Settings = 0x02
-        # Write_USB_Product_Settings      = 0x03
-        # Write_USB_SerialNum_Settings    = 0x04
-        # buf = [0x00,0xB1,Write_Deta_Setting_Byte]
-        # buf = buf + [0 for i in range(PACKET_SIZE_65-len(buf))]
-        # !!!! Be careful when making changes !!!!
-        # buf[6+1] =  0xD8    # VID (Lower)
-        # buf[7+1] =  0x04    # VID (Higher)
-        # buf[8+1] =  0xDD    # PID (Lower)
-        # buf[9+1] =  0x00    # PID (Higher)
 
-        # print ("Write")
-        # print (buf)
-        # h.write(buf)
-        # buf = h.read(PACKET_SIZE_65)
-        # print ("Read")
-        # print (buf)
 
     def GPIO_Config(self,
         clk_output = None,
@@ -852,43 +788,6 @@ class PyMCP2221A:
         return bytes(data)
 
 
-#    def _i2c_read(self, addrs, size, buf):
-#
-#        buf[1 + 1] = (size & 0x00FF)  # Read LEN
-#        buf[2 + 1] = (size & 0xFF00) >> 8  # Read LEN
-#        buf[3 + 1] = 0xFF & (addrs << 1)  # addrs
-#        self.mcp2221a.write(buf)
-#        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-#        if (rbuf[RESPONSE_STATUS_BYTE] != 0x00):
-#            # print("[0x91:0x{:02x},0x{:02x},0x{:02x}]".format(rbuf[1],rbuf[2],rbuf[3]))
-#            self.I2C_Cancel()
-#            self.I2C_Init()
-#            raise RuntimeError("I2C Read Data Failed: Code " + rbuf[1])
-#        time.sleep(self.MCP2221_I2C_SLEEP)
-#
-#        buf = self.compile_packet([0x00, 0x40])
-#        buf[1 + 1] = 0x00
-#        buf[2 + 1] = 0x00
-#        buf[3 + 1] = 0x00
-#        self.mcp2221a.write(buf)
-#        rbuf = self.mcp2221a.read(PACKET_SIZE_65)
-#        if (rbuf[1] != 0x00):
-#            # print("[0x40:0x{:02x},0x{:02x},0x{:02x}]".format(rbuf[1],rbuf[2],rbuf[3]))
-#            self.I2C_Cancel()
-#            self.I2C_Init()
-#            print("You can try increasing environment variable MCP2221_I2C_SLEEP")
-#            raise RuntimeError("I2C Read Data - Get I2C Data Failed: Code " + rbuf[1])
-#        if (rbuf[2] == 0x00 and rbuf[3] == 0x00):
-#            self.I2C_Cancel()
-#            self.I2C_Init()
-#            return rbuf[4]
-#        if (rbuf[2] == 0x55 and rbuf[3] == size):
-#            rdata = [0] * size
-#            for i in range(size):
-#                rdata[i] = rbuf[4 + i]
-#            return rdata
-
-
     #######################################################################
     # UART
     #######################################################################
@@ -904,7 +803,6 @@ class PyMCP2221A:
         Set GP1 to indicate UART TX activity.
         """
         self.GPIO_Config(gp1 = GPIO_FUNC_ALT_1)
-
 
 
     #######################################################################
