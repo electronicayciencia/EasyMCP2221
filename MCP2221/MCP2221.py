@@ -4,7 +4,6 @@
 
 import hid
 import time
-import os
 
 DEV_DEFAULT_VID = 0x04D8
 DEV_DEFAULT_PID = 0x00DD
@@ -122,7 +121,7 @@ RESET_CHIP_VERY_SURE      = 0xCD
 RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 
-class PyMCP2221A:
+class MCP2221:
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
         self.debug_packets = False
         self.mcp2221a = hid.device()
@@ -639,6 +638,18 @@ class PyMCP2221A:
         """
         Send Cancel Current Transfer command to I2C engine.
         Return true if success and I2C is in idle state.
+        
+        Raise RuntimeError if:
+        - SCL keeps low. This is caused by:
+          - Missing pull-up resistor or to high value.
+          - A slave device is using clock stretching while doing an operation (e.g. writting to EEPROM).
+          - Another device is using the bus.
+        - SDA keeps low. Caused by:
+          - Missing pull-up resistor or to high value.
+          - Another device is using the bus.
+          - A i2c read transfer was cancelled in the middle of data writing. MCP2221 firmware cannot solve
+            this situation. You need to manually reset the slave o use any of the gpio lines to clock the bus until
+            slave device releases the SDA line.
         """
         buf = [0] * 3
         buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
@@ -647,14 +658,15 @@ class PyMCP2221A:
 
         # More than one time is needed to clear timeout status.
         # And device half writing.
-        rbuf = self.send_cmd(buf, sleep = 0.1)
-        rbuf = self.send_cmd(buf, sleep = 0.1)
+        rbuf = self.send_cmd(buf)
+        time.sleep(10/1000)
+        rbuf = self.send_cmd(buf)
 
         if (rbuf[22] == 0):
             raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
 
         if (rbuf[23] == 0):
-            raise RuntimeError("SDA is low. I2C bus is busy or missing pull-up resistor.")
+            raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
 
         return self.I2C_Idle()
 
@@ -701,12 +713,12 @@ class PyMCP2221A:
             # But buffer may not be fully empty in the last chunk
             # This loop could get stuck?
             while last_byte < len(data) and self._i2c_buffer_counter() > 0:
-                #time.sleep(1e-6)
+                time.sleep(1e-6)
                 pass
 
-        if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-            self.I2C_Cancel()
-            raise RuntimeError("I2C write error: device NAK.")
+            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+                self.I2C_Cancel()
+                raise RuntimeError("I2C write error: device NAK.")
 
 
     def _i2c_buffer_counter(self):
@@ -754,27 +766,37 @@ class PyMCP2221A:
         buf[2] = size >> 8 & 0xFF
         buf[3] = (addr << 1 & 0xFF) + 1  # address for read operation
 
-        # Send read command to i2c bus. Read bus data into a buffer (until 60 bytes).
+        # Send read command to i2c bus. 
+        # This command return OK always unless bus were busy. 
+        # Also triggers data reading and place it into a buffer (until 60 bytes).
         rbuf = self.send_cmd(buf)
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             self.I2C_Cancel()
             raise RuntimeError("I2C command read error.")
 
         data = []
-        while len(data) < size:
+        
+        # You must call CMD_I2C_READ_DATA_GET_I2C_DATA at least once, 
+        # even for 0 byte read to get if device ack'ed or not.
+        while True:
             time.sleep(timeout_ms/1000)
             
             # Retrieve data from buffer
             # This command must be issued after all bytes have arrived.
+            # Return OK if got all data needed (or at least first 60 bytes).
+            # Return 0x41 if device did not ACK or did not send enough data.
             rbuf = self.send_cmd([CMD_I2C_READ_DATA_GET_I2C_DATA])
             
             if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
                 self.I2C_Cancel()
-                raise RuntimeError("I2C command read data timeout or device not ready. Try increasing timeout_ms.")
+                raise RuntimeError("Device did not ACK or did not send enough data. Try increasing timeout_ms.")
 
             else:
                 chunk_size = rbuf[3]
                 data += rbuf[4:4+chunk_size]
+                
+            if len(data) >= size:
+                break
             
         return bytes(data)
 
