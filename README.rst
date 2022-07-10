@@ -1,4 +1,17 @@
 =====================================================
+Disclaimer
+=====================================================
+
+This repository is based on https://github.com/nonNoise/PyMCP2221A library.
+
+**Work in progress.**
+
+This README and examples do not work anymore.
+
+
+
+
+=====================================================
 PyMCP2221A
 =====================================================
 
