@@ -167,7 +167,6 @@ class MCP2221:
     # Flash Data
     #######################################################################
     def Read_Flash_Data(self):
-
         CHIP_SETTINGS_STR   = "Chip settings"
         GP_SETTINGS_STR     = "GP settings"
         USB_VENDOR_STR      = "USB Manufacturer"
@@ -233,10 +232,8 @@ class MCP2221:
         """
         pass
 
-    #######################################################################
-    # GPIO
-    #######################################################################
-    def GPIO_Config(self,
+
+    def Flash_Config(self,
         clk_output = None,
         dac_ref    = None,
         dac_value  = None,
@@ -286,6 +283,9 @@ class MCP2221:
         self.send_cmd(cmd)
 
 
+    #######################################################################
+    # GPIO
+    #######################################################################
     def GPIO_Input(self, pin):
         """
         Set pin as GPIO Input.
@@ -293,13 +293,13 @@ class MCP2221:
         This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
         """
         if pin == "GP0":
-            self.GPIO_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.Flash_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP1":
-            self.GPIO_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.Flash_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP2":
-            self.GPIO_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.Flash_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP3":
-            self.GPIO_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.Flash_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         else:
             raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
 
@@ -317,13 +317,13 @@ class MCP2221:
             val = GPIO_OUT_VAL_0
 
         if pin == "GP0":
-            self.GPIO_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.Flash_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP1":
-            self.GPIO_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.Flash_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP2":
-            self.GPIO_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.Flash_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP3":
-            self.GPIO_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.Flash_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         else:
             raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
 
@@ -416,20 +416,67 @@ class MCP2221:
 
         return (gp0, gp1, gp2, gp3)
 
+
+    def Pin_Function(
+        self,
+        gp0 = None, gp1 = None, gp2 = None, gp3 = None,
+        out0 = False, out1 = False, out2 = False, out3 = False):
+        """
+        Set pin function and, optionally, output value.
+        """
+        gp0_funcs = {
+            "GPIO"    : GPIO_FUNC_GPIO,
+            "SSPND"   : GPIO_FUNC_DEDICATED,
+            "LED_URX" : GPIO_FUNC_ALT_0
+            }
+
+        gp1_funcs = {
+            "GPIO"    : GPIO_FUNC_GPIO,
+            "CLK_OUT" : GPIO_FUNC_DEDICATED,
+            "ADC1"    : GPIO_FUNC_ALT_0,
+            "LED_UTX" : GPIO_FUNC_ALT_1,
+            "IOC"     : GPIO_FUNC_ALT_2,
+            }
+
+        gp2_funcs = {
+            "GPIO"    : GPIO_FUNC_GPIO,
+            "USBCFG"  : GPIO_FUNC_DEDICATED,
+            "ADC2"    : GPIO_FUNC_ALT_0,
+            "DAC1"    : GPIO_FUNC_ALT_1,
+            }
+
+        gp3_funcs = {
+            "GPIO"    : GPIO_FUNC_GPIO,
+            "LED_I2C" : GPIO_FUNC_DEDICATED,
+            "ADC3"    : GPIO_FUNC_ALT_0,
+            "DAC2"    : GPIO_FUNC_ALT_1,
+            }
+
+        if gp0 is not None and gp0 not in gp0_funcs:
+            raise ValueError("Invalid function for GP0. Could be: " + ", ".join(gp0_funcs))
+        if gp1 is not None and gp1 not in gp1_funcs:
+            raise ValueError("Invalid function for GP1. Could be: " + ", ".join(gp1_funcs))
+        if gp2 is not None and gp2 not in gp2_funcs:
+            raise ValueError("Invalid function for GP2. Could be: " + ", ".join(gp2_funcs))
+        if gp3 is not None and gp3 not in gp3_funcs:
+            raise ValueError("Invalid function for GP3. Could be: " + ", ".join(gp3_funcs))
+
+        if ( (out0 and gp0 != "GPIO") or
+             (out1 and gp1 != "GPIO") or
+             (out2 and gp2 != "GPIO") or
+             (out3 and gp3 != "GPIO") ):
+            raise ValueError("Pin output value only can be set if pin function is GPIO")
+
+        self.Flash_Config(
+            gp0 = None if gp0 is None else gp0_funcs[gp0] | (1 if out0 else 0),
+            gp1 = None if gp1 is None else gp1_funcs[gp1] | (1 if out1 else 0),
+            gp2 = None if gp2 is None else gp2_funcs[gp2] | (1 if out2 else 0),
+            gp3 = None if gp3 is None else gp3_funcs[gp3] | (1 if out3 else 0)
+            )
+
     #######################################################################
     # CLOCK
     #######################################################################
-    def Clock_Channel(self, pin = "GP1"):
-        """
-        Configure pin as clock output channel.
-        pin valid values is only "GP1".
-        """
-        if pin == "GP1":
-            self.GPIO_Config(gp1 = GPIO_FUNC_DEDICATED)
-        else:
-            raise ValueError("Accepted values for pin is only 'GP1'.")
-
-
     def Clock_Config(self, duty, freq):
         """
         Configure the clock output.
@@ -465,27 +512,12 @@ class MCP2221:
         else:
             raise ValueError("Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz")
 
-        self.GPIO_Config(clk_output = duty | div)
+        self.Flash_Config(clk_output = duty | div)
 
 
     #######################################################################
     # ADC
     #######################################################################
-    def ADC_Channel(self, pin):
-        """
-        Configure pin as an analog input channel.
-        pin valid values are "GP1", "GP2" and "GP3".
-        """
-        if pin == "GP1":
-            self.GPIO_Config(gp1 = GPIO_FUNC_ADC)
-        elif pin == "GP2":
-            self.GPIO_Config(gp2 = GPIO_FUNC_ADC)
-        elif pin == "GP3":
-            self.GPIO_Config(gp3 = GPIO_FUNC_ADC)
-        else:
-            raise ValueError("Accepted values for pin are 'GP1', 'GP2' or 'GP3'.")
-
-
     def ADC_Config(self, ref):
         """
         Configure ADC reference.
@@ -510,7 +542,7 @@ class MCP2221:
         else:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        self.GPIO_Config(adc_ref = ref | vrm)
+        self.Flash_Config(adc_ref = ref | vrm)
 
 
     def ADC_Read(self):
@@ -529,19 +561,6 @@ class MCP2221:
     #######################################################################
     # DAC
     #######################################################################
-    def DAC_Channel(self, pin):
-        """
-        Configure DAC pin to use.
-        pin valid values are "GP2" and "GP3"
-        """
-        if pin == "GP2":
-            self.GPIO_Config(gp2 = GPIO_FUNC_DAC)
-        elif pin == "GP3":
-            self.GPIO_Config(gp3 = GPIO_FUNC_DAC)
-        else:
-            raise ValueError("Accepted values for pin are 'GP2' and 'GP3'.")
-
-
     def DAC_Config(self, ref, out = 0):
         """
         Configure DAC reference.
@@ -570,7 +589,7 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.GPIO_Config(
+        self.Flash_Config(
             dac_ref = ref | vrm,
             dac_value = out)
 
@@ -585,19 +604,12 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.GPIO_Config(dac_value = out)
+        self.Flash_Config(dac_value = out)
 
 
     #######################################################################
     # I2C
     #######################################################################
-    def I2C_Led(self):
-        """
-        Set GP3 to indicate I2C activity.
-        """
-        self.GPIO_Config(gp3 = GPIO_FUNC_DEDICATED)
-
-
     def I2C_Speed(self, speed=100000):
         """
         Set I2C bus speed.
@@ -638,7 +650,7 @@ class MCP2221:
         """
         Send Cancel Current Transfer command to I2C engine.
         Return true if success and I2C is in idle state.
-        
+
         Raise RuntimeError if:
         - SCL keeps low. This is caused by:
           - Missing pull-up resistor or to high value.
@@ -766,8 +778,8 @@ class MCP2221:
         buf[2] = size >> 8 & 0xFF
         buf[3] = (addr << 1 & 0xFF) + 1  # address for read operation
 
-        # Send read command to i2c bus. 
-        # This command return OK always unless bus were busy. 
+        # Send read command to i2c bus.
+        # This command return OK always unless bus were busy.
         # Also triggers data reading and place it into a buffer (until 60 bytes).
         rbuf = self.send_cmd(buf)
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
@@ -775,18 +787,18 @@ class MCP2221:
             raise RuntimeError("I2C command read error.")
 
         data = []
-        
-        # You must call CMD_I2C_READ_DATA_GET_I2C_DATA at least once, 
+
+        # You must call CMD_I2C_READ_DATA_GET_I2C_DATA at least once,
         # even for 0 byte read to get if device ack'ed or not.
         while True:
             time.sleep(timeout_ms/1000)
-            
+
             # Retrieve data from buffer
             # This command must be issued after all bytes have arrived.
             # Return OK if got all data needed (or at least first 60 bytes).
             # Return 0x41 if device did not ACK or did not send enough data.
             rbuf = self.send_cmd([CMD_I2C_READ_DATA_GET_I2C_DATA])
-            
+
             if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
                 self.I2C_Cancel()
                 raise RuntimeError("Device did not ACK or did not send enough data. Try increasing timeout_ms.")
@@ -794,38 +806,11 @@ class MCP2221:
             else:
                 chunk_size = rbuf[3]
                 data += rbuf[4:4+chunk_size]
-                
+
             if len(data) >= size:
                 break
-            
+
         return bytes(data)
-
-
-    #######################################################################
-    # UART
-    #######################################################################
-    def UART_RX_Led(self):
-        """
-        Set GP0 to indicate UART RX activity.
-        """
-        self.GPIO_Config(gp0 = GPIO_FUNC_ALT_0)
-
-
-    def UART_TX_Led(self):
-        """
-        Set GP1 to indicate UART TX activity.
-        """
-        self.GPIO_Config(gp1 = GPIO_FUNC_ALT_1)
-
-
-    #######################################################################
-    # USB INTERRUPTIONS
-    #######################################################################
-    def USB_Config_Led(self):
-        """
-        Set GP2 to indicate USB device configured status.
-        """
-        self.GPIO_Config(gp2 = GPIO_FUNC_DEDICATED)
 
 
     #######################################################################
