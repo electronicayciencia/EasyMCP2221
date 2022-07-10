@@ -164,9 +164,37 @@ class MCP2221:
 
 
     #######################################################################
-    # Flash Data
+    # Flash
     #######################################################################
-    def Read_Flash_Data(self):
+    def _read_flash_raw(self, setting):
+        """
+        Read flash data and return a list of bytes.
+        """
+        rbuf = self.send_cmd([CMD_READ_FLASH_DATA, setting])
+        
+        if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+            raise RuntimeError("Read flash data command failed.")
+        
+        return rbuf[0:64]
+
+        
+    def _write_flash_raw(self, setting, data):
+        """
+        Write flash data.
+        Data payload does not include command and register bytes.
+        """
+        if setting == FLASH_DATA_CHIP_SETTINGS and (data[0] & 0b11) != 0:
+            raise AssertionError("Chip protection is currently disabled.")
+        
+        rbuf = self.send_cmd([CMD_WRITE_FLASH_DATA, setting] + data)
+        
+        if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+            raise RuntimeError("Write flash data command failed.")
+        
+        return rbuf[0:64]
+        
+        
+    def Parse_Flash_Data(self):
         CHIP_SETTINGS_STR   = "Chip settings"
         GP_SETTINGS_STR     = "GP settings"
         USB_VENDOR_STR      = "USB Manufacturer"
@@ -226,14 +254,10 @@ class MCP2221:
         return data
 
 
-    def Write_Flash_Data(self, data):
-        """
-        Unimplemented.
-        """
-        pass
-
-
-    def Flash_Config(self,
+    #######################################################################
+    # SRAM
+    #######################################################################
+    def SRAM_Config(self,
         clk_output = None,
         dac_ref    = None,
         dac_value  = None,
@@ -280,7 +304,10 @@ class MCP2221:
         cmd[10] = gp2        or PRESERVE_GPIO_CONF  # GP2 settings
         cmd[11] = gp3        or PRESERVE_GPIO_CONF  # GP3 settings
 
-        self.send_cmd(cmd)
+        r = self.send_cmd(cmd)
+        
+        if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+            raise RuntimeError("SRAM write error.")
 
 
     #######################################################################
@@ -293,13 +320,13 @@ class MCP2221:
         This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
         """
         if pin == "GP0":
-            self.Flash_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.SRAM_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP1":
-            self.Flash_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.SRAM_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP2":
-            self.Flash_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.SRAM_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         elif pin == "GP3":
-            self.Flash_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            self.SRAM_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
         else:
             raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
 
@@ -317,13 +344,13 @@ class MCP2221:
             val = GPIO_OUT_VAL_0
 
         if pin == "GP0":
-            self.Flash_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.SRAM_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP1":
-            self.Flash_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.SRAM_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP2":
-            self.Flash_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.SRAM_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         elif pin == "GP3":
-            self.Flash_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
+            self.SRAM_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
         else:
             raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
 
@@ -335,7 +362,7 @@ class MCP2221:
         gp3 = None):
         """
         Define a pin as an input but not writes to SRAM.
-        Any call to GPIO_Conf to configure any other pins will reset this settings.
+        Any call to SRAM_Config to configure any other pins will reset this settings.
         """
 
         ALTER_DIRECTION = 1
@@ -372,7 +399,7 @@ class MCP2221:
         gp3 = None):
         """
         Set pin output values but not write it to SRAM.
-        Any call to GPIO_Conf to configure any other pins will reset this settings.
+        Any call to SRAM_Config to configure any other pins will reset this settings.
         """
 
         ALTER_VALUE = 1
@@ -467,12 +494,12 @@ class MCP2221:
              (out3 and gp3 != "GPIO") ):
             raise ValueError("Pin output value only can be set if pin function is GPIO")
 
-        self.Flash_Config(
+        self.SRAM_Config(
             gp0 = None if gp0 is None else gp0_funcs[gp0] | (1 if out0 else 0),
             gp1 = None if gp1 is None else gp1_funcs[gp1] | (1 if out1 else 0),
             gp2 = None if gp2 is None else gp2_funcs[gp2] | (1 if out2 else 0),
-            gp3 = None if gp3 is None else gp3_funcs[gp3] | (1 if out3 else 0)
-            )
+            gp3 = None if gp3 is None else gp3_funcs[gp3] | (1 if out3 else 0))
+
 
     #######################################################################
     # CLOCK
@@ -512,7 +539,7 @@ class MCP2221:
         else:
             raise ValueError("Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz")
 
-        self.Flash_Config(clk_output = duty | div)
+        self.SRAM_Config(clk_output = duty | div)
 
 
     #######################################################################
@@ -542,7 +569,7 @@ class MCP2221:
         else:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        self.Flash_Config(adc_ref = ref | vrm)
+        self.SRAM_Config(adc_ref = ref | vrm)
 
 
     def ADC_Read(self):
@@ -589,7 +616,7 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.Flash_Config(
+        self.SRAM_Config(
             dac_ref = ref | vrm,
             dac_value = out)
 
@@ -604,7 +631,7 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.Flash_Config(dac_value = out)
+        self.SRAM_Config(dac_value = out)
 
 
     #######################################################################
@@ -814,7 +841,49 @@ class MCP2221:
 
 
     #######################################################################
-    # reset
+    # Wake-up
+    #######################################################################
+    def Wake_Up_Enable(self, enable = False):
+        """
+        Enable or disable USB Remote Wake-up Capability bit. 
+        When enabled, device energy options tab should be available.
+        Device reset (or unplug/plug cycle) is needed in order for changes to take effect.
+        """
+        chip_settings = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
+        USBPWRATTR = chip_settings[12]
+        
+        if enable:
+            USBPWRATTR |= 0b00100000
+        else:
+            USBPWRATTR &= 0b11011111
+
+        chip_settings[12] = USBPWRATTR
+        self._write_flash_raw(FLASH_DATA_CHIP_SETTINGS, chip_settings[4:64])
+
+
+    def Wake_Up_Config(self, edge = "none"):
+        """
+        Configure interruption edge.
+        Edge could be: raising, falling, both or none.
+        You also need to assign GP1 to IOC function.
+        Don't forget to allow this device to wake-up the computer in Windows or Linux.
+        """
+        if edge == "none":
+            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_DISABLE
+        elif edge == "raising":
+            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_DISABLE
+        elif edge == "falling":
+            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_ENABLE
+        elif edge == "both":
+            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_ENABLE
+        else:
+            raise ValueError("Invalid edge detection. Allowed: 'raising', 'falling', 'both' or 'none'.")
+            
+        self.SRAM_Config(int_conf = edge | INT_FLAG_CLEAR)
+
+
+    #######################################################################
+    # Reset
     #######################################################################
     def Reset(self):
         """

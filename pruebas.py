@@ -7,25 +7,25 @@ def tested():
     mcp.GPIO_Config(
     gp1 = MCP2221.GPIO_FUNC_DEDICATED,
     gp2 = MCP2221.GPIO_FUNC_GPIO | MCP2221.GPIO_DIR_OUT | MCP2221.GPIO_OUT_VAL_0)
-    
+
     mcp.Clock_Config(duty = 50, freq = "3MHz")
-    
+
     # When Clock_Conf calls to GPIO_Config, it resets previous SetValue and SetAsInput commands.
-    
+
     # DAC
     mcp.DAC_Channel("GP3")
     mcp.DAC_Config(ref = "2.048V", out = 0)
     mcp.DAC_Write(20)
-    
+
     mcp.ADC_Channel("GP1")
     mcp.ADC_Read()
-    
+
     mcp.GPIO_Output("GP3", True)
     mcp.GPIO_Input("GP3")
     mcp.GPIO_Read()
-    
-    
-    
+
+
+
     ###############################
     # Unexpected Reset of GP status
     ###############################
@@ -35,8 +35,8 @@ def tested():
     # LED is off
     mcp.GPIO_Config(gp3 = PyMCP2221A.GPIO_FUNC_ALT_1) # unrelated pin
     # LED is on again
-    
-    
+
+
     ###############################
     # Unexpected Reset of Vrm
     ###############################
@@ -46,7 +46,7 @@ def tested():
     # DAC is Vrm
     mcp.GPIO_FastSetAsInput(gp2 = True) # unrelated pin
     # DAC goes to Zero again only if ref is not Vdd
-    
+
     mcp.I2C_Led()
 
 
@@ -73,7 +73,16 @@ def I2C_Scan():
             mcp.I2C_Read(addr, size = 0)
         except:
             continue
-    
+
         print("0x%02x found!" % addr)
-    
+
+
+def Test_Wake_Up():
+
+    mcp.Wake_Up_Enable(True)
+    mcp.Reset()
+
+    mcp.Pin_Function(gp1 = "IOC", gp2 = "USBCFG")
+    mcp.Wake_Up_Config(edge = "both")
+
 
