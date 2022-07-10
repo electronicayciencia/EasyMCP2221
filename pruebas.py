@@ -1,5 +1,6 @@
 import time
 from MCP2221 import MCP2221
+#from MCP2221.Constants import *
 
 mcp = MCP2221.MCP2221()
 
