@@ -41,7 +41,7 @@ class MCP2221:
 
 
     #######################################################################
-    # HID DeviceDriver Info
+    # HID
     #######################################################################
     def DeviceDriverInfo(self):
         print("Manufacturer: %s" % self.mcp2221a.get_manufacturer_string())
@@ -57,13 +57,13 @@ class MCP2221:
         Read flash data and return a list of bytes.
         """
         rbuf = self.send_cmd([CMD_READ_FLASH_DATA, setting])
-        
+
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("Read flash data command failed.")
-        
+
         return rbuf[0:64]
 
-        
+
     def _write_flash_raw(self, setting, data):
         """
         Write flash data.
@@ -71,16 +71,16 @@ class MCP2221:
         """
         if setting == FLASH_DATA_CHIP_SETTINGS and (data[0] & 0b11) != 0:
             raise AssertionError("Chip protection is currently disabled.")
-        
+
         rbuf = self.send_cmd([CMD_WRITE_FLASH_DATA, setting] + data)
-        
+
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("Write flash data command failed.")
-        
+
         return rbuf[0:64]
-        
-        
-    def Parse_Flash_Data(self):
+
+
+    def parse_flash_data(self):
         CHIP_SETTINGS_STR   = "Chip settings"
         GP_SETTINGS_STR     = "GP settings"
         USB_VENDOR_STR      = "USB Manufacturer"
@@ -143,7 +143,7 @@ class MCP2221:
     #######################################################################
     # SRAM
     #######################################################################
-    def SRAM_Config(self,
+    def SRAM_config(self,
         clk_output = None,
         dac_ref    = None,
         dac_value  = None,
@@ -191,7 +191,7 @@ class MCP2221:
         cmd[11] = gp3        or PRESERVE_GPIO_CONF  # GP3 settings
 
         r = self.send_cmd(cmd)
-        
+
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
 
@@ -199,10 +199,10 @@ class MCP2221:
     #######################################################################
     # GPIO
     #######################################################################
-    def GPIO_Write(self, gp0 = None, gp1 = None, gp2 = None, gp3 = None):
+    def GPIO_write(self, gp0 = None, gp1 = None, gp2 = None, gp3 = None):
         """
         Set pin output values but do not write them to SRAM.
-        Any call to SRAM_Config to configure any other pins will reset this settings.
+        Any call to SRAM_config to configure any other pins will reset this settings.
         """
         ALTER_VALUE = 1
         PRESERVE_VALUE = 0
@@ -231,7 +231,7 @@ class MCP2221:
             raise RuntimeError("Pin GP3 is not assigned to GPIO function.")
 
 
-    def GPIO_Read(self):
+    def GPIO_read(self):
         """
         Read all GPIO pins and return a tuple (gp0, gp1, gp2, gp3).
         Value is None if that pin is not set for GPIO operation.
@@ -246,7 +246,7 @@ class MCP2221:
         return (gp0, gp1, gp2, gp3)
 
 
-    def Pin_Function(
+    def set_pin_function(
         self,
         gp0 = None, gp1 = None, gp2 = None, gp3 = None,
         out0 = False, out1 = False, out2 = False, out3 = False):
@@ -254,31 +254,35 @@ class MCP2221:
         Set pin function and, optionally, output value.
         """
         gp0_funcs = {
-            "GPIO"    : GPIO_FUNC_GPIO,
-            "SSPND"   : GPIO_FUNC_DEDICATED,
-            "LED_URX" : GPIO_FUNC_ALT_0
+            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "SSPND"       : GPIO_FUNC_DEDICATED,
+            "LED_URX"     : GPIO_FUNC_ALT_0
             }
 
         gp1_funcs = {
-            "GPIO"    : GPIO_FUNC_GPIO,
-            "CLK_OUT" : GPIO_FUNC_DEDICATED,
-            "ADC1"    : GPIO_FUNC_ALT_0,
-            "LED_UTX" : GPIO_FUNC_ALT_1,
-            "IOC"     : GPIO_FUNC_ALT_2,
+            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "CLK_OUT"     : GPIO_FUNC_DEDICATED,
+            "ADC1"        : GPIO_FUNC_ALT_0,
+            "LED_UTX"     : GPIO_FUNC_ALT_1,
+            "IOC"         : GPIO_FUNC_ALT_2,
             }
 
         gp2_funcs = {
-            "GPIO"    : GPIO_FUNC_GPIO,
-            "USBCFG"  : GPIO_FUNC_DEDICATED,
-            "ADC2"    : GPIO_FUNC_ALT_0,
-            "DAC1"    : GPIO_FUNC_ALT_1,
+            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "USBCFG"      : GPIO_FUNC_DEDICATED,
+            "ADC2"        : GPIO_FUNC_ALT_0,
+            "DAC"         : GPIO_FUNC_ALT_1,
             }
 
         gp3_funcs = {
-            "GPIO"    : GPIO_FUNC_GPIO,
-            "LED_I2C" : GPIO_FUNC_DEDICATED,
-            "ADC3"    : GPIO_FUNC_ALT_0,
-            "DAC2"    : GPIO_FUNC_ALT_1,
+            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "LED_I2C"     : GPIO_FUNC_DEDICATED,
+            "ADC3"        : GPIO_FUNC_ALT_0,
+            "DAC"         : GPIO_FUNC_ALT_1,
             }
 
         if gp0 is not None and gp0 not in gp0_funcs:
@@ -290,23 +294,23 @@ class MCP2221:
         if gp3 is not None and gp3 not in gp3_funcs:
             raise ValueError("Invalid function for GP3. Could be: " + ", ".join(gp3_funcs))
 
-        if ( (out0 and gp0 != "GPIO") or
-             (out1 and gp1 != "GPIO") or
-             (out2 and gp2 != "GPIO") or
-             (out3 and gp3 != "GPIO") ):
-            raise ValueError("Pin output value only can be set if pin function is GPIO")
+        if ( (out0 and gp0 != "DIGITAL_OUT") or
+             (out1 and gp1 != "DIGITAL_OUT") or
+             (out2 and gp2 != "DIGITAL_OUT") or
+             (out3 and gp3 != "DIGITAL_OUT") ):
+            raise ValueError("Pin output value only can be set if pin function is DIGITAL_OUT.")
 
-        self.SRAM_Config(
-            gp0 = None if gp0 is None else gp0_funcs[gp0] | (1 if out0 else 0),
-            gp1 = None if gp1 is None else gp1_funcs[gp1] | (1 if out1 else 0),
-            gp2 = None if gp2 is None else gp2_funcs[gp2] | (1 if out2 else 0),
-            gp3 = None if gp3 is None else gp3_funcs[gp3] | (1 if out3 else 0))
+        self.SRAM_config(
+            gp0 = None if gp0 is None else gp0_funcs[gp0] | (GPIO_OUT_VAL_1 if out0 else GPIO_OUT_VAL_0),
+            gp1 = None if gp1 is None else gp1_funcs[gp1] | (GPIO_OUT_VAL_1 if out1 else GPIO_OUT_VAL_0),
+            gp2 = None if gp2 is None else gp2_funcs[gp2] | (GPIO_OUT_VAL_1 if out2 else GPIO_OUT_VAL_0),
+            gp3 = None if gp3 is None else gp3_funcs[gp3] | (GPIO_OUT_VAL_1 if out3 else GPIO_OUT_VAL_0))
 
 
     #######################################################################
     # CLOCK
     #######################################################################
-    def Clock_Config(self, duty, freq):
+    def clock_config(self, duty, freq):
         """
         Configure the clock output.
         Duty valid values are 0, 25, 50, 75.
@@ -341,13 +345,13 @@ class MCP2221:
         else:
             raise ValueError("Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz")
 
-        self.SRAM_Config(clk_output = duty | div)
+        self.SRAM_config(clk_output = duty | div)
 
 
     #######################################################################
     # ADC
     #######################################################################
-    def ADC_Config(self, ref):
+    def ADC_config(self, ref):
         """
         Configure ADC reference.
         ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
@@ -371,10 +375,10 @@ class MCP2221:
         else:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        self.SRAM_Config(adc_ref = ref | vrm)
+        self.SRAM_config(adc_ref = ref | vrm)
 
 
-    def ADC_Read(self):
+    def ADC_read(self):
         """
         Read all 3 ADC and return a tuple (gp1, gp2, gp3).
         Each value is 10 bit (0 to 1023).
@@ -390,7 +394,7 @@ class MCP2221:
     #######################################################################
     # DAC
     #######################################################################
-    def DAC_Config(self, ref, out = 0):
+    def DAC_config(self, ref, out = 0):
         """
         Configure DAC reference.
         ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
@@ -418,12 +422,12 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.SRAM_Config(
+        self.SRAM_config(
             dac_ref = ref | vrm,
             dac_value = out)
 
 
-    def DAC_Write(self, out):
+    def DAC_write(self, out):
         """
         Configure DAC output.
         out valid values are from 0 to 31.
@@ -433,13 +437,13 @@ class MCP2221:
         if out < 0 or out > 31:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.SRAM_Config(dac_value = out)
+        self.SRAM_config(dac_value = out)
 
 
     #######################################################################
     # I2C
     #######################################################################
-    def I2C_Speed(self, speed=100000):
+    def I2C_speed(self, speed=100000):
         """
         Set I2C bus speed.
         Default bus speed is 100kHz.
@@ -462,7 +466,7 @@ class MCP2221:
             raise RuntimeError("I2C speed is not valid or bus is busy.")
 
 
-    def I2C_Idle(self):
+    def I2C_is_idle(self):
         """
         Check bus idle state.
         Return True if idle, False if timeout detected.
@@ -475,7 +479,7 @@ class MCP2221:
             return True
 
 
-    def I2C_Cancel(self):
+    def I2C_cancel(self):
         """
         Send Cancel Current Transfer command to I2C engine.
         Return true if success and I2C is in idle state.
@@ -509,10 +513,10 @@ class MCP2221:
         if (rbuf[23] == 0):
             raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
 
-        return self.I2C_Idle()
+        return self.I2C_is_idle()
 
 
-    def I2C_Write(self, addr, data, kind = "regular"):
+    def I2C_write(self, addr, data, kind = "regular"):
         """
         Writes a block of data on I2C bus.
         addr: I2C slave device base address
@@ -558,7 +562,7 @@ class MCP2221:
                 pass
 
             if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-                self.I2C_Cancel()
+                self.I2C_cancel()
                 raise RuntimeError("I2C write error: device NAK.")
 
 
@@ -574,7 +578,7 @@ class MCP2221:
     #######################################################################
     # I2C Read
     #######################################################################
-    def I2C_Read(self, addr, size, kind = "regular", timeout_ms = 10):
+    def I2C_read(self, addr, size, kind = "regular", timeout_ms = 10):
         """
         Read data from I2C bus.
         addr: I2C slave device base address
@@ -598,7 +602,7 @@ class MCP2221:
         else:
             raise ValueError("Invalid kind of transfer. Allowed: 'regular' or 'restart'.")
 
-        if not self.I2C_Idle():
+        if not self.I2C_is_idle():
             raise RuntimeError("I2C read error, engine is not in idle state.")
 
         buf = [0] * 4
@@ -612,7 +616,7 @@ class MCP2221:
         # Also triggers data reading and place it into a buffer (until 60 bytes).
         rbuf = self.send_cmd(buf)
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-            self.I2C_Cancel()
+            self.I2C_cancel()
             raise RuntimeError("I2C command read error.")
 
         data = []
@@ -629,7 +633,7 @@ class MCP2221:
             rbuf = self.send_cmd([CMD_I2C_READ_DATA_GET_I2C_DATA])
 
             if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-                self.I2C_Cancel()
+                self.I2C_cancel()
                 raise RuntimeError("Device did not ACK or did not send enough data. Try increasing timeout_ms.")
 
             else:
@@ -645,15 +649,15 @@ class MCP2221:
     #######################################################################
     # Wake-up
     #######################################################################
-    def Wake_Up_Enable(self, enable = False):
+    def wake_up_enable(self, enable = False):
         """
-        Enable or disable USB Remote Wake-up Capability bit. 
+        Enable or disable USB Remote Wake-up Capability bit.
         When enabled, device energy options tab should be available.
         Device reset (or unplug/plug cycle) is needed in order for changes to take effect.
         """
         chip_settings = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
         USBPWRATTR = chip_settings[12]
-        
+
         if enable:
             USBPWRATTR |= 0b00100000
         else:
@@ -663,7 +667,7 @@ class MCP2221:
         self._write_flash_raw(FLASH_DATA_CHIP_SETTINGS, chip_settings[4:64])
 
 
-    def Wake_Up_Config(self, edge = "none"):
+    def wake_up_config(self, edge = "none"):
         """
         Configure interruption edge.
         Edge could be: raising, falling, both or none.
@@ -680,14 +684,14 @@ class MCP2221:
             edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_ENABLE
         else:
             raise ValueError("Invalid edge detection. Allowed: 'raising', 'falling', 'both' or 'none'.")
-            
-        self.SRAM_Config(int_conf = edge | INT_FLAG_CLEAR)
+
+        self.SRAM_config(int_conf = edge | INT_FLAG_CLEAR)
 
 
     #######################################################################
     # Reset
     #######################################################################
-    def Reset(self):
+    def reset(self):
         """
         Reset device.
         """
