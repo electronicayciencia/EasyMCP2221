@@ -1,12 +1,8 @@
 #############################################################
 #    MIT License                                            #
-#    Copyright (c) 2017 Yuta KItagami                       #
 #############################################################
 
 import hid
-# import hid
-# pip install hidapi
-# https://github.com/trezor/cython-hidapi
 import time
 import os
 
@@ -137,7 +133,7 @@ class PyMCP2221A:
         """
         Write a USB command.
         buf: bytes to write
-        sleep: delay (senconds) between writing the command and reading the response.
+        sleep: delay (seconds) between writing the command and reading the response.
         """
         if self.debug_packets:
             print(buf)
@@ -169,7 +165,7 @@ class PyMCP2221A:
 
 
     #######################################################################
-    # Read Flash Data
+    # Flash Data
     #######################################################################
     def Read_Flash_Data(self):
 
@@ -232,17 +228,15 @@ class PyMCP2221A:
         return data
 
 
-   #######################################################################
-    # Write Flash Data
-    #######################################################################
-
     def Write_Flash_Data(self, data):
         """
         Unimplemented.
         """
         pass
 
-
+    #######################################################################
+    # GPIO
+    #######################################################################
     def GPIO_Config(self,
         clk_output = None,
         dac_ref    = None,
@@ -293,9 +287,6 @@ class PyMCP2221A:
         self.send_cmd(cmd)
 
 
-    #######################################################################
-    # GPIO commands
-    #######################################################################
     def GPIO_Input(self, pin):
         """
         Set pin as GPIO Input.
