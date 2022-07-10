@@ -19,7 +19,6 @@ class MCP2221:
         Write a raw USB command.
         buf: bytes to write
         sleep: delay (seconds) between writing the command and reading the response.
-        
         """
         if self.debug_packets:
             print(buf)
@@ -200,95 +199,11 @@ class MCP2221:
     #######################################################################
     # GPIO
     #######################################################################
-    def GPIO_Input(self, pin):
+    def GPIO_Write(self, gp0 = None, gp1 = None, gp2 = None, gp3 = None):
         """
-        Set pin as GPIO Input.
-        Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.
-        This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
-        """
-        if pin == "GP0":
-            self.SRAM_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
-        elif pin == "GP1":
-            self.SRAM_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
-        elif pin == "GP2":
-            self.SRAM_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
-        elif pin == "GP3":
-            self.SRAM_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
-        else:
-            raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
-
-
-    def GPIO_Output(self, pin, value):
-        """
-        Set pin as GPIO Output with a value.
-        Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.
-        Value could be True or False.
-        This function uses SET_SRAM_SETTINGS command instead of SET_GPIO_OUTPUT_VALUES.
-        """
-        if value:
-            val = GPIO_OUT_VAL_1
-        else:
-            val = GPIO_OUT_VAL_0
-
-        if pin == "GP0":
-            self.SRAM_Config(gp0 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
-        elif pin == "GP1":
-            self.SRAM_Config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
-        elif pin == "GP2":
-            self.SRAM_Config(gp2 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
-        elif pin == "GP3":
-            self.SRAM_Config(gp3 = GPIO_FUNC_GPIO | GPIO_DIR_OUT | val)
-        else:
-            raise ValueError("Accepted values for pin are 'GP0', 'GP1', 'GP2' or 'GP3'.")
-
-
-    def GPIO_FastSetAsInput(self,
-        gp0 = None,
-        gp1 = None,
-        gp2 = None,
-        gp3 = None):
-        """
-        Define a pin as an input but not writes to SRAM.
+        Set pin output values but do not write them to SRAM.
         Any call to SRAM_Config to configure any other pins will reset this settings.
         """
-
-        ALTER_DIRECTION = 1
-        PRESERVE_DIRECTION = 0
-        GPIO_ERROR = 0xEE
-
-        buf = [0] * 18
-        buf[0]  = CMD_SET_GPIO_OUTPUT_VALUES
-        buf[4]  = PRESERVE_DIRECTION if gp0 is None else ALTER_DIRECTION
-        buf[5]  = gp0 or 0
-        buf[8]  = PRESERVE_DIRECTION if gp1 is None else ALTER_DIRECTION
-        buf[9]  = gp1 or 0
-        buf[12] = PRESERVE_DIRECTION if gp2 is None else ALTER_DIRECTION
-        buf[13] = gp2 or 0
-        buf[16] = PRESERVE_DIRECTION if gp3 is None else ALTER_DIRECTION
-        buf[17] = gp3 or 0
-
-        r = self.send_cmd(buf)
-
-        if gp0 is not None and r[4] == GPIO_ERROR:
-            raise RuntimeError("Pin GP0 is not assigned to GPIO function.")
-        elif gp1 is not None and r[8] == GPIO_ERROR:
-            raise RuntimeError("Pin GP1 is not assigned to GPIO function.")
-        elif gp2 is not None and r[12] == GPIO_ERROR:
-            raise RuntimeError("Pin GP2 is not assigned to GPIO function.")
-        elif gp3 is not None and r[16] == GPIO_ERROR:
-            raise RuntimeError("Pin GP3 is not assigned to GPIO function.")
-
-
-    def GPIO_FastSetValue(self,
-        gp0 = None,
-        gp1 = None,
-        gp2 = None,
-        gp3 = None):
-        """
-        Set pin output values but not write it to SRAM.
-        Any call to SRAM_Config to configure any other pins will reset this settings.
-        """
-
         ALTER_VALUE = 1
         PRESERVE_VALUE = 0
         GPIO_ERROR = 0xEE
