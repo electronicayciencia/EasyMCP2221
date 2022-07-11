@@ -7,18 +7,25 @@ import time
 
 from .Constants import *
 
-class MCP2221:
+class Device:
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
         self.debug_packets = False
         self.mcp2221a = hid.device()
+        devices = hid.enumerate(VID, PID)
+        if not devices or len(devices) < devnum:
+            raise RuntimeError("No device found with VID %04X and PID %04X." % (VID, PID))
+        
         self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
 
 
     def send_cmd(self, buf, sleep = 0):
         """
-        Write a raw USB command.
-        buf: bytes to write
-        sleep: delay (seconds) between writing the command and reading the response.
+        Write a raw USB command to HID interface and get the response.
+
+        :param list buf: Full data to write, including command.
+        :param int sleep: Delay (seconds) between writing the command and reading the response.
+        :return: Full response data (64 bytes).
+        :rtype list
         """
         if self.debug_packets:
             print(buf)
