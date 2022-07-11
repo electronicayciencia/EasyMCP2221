@@ -1,7 +1,7 @@
 import time
 import EasyMCP2221
 
-mcp = EasyMCP2221.MCP2221()
+mcp = EasyMCP2221.Device()
 
 def tested():
     mcp.GPIO_Config(

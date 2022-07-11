@@ -586,7 +586,7 @@ class Device:
     #######################################################################
     # I2C Read
     #######################################################################
-    def I2C_read(self, addr, size, kind = "regular", timeout_ms = 10):
+    def I2C_read(self, addr, size = 0, kind = "regular", timeout_ms = 10):
         """
         Read data from I2C bus.
         addr: I2C slave device base address
