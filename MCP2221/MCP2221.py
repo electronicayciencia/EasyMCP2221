@@ -1,6 +1,6 @@
-#############################################################
-#    MIT License                                            #
-#############################################################
+# API library for MCP2221(A).
+# Electronicayciencia. 10/07/2022
+# Original work: Yuta KItagami (https://github.com/nonNoise/PyMCP2221A)
 
 import hid
 import time
@@ -43,7 +43,10 @@ class MCP2221:
     #######################################################################
     # HID
     #######################################################################
-    def DeviceDriverInfo(self):
+    def print_usb_device_info(self):
+        """
+        Print the relevant device info.
+        """
         print("Manufacturer: %s" % self.mcp2221a.get_manufacturer_string())
         print("Product: %s" % self.mcp2221a.get_product_string())
         print("Serial No: %s" % self.mcp2221a.get_serial_number_string())
@@ -63,7 +66,6 @@ class MCP2221:
 
         return rbuf[0:64]
 
-
     def _write_flash_raw(self, setting, data):
         """
         Write flash data.
@@ -78,7 +80,6 @@ class MCP2221:
             raise RuntimeError("Write flash data command failed.")
 
         return rbuf[0:64]
-
 
     def parse_flash_data(self):
         CHIP_SETTINGS_STR   = "Chip settings"
@@ -254,35 +255,35 @@ class MCP2221:
         Set pin function and, optionally, output value.
         """
         gp0_funcs = {
-            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
-            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
-            "SSPND"       : GPIO_FUNC_DEDICATED,
-            "LED_URX"     : GPIO_FUNC_ALT_0
+            "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "GPIO_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "SSPND"    : GPIO_FUNC_DEDICATED,
+            "LED_URX"  : GPIO_FUNC_ALT_0
             }
 
         gp1_funcs = {
-            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
-            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
-            "CLK_OUT"     : GPIO_FUNC_DEDICATED,
-            "ADC1"        : GPIO_FUNC_ALT_0,
-            "LED_UTX"     : GPIO_FUNC_ALT_1,
-            "IOC"         : GPIO_FUNC_ALT_2,
+            "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "GPIO_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "CLK_OUT"  : GPIO_FUNC_DEDICATED,
+            "ADC"      : GPIO_FUNC_ALT_0,
+            "LED_UTX"  : GPIO_FUNC_ALT_1,
+            "IOC"      : GPIO_FUNC_ALT_2,
             }
 
         gp2_funcs = {
-            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
-            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
-            "USBCFG"      : GPIO_FUNC_DEDICATED,
-            "ADC2"        : GPIO_FUNC_ALT_0,
-            "DAC"         : GPIO_FUNC_ALT_1,
+            "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "GPIO_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "USBCFG"   : GPIO_FUNC_DEDICATED,
+            "ADC"      : GPIO_FUNC_ALT_0,
+            "DAC"      : GPIO_FUNC_ALT_1,
             }
 
         gp3_funcs = {
-            "DIGITAL_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
-            "DIGITAL_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
-            "LED_I2C"     : GPIO_FUNC_DEDICATED,
-            "ADC3"        : GPIO_FUNC_ALT_0,
-            "DAC"         : GPIO_FUNC_ALT_1,
+            "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
+            "GPIO_OUT" : GPIO_FUNC_GPIO | GPIO_DIR_OUT,
+            "LED_I2C"  : GPIO_FUNC_DEDICATED,
+            "ADC"      : GPIO_FUNC_ALT_0,
+            "DAC"      : GPIO_FUNC_ALT_1,
             }
 
         if gp0 is not None and gp0 not in gp0_funcs:
@@ -294,11 +295,11 @@ class MCP2221:
         if gp3 is not None and gp3 not in gp3_funcs:
             raise ValueError("Invalid function for GP3. Could be: " + ", ".join(gp3_funcs))
 
-        if ( (out0 and gp0 != "DIGITAL_OUT") or
-             (out1 and gp1 != "DIGITAL_OUT") or
-             (out2 and gp2 != "DIGITAL_OUT") or
-             (out3 and gp3 != "DIGITAL_OUT") ):
-            raise ValueError("Pin output value only can be set if pin function is DIGITAL_OUT.")
+        if ( (out0 and gp0 != "GPIO_OUT") or
+             (out1 and gp1 != "GPIO_OUT") or
+             (out2 and gp2 != "GPIO_OUT") or
+             (out3 and gp3 != "GPIO_OUT") ):
+            raise ValueError("Pin output value can only be set if pin function is GPIO_OUT.")
 
         self.SRAM_config(
             gp0 = None if gp0 is None else gp0_funcs[gp0] | (GPIO_OUT_VAL_1 if out0 else GPIO_OUT_VAL_0),
