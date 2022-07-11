@@ -1,4 +1,4 @@
-# This could be a battery level meter.
+# This could be a voltage level meter.
 # GP0 and GP1 and GP2 are digital outputs.
 # GP2 is analog input.
 # Connect:
@@ -10,6 +10,10 @@
 # Between 25% and 50%, only red will light still.
 # Between 50% and 75%, red and yellow light.
 # Above 75%, all three leds light.
+#
+# Tip: you could connect a LDR instead of a potentiometer to
+# make a light level indicator.
+#
 
 import sys
 sys.path.append('../')

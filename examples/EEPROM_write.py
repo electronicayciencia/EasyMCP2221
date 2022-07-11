@@ -1,0 +1,28 @@
+# Simple EEPROM storage.
+import sys
+sys.path.append('../')
+# ----------------------
+
+import EasyMCP2221
+
+# Connect to MCP2221
+mcp = EasyMCP2221.Device()
+
+# Configure GP3 to show I2C bus activity.
+mcp.set_pin_function(gp3 = "LED_I2C")
+
+MEM_ADDR = 0x50
+MEM_POS  = 0
+
+# Take a phrase
+phrase = input("Tell me a phrase: ")
+# Encode into bytes using preferred encoding method
+phrase_bytes = bytes(phrase, encoding = 'utf-8')
+
+# Store in EEPROM
+mcp.I2C_write(MEM_ADDR,
+    MEM_POS.to_bytes(2, byteorder = 'little') +  # position to write
+    bytes(phrase, encoding = 'utf-8') +          # data
+    b'\0')                                       # null
+
+print("Saved to EEPROM.")
