@@ -25,9 +25,9 @@ while True:
 
     print("ADC0: %4.1f%%    ADC1: %4.1f%%    ADC2: %4.1f%%" %
         (
-        values[0] / 1024 * 100, 
-        values[1] / 1024 * 100, 
-        values[2] / 1024 * 100, 
+        values[0] / 1024 * 100,
+        values[1] / 1024 * 100,
+        values[2] / 1024 * 100,
         ))
 
     sleep(0.1)

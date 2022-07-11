@@ -21,7 +21,7 @@ while True:
     for v in range(0,32):
         mcp.DAC_write(v)
         sleep(0.01)
-    
+
     for v in range(31,0,-1):
         mcp.DAC_write(v)
         sleep(0.01)

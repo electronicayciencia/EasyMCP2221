@@ -17,7 +17,7 @@ for addr in range(0, 0x80):
     try:
         mcp.I2C_read(addr)
         print("I2C slave found at address 0x%02X" % (addr))
-        
+
     except RuntimeError:
         pass
-        
+

@@ -1,4 +1,4 @@
-# Simple example to show how to initialize class, 
+# Simple example to show how to initialize class,
 # set pin function and change value.
 
 import EasyMCP2221
