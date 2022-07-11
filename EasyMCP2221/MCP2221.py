@@ -14,7 +14,7 @@ class Device:
         devices = hid.enumerate(VID, PID)
         if not devices or len(devices) < devnum:
             raise RuntimeError("No device found with VID %04X and PID %04X." % (VID, PID))
-        
+
         self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
 
 
