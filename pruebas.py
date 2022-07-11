@@ -1,8 +1,7 @@
 import time
-from MCP2221 import MCP2221
-#from MCP2221.Constants import *
+import EasyMCP2221
 
-mcp = MCP2221.MCP2221()
+mcp = EasyMCP2221.MCP2221()
 
 def tested():
     mcp.GPIO_Config(
