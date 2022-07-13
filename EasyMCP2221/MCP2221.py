@@ -8,8 +8,40 @@ import time
 from .Constants import *
 
 class Device:
+    """ Represent a MCP2221(A) device.
+    
+    Parameters:
+        VID (int, optional): Vendor Id (default to ``0x04D8``)
+        PID (int, optional): Product Id (default to ``0x00DD``)
+        devnum (int, optional): Device index if multiple device found with the same PID and VID.
+
+    Raises:
+        RuntimeError: if no device found with given VID and PID.
+
+    Example:
+        >>> import EasyMCP2221
+        >>> mcp = EasyMCP2221.Device()
+        >>> print(mcp)
+        {
+            "Chip settings": {
+                "USB PID": "0x00DD",
+                "USB VID": "0x04D8",
+                "USB requested number of mA": 100
+            },
+            "Factory Serial": "01234567",
+            "GP settings": {},
+            "USB Manufacturer": "Microchip Technology Inc.",
+            "USB Product": "MCP2221 USB-I2C/UART Combo",
+            "USB Serial": "0000000000"
+        }
+    """
+
+
+    debug_packets = False 
+    """bool: Print all binary commands and responses."""
+
+
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
-        self.debug_packets = False
         self.mcp2221a = hid.device()
         devices = hid.enumerate(VID, PID)
         if not devices or len(devices) < devnum:
@@ -19,13 +51,25 @@ class Device:
 
 
     def send_cmd(self, buf, sleep = 0):
-        """
-        Write a raw USB command to HID interface and get the response.
+        """ Write a raw USB command to device and get the response.
 
-        :param list buf: Full data to write, including command.
-        :param int sleep: Delay (seconds) between writing the command and reading the response.
-        :return: Full response data (64 bytes).
-        :rtype list
+        Write 64 bytes to the HID interface, starting by ``buf`` bytes. 
+        Optionally wait ``sleep`` seconds.
+        Then read 64 bytes from HID and return them as a list.
+
+        Parameters:
+            buf (list of bytes): Full data to write, including command (64 bytes max).
+            
+        Other parameters:
+            sleep (float, optional): Delay (seconds) between writing the command and reading the response.
+        
+        Returns:
+            list of bytes: Full response data (64 bytes).
+
+        Example:
+            >>> from EasyMCP2221.Constants import *
+            >>> r = mcp.send_cmd([CMD_GET_GPIO_VALUES])
+            [81, 0, 238, 239, 238, 239, 238, 239, 238, 239, 0, 0, 0, ... 0, 0]
         """
         if self.debug_packets:
             print(buf)
@@ -45,18 +89,6 @@ class Device:
             print(r)
 
         return r
-
-
-    #######################################################################
-    # HID
-    #######################################################################
-    def print_usb_device_info(self):
-        """
-        Print the relevant device info.
-        """
-        print("Manufacturer: %s" % self.mcp2221a.get_manufacturer_string())
-        print("Product: %s" % self.mcp2221a.get_product_string())
-        print("Serial No: %s" % self.mcp2221a.get_serial_number_string())
 
 
     #######################################################################
@@ -88,7 +120,27 @@ class Device:
 
         return rbuf[0:64]
 
-    def parse_flash_data(self):
+    def __str__(self):
+        import json
+        data = self.flash_info(raw = False)
+        return json.dumps(data, indent=4, sort_keys=True)
+        
+    def read_flash_info(self, raw = False):
+        """ Read flash data. 
+        
+        Return USB enumeration strings, power-up GPIO settings and internal chip configuration.
+        
+        Parameters:
+            raw (bool, optional): 
+                If ``False``, return only parsed data (this is the default).
+                If ``True``, return all data unparsed.
+        
+        Return:
+            dict: Flash data (parsed or raw)
+        
+        Hint:
+            This is the function used to stringfy the object.
+        """
         CHIP_SETTINGS_STR   = "Chip settings"
         GP_SETTINGS_STR     = "GP settings"
         USB_VENDOR_STR      = "USB Manufacturer"
@@ -104,6 +156,9 @@ class Device:
             USB_SERIAL_STR:       self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_SERIALNUM]),
             USB_FACT_SERIAL_STR:  self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SERIALNUM]),
         }
+
+        if raw:
+            return data
 
         data[USB_VENDOR_STR]      = self._parse_wchar_structure(data[USB_VENDOR_STR])
         data[USB_PRODUCT_STR]     = self._parse_wchar_structure(data[USB_PRODUCT_STR])
@@ -137,14 +192,11 @@ class Device:
             "USB VID": "0x{:02X}{:02X}".format(buf[9], buf[8]),
             "USB PID": "0x{:02X}{:02X}".format(buf[11], buf[10]) ,
             "USB requested number of mA": buf[13] * 2,
-            "raw": buf[0:14],
         }
         return data
 
     def _parse_gp_settings_struct(self, buf):
-        data = {
-            "raw": buf[0:7]
-        }
+        data = { }
         return data
 
 
@@ -161,13 +213,39 @@ class Device:
         gp1        = None,
         gp2        = None,
         gp3        = None):
-        """
+        """ Low level SRAM configuration.
+        
         Configure Runtime GPIO pins and parameters.
-        This function unexpectedly resets:
-            GPIO values set via CMD_SET_GPIO_OUTPUT_VALUES.
-            Vrm (not affected if ref = VDD)
+        All arguments are optional. 
+        Apply given settings, preserve the rest.
+        
+        Parameters:
+            clk_output (int, optional): settings
+            dac_ref    (int, optional): settings
+            dac_value  (int, optional): settings
+            adc_ref    (int, optional): settings
+            int_conf   (int, optional): settings
+            gp0        (int, optional): settings
+            gp1        (int, optional): settings
+            gp2        (int, optional): settings
+            gp3        (int, optional): settings
+        
+        Raises:
+            RuntimeError: if command failed.
+        
+        Examples:
+            >>> from EasyMCP2221.Constants import *
+            >>> mcp.SRAM_config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
+            
+            >>> mcp.SRAM_config(dac_ref = ADC_REF_VRM | ADC_VRM_2048)
+        
+        Note:
+            This function, when called, unexpectedly resets (not preserve):
+        
+            - All GPIO values set via :func:`GPIO_write` method.
+            - Reference voltage for ADC set by :func:`ADC_config` (not affected if ref = VDD)
+            - Reference voltage for DAC set by :func:`DAC_config` (not affected if ref = VDD)
         """
-
         if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
         if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF
         if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
@@ -208,9 +286,36 @@ class Device:
     # GPIO
     #######################################################################
     def GPIO_write(self, gp0 = None, gp1 = None, gp2 = None, gp3 = None):
-        """
-        Set pin output values but do not write them to SRAM.
-        Any call to SRAM_config to configure any other pins will reset this settings.
+        """ Set pin output values.
+        
+        If a pin is omitted, it will preserve the value.
+        
+        To change the output state of a pin, it must had beed assigned to GPIO function, 
+        GPIO_IN or GPIO_OUT will work. You can use :func:`set_pin_function` to do it.
+        
+        Parameters:
+            gp0 (bool, optional): Set GP0 logic value.
+            gp1 (bool, optional): Set GP1 logic value.
+            gp2 (bool, optional): Set GP2 logic value.
+            gp3 (bool, optional): Set GP3 logic value.
+        
+        Raises:
+            RuntimeError: If given pin is not assigned to GPIO function.
+        
+        Examples:
+            
+            Configure GP1 as output (defaults to False) and then set the value to logical True.
+            
+            >>> mcp.set_pin_function(gp1 = "GPIO_OUT")
+            >>> mcp.GPIO_write(gp1 = True)
+            
+            If will fail if the pin is not assigned to GPIO:
+            
+            >>> mcp.set_pin_function(gp2 = 'DAC')
+            >>> mcp.GPIO_write(gp2 = False)
+            Traceback (most recent call last):
+                ...
+            RuntimeError: Pin GP2 is not assigned to GPIO function.
         """
         ALTER_VALUE = 1
         PRESERVE_VALUE = 0
@@ -240,11 +345,21 @@ class Device:
 
 
     def GPIO_read(self):
-        """
-        Read all GPIO pins and return a tuple (gp0, gp1, gp2, gp3).
-        Value is None if that pin is not set for GPIO operation.
-        """
+        """ Read all GPIO pins logic state.
 
+        Returned values can be True, False or None if the pin is not set for GPIO operation.
+        For an output pin, the returned status is the actual value.
+
+        Return:
+            tuple of bool: 4 logic values for the pins status gp0, gp1, gp2 and gp3.
+            
+        Example:
+        
+            Only GP1 and GP2 are GPIO:
+        
+            >>> mcp.GPIO_read()
+            (None, 0, 1, None)
+        """
         r = self.send_cmd([CMD_GET_GPIO_VALUES])
         gp0 = r[2] if r[2] != 0xEE else None
         gp1 = r[4] if r[4] != 0xEE else None
