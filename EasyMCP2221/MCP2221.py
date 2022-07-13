@@ -629,9 +629,9 @@ class Device:
 
 
     def ADC_read(self):
-        """ Read all Analogc to Digital Converter (ADC) channels.
+        """ Read all Analog to Digital Converter (ADC) channels.
 
-        Analog value is always available regardless of pin funcion (see :func:`set_pin_function`).
+        Analog value is always available regardless of pin function (see :func:`set_pin_function`).
         If pin is configured as output (GPIO_OUT or LED_I2C), the read value is always the output state.
 
         ADC is 10 bits, so the minimum value is 0 and the maximum value is 1023.
@@ -670,7 +670,7 @@ class Device:
     # DAC
     #######################################################################
     def DAC_config(self, ref, out = 0):
-        """ Configure Digital to Analogic Converter (DAC) reference.
+        """ Configure Digital to Analog Converter (DAC) reference.
 
         Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
@@ -680,7 +680,7 @@ class Device:
         Use :func:`DAC_write` to set the DAC output value.
 
         Parameters:
-            ref (str): Reference voltage por DAC.
+            ref (str): Reference voltage for DAC.
             out (int, optional): value to output. Default is 0.
 
         Raises:
@@ -727,7 +727,7 @@ class Device:
 
         Valid ``out`` values are 0 to 31.
 
-        To use a GP pin as DAC, you must assing the function "DAC" (see :func:`set_pin_function`).
+        To use a GP pin as DAC, you must assign the function "DAC" (see :func:`set_pin_function`).
         MCP2221 only have 1 DAC. So if you assign to "DAC" GP2 and GP3 you will
         see the same output value in both.
 
@@ -814,14 +814,14 @@ class Device:
         - SCL keeps low. This is caused by:
 
           - Missing pull-up resistor or to high value.
-          - A slave device is using clock stretching while doing an operation (e.g. writting to EEPROM).
+          - A slave device is using clock stretching while doing an operation (e.g. writing to EEPROM).
           - Another device is using the bus.
 
         - SDA keeps low. Caused by:
 
           - Missing pull-up resistor or to high value.
           - Another device is using the bus.
-          - A i2c read transfer was cancelled in the middle of data writing. MCP2221 firmware cannot solve
+          - A i2c read transfer was canceled in the middle of data writing. MCP2221 firmware cannot solve
             this situation. You need to manually reset the slave o use any of the gpio lines to clock the bus until
             slave device releases the SDA line.
 
@@ -1016,7 +1016,7 @@ class Device:
             b'This is a very long long data stream that may trigger a timeout.'
 
         Note:
-            If a timeout occurs in the middle of characer reading, the I2C but may stay busy.
+            If a timeout occurs in the middle of character reading, the I2C but may stay busy.
             See :func:`I2C_cancel`.
 
         Hint:
