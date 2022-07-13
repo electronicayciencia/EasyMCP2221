@@ -9,7 +9,7 @@ from .Constants import *
 
 class Device:
     """ Represent a MCP2221(A) device.
-    
+
     Parameters:
         VID (int, optional): Vendor Id (default to ``0x04D8``)
         PID (int, optional): Product Id (default to ``0x00DD``)
@@ -37,7 +37,7 @@ class Device:
     """
 
 
-    debug_packets = False 
+    debug_packets = False
     """bool: Print all binary commands and responses."""
 
 
@@ -53,16 +53,16 @@ class Device:
     def send_cmd(self, buf, sleep = 0):
         """ Write a raw USB command to device and get the response.
 
-        Write 64 bytes to the HID interface, starting by ``buf`` bytes. 
+        Write 64 bytes to the HID interface, starting by ``buf`` bytes.
         Optionally wait ``sleep`` seconds.
         Then read 64 bytes from HID and return them as a list.
 
         Parameters:
             buf (list of bytes): Full data to write, including command (64 bytes max).
-            
+
         Other parameters:
             sleep (float, optional): Delay (seconds) between writing the command and reading the response.
-        
+
         Returns:
             list of bytes: Full response data (64 bytes).
 
@@ -122,22 +122,22 @@ class Device:
 
     def __str__(self):
         import json
-        data = self.flash_info(raw = False)
+        data = self.read_flash_info(raw = False)
         return json.dumps(data, indent=4, sort_keys=True)
-        
+
     def read_flash_info(self, raw = False):
-        """ Read flash data. 
-        
+        """ Read flash data.
+
         Return USB enumeration strings, power-up GPIO settings and internal chip configuration.
-        
+
         Parameters:
-            raw (bool, optional): 
+            raw (bool, optional):
                 If ``False``, return only parsed data (this is the default).
                 If ``True``, return all data unparsed.
-        
+
         Return:
             dict: Flash data (parsed or raw)
-        
+
         Hint:
             This is the function used to stringfy the object.
         """
@@ -214,11 +214,11 @@ class Device:
         gp2        = None,
         gp3        = None):
         """ Low level SRAM configuration.
-        
+
         Configure Runtime GPIO pins and parameters.
-        All arguments are optional. 
+        All arguments are optional.
         Apply given settings, preserve the rest.
-        
+
         Parameters:
             clk_output (int, optional): settings
             dac_ref    (int, optional): settings
@@ -229,19 +229,19 @@ class Device:
             gp1        (int, optional): settings
             gp2        (int, optional): settings
             gp3        (int, optional): settings
-        
+
         Raises:
             RuntimeError: if command failed.
-        
+
         Examples:
             >>> from EasyMCP2221.Constants import *
             >>> mcp.SRAM_config(gp1 = GPIO_FUNC_GPIO | GPIO_DIR_IN)
-            
+
             >>> mcp.SRAM_config(dac_ref = ADC_REF_VRM | ADC_VRM_2048)
-        
+
         Note:
-            This function, when called, unexpectedly resets (not preserve):
-        
+            Calling this function unexpectedly resets (not preserve):
+
             - All GPIO values set via :func:`GPIO_write` method.
             - Reference voltage for ADC set by :func:`ADC_config` (not affected if ref = VDD)
             - Reference voltage for DAC set by :func:`DAC_config` (not affected if ref = VDD)
@@ -287,30 +287,30 @@ class Device:
     #######################################################################
     def GPIO_write(self, gp0 = None, gp1 = None, gp2 = None, gp3 = None):
         """ Set pin output values.
-        
+
         If a pin is omitted, it will preserve the value.
-        
-        To change the output state of a pin, it must had beed assigned to GPIO function, 
+
+        To change the output state of a pin, it must had beed assigned to GPIO function,
         GPIO_IN or GPIO_OUT will work. You can use :func:`set_pin_function` to do it.
-        
+
         Parameters:
             gp0 (bool, optional): Set GP0 logic value.
             gp1 (bool, optional): Set GP1 logic value.
             gp2 (bool, optional): Set GP2 logic value.
             gp3 (bool, optional): Set GP3 logic value.
-        
+
         Raises:
             RuntimeError: If given pin is not assigned to GPIO function.
-        
+
         Examples:
-            
+
             Configure GP1 as output (defaults to False) and then set the value to logical True.
-            
+
             >>> mcp.set_pin_function(gp1 = "GPIO_OUT")
             >>> mcp.GPIO_write(gp1 = True)
-            
+
             If will fail if the pin is not assigned to GPIO:
-            
+
             >>> mcp.set_pin_function(gp2 = 'DAC')
             >>> mcp.GPIO_write(gp2 = False)
             Traceback (most recent call last):
@@ -352,11 +352,8 @@ class Device:
 
         Return:
             tuple of bool: 4 logic values for the pins status gp0, gp1, gp2 and gp3.
-            
+
         Example:
-        
-            Only GP1 and GP2 are GPIO:
-        
             >>> mcp.GPIO_read()
             (None, 0, 1, None)
         """
@@ -373,8 +370,92 @@ class Device:
         self,
         gp0 = None, gp1 = None, gp2 = None, gp3 = None,
         out0 = False, out1 = False, out2 = False, out3 = False):
-        """
-        Set pin function and, optionally, output value.
+        """ Configure pin function and, optionally, output value.
+
+        You can set multiple pins at once.
+
+        Accepted functions depends on the pin.
+
+        - For **GP0**:
+
+            - **GPIO_IN**  (*in*) : Digital input
+            - **GPIO_OUT** (*out*): Digital output
+            - **SSPND**    (*out*): Signals when the host has entered Suspend mode
+            - **LED_URX**  (*out*): UART Rx LED activity output (factory default)
+
+        - For **GP1**:
+
+            - **GPIO_IN**  (*in*) : Digital input
+            - **GPIO_OUT** (*out*): Digital output
+            - **ADC**      (*in*) : ADC Channel 1
+            - **CLK_OUT**  (*out*): Clock Reference Output
+            - **IOC**      (*in*) : External Interrupt Edge Detector
+            - **LED_UTX**  (*out*): UART Tx LED activity output (factory default)
+
+        - For **GP2**:
+
+            - **GPIO_IN**  (*in*) : Digital input
+            - **GPIO_OUT** (*out*): Digital output
+            - **ADC**      (*in*) : ADC Channel 2
+            - **DAC**      (*out*): DAC Output 1
+            - **USBCFG**   (*out*): USB device-configured status (factory default)
+
+        - For **GP3**:
+
+            - **GPIO_IN**  (*in*) : Digital input
+            - **GPIO_OUT** (*out*): Digital output
+            - **ADC**      (*in*) : ADC Channel 3
+            - **DAC**      (*out*): DAC Output 2
+            - **LED_I2C**  (*out*): USB/I2C traffic indicator (factory default)
+
+
+        Parameters:
+            gp0  (str, optional): Function for pin GP0. If None, don't alter function.
+            gp1  (str, optional): Function for pin GP1. If None, don't alter function.
+            gp2  (str, optional): Function for pin GP2. If None, don't alter function.
+            gp3  (str, optional): Function for pin GP3. If None, don't alter function.
+            out0 (bool, optional): Logic status for GP0 if configured as GPIO_OUT (default: False).
+            out1 (bool, optional): Logic status for GP1 if configured as GPIO_OUT (default: False).
+            out2 (bool, optional): Logic status for GP2 if configured as GPIO_OUT (default: False).
+            out3 (bool, optional): Logic status for GP3 if configured as GPIO_OUT (default: False).
+
+        Raises:
+            ValueError: If invalid function for that pin is specified.
+            ValueError: If given out value for non GPIO_OUT pin.
+
+        Examples:
+
+            Set all pins at once:
+
+            >>> mcp.set_pin_function(
+            ...     gp0 = "GPIO_IN",
+            ...     gp1 = "GPIO_OUT",
+            ...     gp2 = "ADC",
+            ...     gp3 = "LED_I2C")
+            >>>
+
+            Change pin function at runtime:
+
+            >>> mcp.set_pin_function(gp1 = "GPIO_IN")
+            >>>
+
+            It is not permitted to set the output of a non GPIO_OUT pin.
+
+            >>> mcp.set_pin_function(
+            ...     gp1 = "GPIO_OUT", out1 = True,
+            ...     gp2 = "ADC", out2 = True)
+            Traceback (most recent call last):
+            ...
+            ValueError: Pin output value can only be set if pin function is GPIO_OUT.
+            >>>
+
+            Only some functions are allowed for each pin.
+
+            >>> mcp.set_pin_function(gp0 = "ADC")
+            Traceback (most recent call last):
+            ...
+            ValueError: Invalid function for GP0. Could be: GPIO_IN, GPIO_OUT, SSPND, LED_URX
+            >>>
         """
         gp0_funcs = {
             "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
@@ -417,10 +498,10 @@ class Device:
         if gp3 is not None and gp3 not in gp3_funcs:
             raise ValueError("Invalid function for GP3. Could be: " + ", ".join(gp3_funcs))
 
-        if ( (out0 and gp0 != "GPIO_OUT") or
-             (out1 and gp1 != "GPIO_OUT") or
-             (out2 and gp2 != "GPIO_OUT") or
-             (out3 and gp3 != "GPIO_OUT") ):
+        if ( (out0 is True and gp0 != "GPIO_OUT") or
+             (out1 is True and gp1 != "GPIO_OUT") or
+             (out2 is True and gp2 != "GPIO_OUT") or
+             (out3 is True and gp3 != "GPIO_OUT") ):
             raise ValueError("Pin output value can only be set if pin function is GPIO_OUT.")
 
         self.SRAM_config(
@@ -434,11 +515,37 @@ class Device:
     # CLOCK
     #######################################################################
     def clock_config(self, duty, freq):
-        """
-        Configure the clock output.
-        Duty valid values are 0, 25, 50, 75.
-        Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz.
-        To output clock signal, you also need to set GP1 function to GPIO_FUNC_DEDICATED.
+        """ Configure clock output frequency and Duty Cycle.
+
+        Accepted values for **duty** are: `0`, `25`, `50` and `75`.
+
+        Valid **freq** values are:
+        `375kHz`, `750kHz`, `1.5MHz`, `3MHz`, `6MHz`, `12MHz` or `24MHz`.
+
+        To output clock signal, you also need to assign GP1 function to `CLK_OUT`.
+
+        Parameters:
+            duty (int): Output duty cycle in percent.
+            freq (str): Output frequency.
+
+        Raises:
+            ValueError: if any of the parameters is not valid.
+
+        Examples:
+
+            >>> mcp.set_pin_function(gp1 = "CLK_OUT")
+            >>> mcp.clock_config(50, "375kHz")
+            >>>
+
+            >>> mcp.clock_config(100, "375kHz")
+            Traceback (most recent call last):
+            ...
+            ValueError: Accepted values for duty are 0, 25, 50, 75.
+
+            >>> mcp.clock_config(25, "175kHz")
+            Traceback (most recent call last):
+            ...
+            ValueError: Freq is one of 375kHz, 750kHz, 1.5MHz, 3MHz, 6MHz, 12MHz or 24MHz
         """
         if duty == 0:
             duty = CLK_DUTY_0
@@ -475,10 +582,26 @@ class Device:
     # ADC
     #######################################################################
     def ADC_config(self, ref):
-        """
-        Configure ADC reference.
-        ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
-        You also need to set GP2/3 function to GPIO_FUNC_ADC using ADC_Channel.
+        """ Configure ADC reference voltage.
+
+        Accepted values for ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+
+        Parameters:
+            ref (str): ADC reference voltage.
+
+        Raises:
+            ValueError: if ``ref`` value is not valid.
+
+        Examples:
+
+            >>> mcp.ADC_config(ref = "VDD")
+
+            >>> mcp.ADC_config("1.024V")
+
+            >>> mcp.ADC_config(ref = "5V")
+            Traceback (most recent call last):
+            ...
+            ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
         """
         if ref == "OFF":
             ref = ADC_REF_VRM
@@ -502,10 +625,35 @@ class Device:
 
 
     def ADC_read(self):
-        """
-        Read all 3 ADC and return a tuple (gp1, gp2, gp3).
-        Each value is 10 bit (0 to 1023).
-        Analog value is read regardless of pin funcion.
+        """ Read all Analogc to Digital Converter (ADC) channels.
+
+        Analog value is always available regardless of pin funcion.
+        If pin is configured as output (GPIO_OUT or LED_I2C), the read value is always the output state.
+
+        ADC is 10 bits, so the minimum value is 0 and the maximum value is 1023.
+
+        Return:
+            tuple of int: Value of 3 channels (gp1, gp2, gp3).
+
+        Examples:
+            All three pins configured as ADC inputs.
+
+            >>> mcp.ADC_config(ref = "VDD")
+            >>> mcp.set_pin_function(
+            ...    gp1 = "ADC",
+            ...    gp2 = "ADC",
+            ...    gp3 = "ADC")
+            >>> mcp.ADC_read()
+            (185, 136, 198)
+
+            Reading the ADC value of a digital output gives the actual voltage in the pin.
+            For a logic output ``1`` is equal to ``Vdd`` unless something is pulling that pin low (i.e. a LED).
+
+            >>> mcp.set_pin_function(
+            ...    gp1 = "GPIO_OUT", out1 = True,
+            ...    gp2 = "GPIO_OUT", out2 = False)
+            >>> mcp.ADC_read()
+            (1023, 0, 198)
         """
         buf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
         adc1 = buf[50] + 256*buf[51]
@@ -518,11 +666,31 @@ class Device:
     # DAC
     #######################################################################
     def DAC_config(self, ref, out = 0):
-        """
-        Configure DAC reference.
-        ref valid values are "0", "1.024V", "2.048V", "4.096V" and "VDD".
-        out valid values are from 0 to 31.
-        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_DAC using DAC_Channel.
+        """ Configure Digital to Analogic Converter (DAC) reference.
+
+        Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+
+        MCP2221's DAC is 5 bits. So valid values for ``out`` are from 0 to 31.
+
+        ``out`` parameter is optional and defaults to 0.
+        Use :func:`DAC_write` to set the DAC output value.
+
+        Parameters:
+            ref (str): Reference voltage por DAC.
+            out (int, optional): value to output. Default is 0.
+
+        Raises:
+            ValueError: if ``ref`` or ``out`` values are not valid.
+
+        Examples:
+
+            >>> mcp.set_pin_function(gp2 = "DAC")
+            >>> mcp.DAC_config(ref = "4.096V")
+
+            >>> mcp.DAC_config(ref = 0)
+            Traceback (most recent call last):
+            ...
+            ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
         """
         if ref == "OFF":
             ref = DAC_REF_VRM
@@ -542,7 +710,7 @@ class Device:
         else:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        if out < 0 or out > 31:
+        if out not in range(0, 32):
             raise ValueError("Accepted values for out are from 0 to 31.")
 
         self.SRAM_config(
@@ -551,13 +719,29 @@ class Device:
 
 
     def DAC_write(self, out):
-        """
-        Configure DAC output.
-        out valid values are from 0 to 31.
-        To output DAC, you also need to set GP2/3 function to GPIO_FUNC_ALT_1.
-        """
+        """ Set the DAC output value.
 
-        if out < 0 or out > 31:
+        Valid ``out`` values are 0 to 31.
+
+        To use a GP pin as DAC, you must assing the function "DAC".
+        MCP2221 only have 1 DAC. So if you assign to "DAC" GP2 and GP3 you will
+        see the same output value in both.
+
+        Parameters:
+            out (int): Value to output (max. 32) referenced to DAC ref voltage.
+
+        Examples:
+            >>> mcp.set_pin_function(gp2 = "DAC")
+            >>> mcp.DAC_config(ref = "VDD")
+            >>> mcp.DAC_write(31)
+            >>>
+
+            >>> mcp.DAC_write(32)
+            Traceback (most recent call last):
+            ...
+            ValueError: Accepted values for out are from 0 to 31.
+        """
+        if out not in range(0, 32):
             raise ValueError("Accepted values for out are from 0 to 31.")
 
         self.SRAM_config(dac_value = out)
