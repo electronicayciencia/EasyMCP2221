@@ -751,10 +751,20 @@ class Device:
     # I2C
     #######################################################################
     def I2C_speed(self, speed=100000):
-        """
-        Set I2C bus speed.
-        Default bus speed is 100kHz.
-        Acceptable values for speed are between 47kHz and 400kHz.
+        """ Set I2C bus speed.
+
+        Acceptable values for speed are between 50kHz and 400kHz.
+
+        Parameters:
+            speed (int): Bus clock frequency in Hz. Default bus speed is 100kHz.
+
+        Raises:
+            ValueError: if speed parameter is out of range.
+            RuntimeError: if command failed (I2C engine is busy)."
+
+        Example:
+            >>> mcp.I2C_speed(100000)
+            >>>
         """
         bus_speed = round(12_000_000 / speed) - 2
 
@@ -774,9 +784,15 @@ class Device:
 
 
     def I2C_is_idle(self):
-        """
-        Check bus idle state.
-        Return True if idle, False if timeout detected.
+        """ Check if the I2C engine is idle.
+
+        Returns:
+            bool: True if idle, False if engine is in the middle of a transfer (timeout detected).
+
+        Example:
+            >>> mcp.I2C_is_idle()
+            True
+            >>>
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
 
@@ -787,21 +803,71 @@ class Device:
 
 
     def I2C_cancel(self):
-        """
-        Send Cancel Current Transfer command to I2C engine.
-        Return true if success and I2C is in idle state.
+        """ Cancel an active I2C transfer.
 
-        Raise RuntimeError if:
+        This command can fail in two ways.
+
         - SCL keeps low. This is caused by:
+
           - Missing pull-up resistor or to high value.
           - A slave device is using clock stretching while doing an operation (e.g. writting to EEPROM).
           - Another device is using the bus.
+
         - SDA keeps low. Caused by:
+
           - Missing pull-up resistor or to high value.
           - Another device is using the bus.
           - A i2c read transfer was cancelled in the middle of data writing. MCP2221 firmware cannot solve
             this situation. You need to manually reset the slave o use any of the gpio lines to clock the bus until
             slave device releases the SDA line.
+
+        Return:
+            bool: True if device is now ready to go. False if the engine is not idle.
+
+        Raises:
+            RuntimeError: if I2C engine detects the **SCL** line does not go up (read description).
+            RuntimeError: if I2C engine detects the **SDA** line does not go up (read description).
+
+        Examples:
+
+            Last transfer was cancel, and engine is ready for the next operation:
+            >>> mcp.I2C_cancel()
+            True
+
+            >>> mcp.I2C_cancel()
+            Traceback (most recent call last):
+            ...
+            RuntimeError: SCL is low. I2C bus is busy or missing pull-up resistor.
+
+        Note:
+            Do not call this function without issuing a :func:`I2c_read` or
+            :func:`I2c_write` first. It could render I2C engine inoperative until
+            the next reset.
+
+            >>> mcp.reset()
+            >>> mcp.I2C_is_idle()
+            True
+            >>> mcp.I2C_cancel()
+            False
+
+            Now the bus is busy until the next reset.
+
+            >>> mcp.I2C_speed(100000)
+            Traceback (most recent call last):
+            ...
+            RuntimeError: I2C speed is not valid or bus is busy.
+            >>> mcp.I2C_cancel()
+            False
+            >>> mcp.I2C_is_idle()
+            False
+            >>> mcp.I2C_cancel()
+            False
+
+            After a reset, it will work again.
+
+            >>> mcp.reset()
+            >>> mcp.I2C_is_idle()
+            True
         """
         buf = [0] * 3
         buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
@@ -824,15 +890,37 @@ class Device:
 
 
     def I2C_write(self, addr, data, kind = "regular"):
-        """
-        Writes a block of data on I2C bus.
-        addr: I2C slave device base address
-        data: bytes to write (max length 65536)
-        kind: one of
-          regular: start - data to write - stop
-          restart: repeated start - data to write - stop
-          nonstop: start - data to write
-        """
+        """ Write data to an address on I2C bus.
+
+        Maximum ``data`` length is 65536 bytes. If data length is 0, this function
+        will not write anything to the bus.
+
+        Valid values for ``kind`` are:
+
+        - **regular**: start - data to write - stop (this is the default)
+        - **restart**: repeated start - data to write - stop
+        - **nonstop**: start - data to write
+
+        Parameters:
+            addr (int): I2C slave device **base** address.
+            data (bytes): bytes to write
+            kind (str, optional): kind of transfer (see description).
+
+        Raises:
+            ValueError: if any parameter is not valid.
+            RuntimeError: if the I2C slave didn't acknowledge.
+
+        Examples:
+            >>> mcp.I2C_write(0x50, b'This is data')
+            >>>
+
+            Writing data to a non-existent device:
+
+            >>> mcp.I2C_write(0x60, b'This is data'))
+            Traceback (most recent call last):
+            ...
+            RuntimeError: I2C write error: device NAK.
+            """
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
 
@@ -886,15 +974,62 @@ class Device:
     # I2C Read
     #######################################################################
     def I2C_read(self, addr, size = 0, kind = "regular", timeout_ms = 10):
-        """
-        Read data from I2C bus.
-        addr: I2C slave device base address
-        size: Read this number of bytes (max. 65536).
-        kind: one of
-          regular: start - read data - stop
-          restart: repeated start - read data - stop
-        timeout_ms: time to retrieve data in milliseconds
-        return bytes read
+        """ Read data from I2C bus.
+
+        Maximum value for ``size`` is 65536 bytes.
+        If ``size`` is 0, only expect acknowledge from device, but do not read any bytes.
+
+        Valid values for ``kind`` are:
+
+        - **regular**: start - read data - stop
+        - **restart**: repeated start - read data - stop
+
+        Parameters:
+            addr (int): I2C slave device **base** address.
+            size (int, optional): how many bytes to read, default 0.
+            kind (str, optional): kind of transfer (see description).
+            timeout_ms (int, optional): time to wait for the data in milliseconds (default 10 ms).
+
+        Return:
+            bytes: data read
+
+        Raises:
+            ValueError: if any parameter is not valid.
+            RuntimeError: if the I2C slave didn't acknowledge or the I2C engine was busy.
+
+        Examples:
+
+            >>> mcp.I2C_read(0x50, 12)
+            b'This is data'
+
+            Solve timeout by increasing ``timeout_ms`` parameter:
+
+            >>> mcp.I2C_read(0x50, 64)
+            Traceback (most recent call last):
+            ...
+            RuntimeError: Device did not ACK or did not send enough data. Try increasing timeout_ms.
+            >>> mcp.I2C_read(0x50, 64, timeout_ms = 25)
+            b'This is a very long long data stream that may trigger a timeout.'
+
+        Note:
+            If a timeout occurs in the middle of characer reading, the I2C but may stay busy.
+            See :func:`I2C_cancel`.
+
+        Hint:
+            You can use :func:`I2C_read` with size 0 to check if there is any device listening
+            with that address.
+
+            There is a device in ``0x50`` (EEPROM):
+
+            >>> mcp.I2C_read(0x50)
+            b''
+
+            No device in ``0x60``:
+
+            >>> mcp.I2C_read(0x60)
+            Traceback (most recent call last):
+            ...
+            RuntimeError: Device did not ACK or did not send enough data. Try increasing timeout_ms.
         """
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
