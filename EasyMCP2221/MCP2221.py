@@ -8,7 +8,7 @@ import time
 from .Constants import *
 
 class Device:
-    """ Represent a MCP2221(A) device.
+    """ MCP2221(A) device
 
     Parameters:
         VID (int, optional): Vendor Id (default to ``0x04D8``)
@@ -24,6 +24,7 @@ class Device:
         >>> print(mcp)
         {
             "Chip settings": {
+                "Power management options": "enabled",
                 "USB PID": "0x00DD",
                 "USB VID": "0x04D8",
                 "USB requested number of mA": 100
@@ -111,7 +112,7 @@ class Device:
         Data payload does not include command and register bytes.
         """
         if setting == FLASH_DATA_CHIP_SETTINGS and (data[0] & 0b11) != 0:
-            raise AssertionError("Chip protection is currently disabled.")
+            raise AssertionError("Chip protection prevented!")
 
         rbuf = self.send_cmd([CMD_WRITE_FLASH_DATA, setting] + data)
 
@@ -122,10 +123,10 @@ class Device:
 
     def __str__(self):
         import json
-        data = self.read_flash_info(raw = False)
+        data = self._read_flash_info(raw = False)
         return json.dumps(data, indent=4, sort_keys=True)
 
-    def read_flash_info(self, raw = False):
+    def _read_flash_info(self, raw = False):
         """ Read flash data.
 
         Return USB enumeration strings, power-up GPIO settings and internal chip configuration.
@@ -192,6 +193,8 @@ class Device:
             "USB VID": "0x{:02X}{:02X}".format(buf[9], buf[8]),
             "USB PID": "0x{:02X}{:02X}".format(buf[11], buf[10]) ,
             "USB requested number of mA": buf[13] * 2,
+            "Power management options":
+                "enabled" if buf[12] & 0b00100000 else "disabled",
         }
         return data
 
@@ -290,8 +293,8 @@ class Device:
 
         If a pin is omitted, it will preserve the value.
 
-        To change the output state of a pin, it must had beed assigned to GPIO function,
-        GPIO_IN or GPIO_OUT will work. You can use :func:`set_pin_function` to do it.
+        To change the output state of a pin, it must be assigned to GPIO_IN or GPIO_OUT
+        (see :func:`set_pin_function`).
 
         Parameters:
             gp0 (bool, optional): Set GP0 logic value.
@@ -414,10 +417,10 @@ class Device:
             gp1  (str, optional): Function for pin GP1. If None, don't alter function.
             gp2  (str, optional): Function for pin GP2. If None, don't alter function.
             gp3  (str, optional): Function for pin GP3. If None, don't alter function.
-            out0 (bool, optional): Logic status for GP0 if configured as GPIO_OUT (default: False).
-            out1 (bool, optional): Logic status for GP1 if configured as GPIO_OUT (default: False).
-            out2 (bool, optional): Logic status for GP2 if configured as GPIO_OUT (default: False).
-            out3 (bool, optional): Logic status for GP3 if configured as GPIO_OUT (default: False).
+            out0 (bool, optional): Logic output for GP0 if configured as GPIO_OUT (default: False).
+            out1 (bool, optional): Logic output for GP1 if configured as GPIO_OUT (default: False).
+            out2 (bool, optional): Logic output for GP2 if configured as GPIO_OUT (default: False).
+            out3 (bool, optional): Logic output for GP3 if configured as GPIO_OUT (default: False).
 
         Raises:
             ValueError: If invalid function for that pin is specified.
@@ -522,7 +525,8 @@ class Device:
         Valid **freq** values are:
         `375kHz`, `750kHz`, `1.5MHz`, `3MHz`, `6MHz`, `12MHz` or `24MHz`.
 
-        To output clock signal, you also need to assign GP1 function to `CLK_OUT`.
+        To output clock signal, you also need to assign GP1 function to `CLK_OUT`
+        (see :func:`set_pin_function`).
 
         Parameters:
             duty (int): Output duty cycle in percent.
@@ -627,7 +631,7 @@ class Device:
     def ADC_read(self):
         """ Read all Analogc to Digital Converter (ADC) channels.
 
-        Analog value is always available regardless of pin funcion.
+        Analog value is always available regardless of pin funcion (see :func:`set_pin_function`).
         If pin is configured as output (GPIO_OUT or LED_I2C), the read value is always the output state.
 
         ADC is 10 bits, so the minimum value is 0 and the maximum value is 1023.
@@ -723,7 +727,7 @@ class Device:
 
         Valid ``out`` values are 0 to 31.
 
-        To use a GP pin as DAC, you must assing the function "DAC".
+        To use a GP pin as DAC, you must assing the function "DAC" (see :func:`set_pin_function`).
         MCP2221 only have 1 DAC. So if you assign to "DAC" GP2 and GP3 you will
         see the same output value in both.
 
@@ -1091,11 +1095,32 @@ class Device:
     #######################################################################
     # Wake-up
     #######################################################################
-    def wake_up_enable(self, enable = False):
-        """
-        Enable or disable USB Remote Wake-up Capability bit.
-        When enabled, device energy options tab should be available.
-        Device reset (or unplug/plug cycle) is needed in order for changes to take effect.
+    def enable_power_management(self, enable = False):
+        """ Enable or disable USB Power Management options for this device.
+
+        Set or clear Remote Wake-up Capability bit in flash configuration.
+
+        If enabled, Power Management Tab is available for this device in the Device Manager (Windows).
+        So you can mark *"Allow this device to wake the computer"* option.
+
+        A device :func:`reset` (or power supply cycle) is needed in order for changes to take effect.
+
+        Parameters:
+            enable (bool): Enable or disable Power Management.
+
+        Raises:
+            RuntimeError: If write to flash command failed.
+            AssertionError: In rare cases, when some bug might have inadvertently activated Flash protection or permanent chip lock.
+
+        Example:
+            >>> mcp.enable_power_management(True)
+            >>> print(mcp)
+            ...
+                "Chip settings": {
+                    "Power management options": "enabled",
+            ...
+            >>> mcp.reset()
+            >>>
         """
         chip_settings = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
         USBPWRATTR = chip_settings[12]
@@ -1110,11 +1135,29 @@ class Device:
 
 
     def wake_up_config(self, edge = "none"):
-        """
-        Configure interruption edge.
-        Edge could be: raising, falling, both or none.
-        You also need to assign GP1 to IOC function.
-        Don't forget to allow this device to wake-up the computer in Windows or Linux.
+        """ Configure interruption edge.
+
+        Valid values for ``edge``:
+
+        - **none**: disable interrupt detection
+        - **raising**: fire interruption in raising edge (i.e. when GP1 goes from Low to High).
+        - **falling**: fire interruption in falling edge (i.e. when GP1 goes from High to Low).
+        - **both**: fire interruption in both (i.e. when GP1 state changes).
+
+        In order to trigger, GP1 must be assigned to IOC function (see :func:`set_pin_function`).
+
+        To wake-up the computer, Power Management options must be enabled (see :func:`enable_power_management`).
+        And *"Allow this device to wake the computer"* option must be set in Device Manager.
+
+        Parameters:
+            edge (str): which edge triggers the interruption (see description).
+
+        Raises:
+            ValueError: if edge detection given.
+
+        Example:
+            >>> mcp.wake_up_config("both")
+            >>>
         """
         if edge == "none":
             edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_DISABLE
@@ -1134,8 +1177,12 @@ class Device:
     # Reset
     #######################################################################
     def reset(self):
-        """
-        Reset device.
+        """ Reset MCP2221.
+
+        Reboot the device and load stored configuration from flash.
+
+        This operation do not reset any I2C slave devices.
+
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
