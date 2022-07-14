@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('../../'))
 # -- Project information -----------------------------------------------------
 
 project = 'Easy MCP2221(A)'
-copyright = '2022, Reinoso Guzman & contributors'
-author = 'Reinoso Guzman. electronicayciencia.com'
+copyright = 'Reinoso Guzman'
+author = 'Reinoso Guzman (electronicayciencia@gmail.com)'
 
 
 # -- General configuration ---------------------------------------------------
