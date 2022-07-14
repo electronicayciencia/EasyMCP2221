@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "EasyMCP2221"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   { name="Reinoso Guzman", email="electronicayciencia@gmail.com" },
 ]
@@ -16,6 +16,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "hidapi",
 ]
 
 [project.urls]
