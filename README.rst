@@ -2,11 +2,12 @@
 Easy MCP2221
 =====================================================
 
-The objective of this project is to provide a **normal computer** with the capabilities of a **basic microcontroller**.
+Easy MCP2221 is a Python module to interface with Microchip MCP2221 and MCP2221A.
 
-Easy MCP2221 is a Python module to interface the chip MCP2221 and MCP2221A.
+Connected to the USB port, this 14 pin chip part can provide a **normal computer** with the capabilities of a **basic microcontroller**.
 
-MCP2221 is a simple 14 pin chip with USB interface and these peripherals:
+
+MCP2221's peripherals:
 
 - 4 GPIO
 - 3 channel ADC
@@ -16,7 +17,7 @@ MCP2221 is a simple 14 pin chip with USB interface and these peripherals:
 - Clock Output
 - USB Wake-up via Interrupt Detection.
 
-You can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
+So you can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
 
 
 Documentation
