@@ -1,8 +1,9 @@
-# Very simple I2C scan
+# This is to make examples work just by cloning the repo.
 import sys
 sys.path.append('../')
 # ----------------------
 
+# Very simple I2C scan
 import EasyMCP2221
 
 # Connect to MCP2221

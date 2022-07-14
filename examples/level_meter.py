@@ -1,3 +1,8 @@
+# This is to make examples work just by cloning the repo.
+import sys
+sys.path.append('../')
+# ----------------------
+
 # This could be a voltage level meter.
 # GP0 and GP1 and GP2 are digital outputs.
 # GP2 is analog input.

@@ -1,3 +1,8 @@
+# This is to make examples work just by cloning the repo.
+import sys
+sys.path.append('../')
+# ----------------------
+
 # GPIO output and input.
 # GP0 and GP1 are inputs, GP2 and GP3 are outputs.
 # The state of GP2 and GP3 mirror GP0 and GP1.

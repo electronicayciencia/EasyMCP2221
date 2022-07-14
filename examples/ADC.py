@@ -1,10 +1,11 @@
-# ADC input
-# MCP2221 have one 10bit ADC with three channels connected to GP1, GP2 and GP3.
-# The ADC is always running.
+# This is to make examples work just by cloning the repo.
 import sys
 sys.path.append('../')
 # ----------------------
 
+# ADC input
+# MCP2221 have one 10bit ADC with three channels connected to GP1, GP2 and GP3.
+# The ADC is always running.
 import EasyMCP2221
 from time import sleep
 
