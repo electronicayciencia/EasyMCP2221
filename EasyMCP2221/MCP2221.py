@@ -821,7 +821,7 @@ class Device:
 
           - Missing pull-up resistor or to high value.
           - A i2c read transfer timed out while slave was sending data and now the I2C
-            bus is locked-up. Read the hit.
+            bus is locked-up. Read the Hint.
 
         Return:
             bool: True if device is now ready to go. False if the engine is not idle.

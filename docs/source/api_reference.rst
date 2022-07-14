@@ -1,6 +1,3 @@
-
-.. contents::
-
 API reference
 =============
 

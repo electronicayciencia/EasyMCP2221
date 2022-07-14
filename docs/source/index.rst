@@ -24,14 +24,26 @@ Which, in my opinion, makes it great to **learn the basics of microcontrollers**
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-   :hidden:
+   :maxdepth: 3
+   :caption: Table of Contents
 
    installation
-   usage
    examples
    api_reference
 
-.. toctree::
-   :numbered:
+
+
+Installation
+------------
+
+- :doc:`installation`
+
+Examples
+--------
+
+- :doc:`examples`
+
+Full API reference
+------------------
+
+- :doc:`api_reference`

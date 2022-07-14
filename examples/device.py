@@ -15,4 +15,3 @@ except RuntimeError:
 
 print("MCP2221 is there!")
 print(mcp)
-
