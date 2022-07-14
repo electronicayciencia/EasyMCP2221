@@ -19,20 +19,12 @@ MCP2221 is a simple 14 pin chip with USB interface and these peripherals:
 You can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
 
 
-Docs
-----
+Documentation
+-------------
 
-Read the install guide, examples and full API reference in:
+Read the Install Guide, Examples and full API Reference in:
 
 https://easymcp2221.readthedocs.io/
-
-
-Setup
-----------------------------------------------------
-
-To do.
-
-.. image:: ./img/mcp2221.PNG
 
 
 Author
@@ -40,7 +32,7 @@ Author
 
 Reinoso Guzman (https://www.electronicayciencia.com).
 
-Originally based on PyMCP2221A library by Yuta KItagami (https://github.com/nonNoise/PyMCP2221A).
+Initially based on PyMCP2221A library by Yuta KItagami (https://github.com/nonNoise/PyMCP2221A).
 
 
 License

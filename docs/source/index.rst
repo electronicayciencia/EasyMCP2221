@@ -6,9 +6,11 @@ Easy MCP2221
    :maxdepth: 1
    :caption: Table of Contents
 
-   installation
+   install
    examples
    api_reference
+   bugs
+   history
    links
 
 

@@ -3,7 +3,9 @@ Examples
 
 .. currentmodule:: EasyMCP2221
 
-First thing is to import ``EasyMCP2221`` and create a new :class:`Device`. If you can, that's great news! If you don't, check if OS is able to "see" the device or not.
+First import ``EasyMCP2221`` and create a new :class:`Device`. 
+
+If you can, that's great news! If you don't, check if OS is able to "see" the device or not.
 
 .. literalinclude:: ../../examples/device.py
    :lines: 6-
@@ -174,7 +176,7 @@ Same as before but reading
 
 We seek the first position writing ``0x0000``, then func:`I2C_read` 100 bytes and print until the first null.
 
-On slower devices, the read may fail. Yo need to :func:`I2C_cancel` then and try again increasing func:`I2C_read`'s timeout.
+On slower devices, the read may fail. Yo need to :func:`I2C_cancel` then and try again increasing func:`I2C_read` timeout parameter.
 
 .. literalinclude:: ../../examples/EEPROM_read.py
    :lines: 6-
