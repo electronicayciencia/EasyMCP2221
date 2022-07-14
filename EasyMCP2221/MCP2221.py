@@ -43,12 +43,12 @@ class Device:
 
 
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
-        self.mcp2221a = hid.device()
+        self.hidhandler = hid.device()
         devices = hid.enumerate(VID, PID)
         if not devices or len(devices) < devnum:
             raise RuntimeError("No device found with VID %04X and PID %04X." % (VID, PID))
 
-        self.mcp2221a.open_path(hid.enumerate(VID, PID)[devnum]["path"])
+        self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
 
 
     def send_cmd(self, buf, sleep = 0):
@@ -77,14 +77,14 @@ class Device:
 
         REPORT_NUM = 0x00
         padding = [0x00] * (PACKET_SIZE - len(buf))
-        self.mcp2221a.write([REPORT_NUM] + buf + padding)
+        self.hidhandler.write([REPORT_NUM] + buf + padding)
 
         time.sleep(sleep)
 
         if buf[0] == CMD_RESET_CHIP:
             return None
 
-        r = self.mcp2221a.read(PACKET_SIZE)
+        r = self.hidhandler.read(PACKET_SIZE)
 
         if self.debug_packets:
             print(r)
@@ -820,10 +820,8 @@ class Device:
         - SDA keeps low. Caused by:
 
           - Missing pull-up resistor or to high value.
-          - Another device is using the bus.
-          - A i2c read transfer was canceled in the middle of data writing. MCP2221 firmware cannot solve
-            this situation. You need to manually reset the slave o use any of the gpio lines to clock the bus until
-            slave device releases the SDA line.
+          - A i2c read transfer timed out while slave was sending data and now the I2C
+            bus is locked-up. Read the hit.
 
         Return:
             bool: True if device is now ready to go. False if the engine is not idle.
@@ -843,9 +841,24 @@ class Device:
             ...
             RuntimeError: SCL is low. I2C bus is busy or missing pull-up resistor.
 
+        Hint:
+            About the I2C bus locking-up.
+
+            Sometimes, due to a glitch or premature timeout, the master terminates the transfer.
+            But the slave was in the middle of sending a byte. So it is expecting a few more clocks
+            cycles to send the rest of the byte.
+
+            Since the master gave up, it will not clock the bus anymore, and so the slave won't
+            release SDA line. The master, seeing SDA line busy, refuses to initiate any new
+            I2C transfer. If the slave does not implement any timeout (SMB slaves do have it,
+            but I2C ones don't), the I2C bus is locked-up forever.
+
+            MCP2221's I2C engine cannot solve this problem. You can either manually clock the
+            bus using any GPIO line, or cycle the power supply.
+
         Note:
-            Do not call this function without issuing a :func:`I2c_read` or
-            :func:`I2c_write` first. It could render I2C engine inoperative until
+            Do not call this function without issuing a :func:`I2C_read` or
+            :func:`I2C_write` first. It could render I2C engine inoperative until
             the next reset.
 
             >>> mcp.reset()
@@ -1015,10 +1028,6 @@ class Device:
             >>> mcp.I2C_read(0x50, 64, timeout_ms = 25)
             b'This is a very long long data stream that may trigger a timeout.'
 
-        Note:
-            If a timeout occurs in the middle of character reading, the I2C but may stay busy.
-            See :func:`I2C_cancel`.
-
         Hint:
             You can use :func:`I2C_read` with size 0 to check if there is any device listening
             with that address.
@@ -1034,6 +1043,10 @@ class Device:
             Traceback (most recent call last):
             ...
             RuntimeError: Device did not ACK or did not send enough data. Try increasing timeout_ms.
+
+        Note:
+            If a timeout occurs in the middle of character reading, the I2C but may stay busy.
+            See :func:`I2C_cancel`.
         """
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
