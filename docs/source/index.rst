@@ -2,6 +2,16 @@
 Easy MCP2221 project
 =====================================================
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Table of Contents
+
+   installation
+   examples
+   api_reference
+   links
+
+
 Easy MCP2221 is a Python module to interface the chip MCP2221 and MCP2221A.
 
 Some projects, like MicroPython, port Python to a microcontroller.
@@ -18,32 +28,7 @@ MCP2221 is a simple 14 pin chip with:
 - Clock Output
 - USB Wake-up via Interrupt Detection.
 
-You can interface all of it using USB interface.
+You can interface all of it via USB.
 
-Which, in my opinion, makes it great to **learn the basics of microcontrollers** and robotics using nothing more than a regular computer, a protoboard and Python environment.
+Which, in my opinion, makes it great to **learn the basics of microcontrollers** and robotics using nothing more than a regular computer, a protoboard, some parts, and Python.
 
-
-.. toctree::
-   :maxdepth: 3
-   :caption: Table of Contents
-
-   installation
-   examples
-   api_reference
-
-
-
-Installation
-------------
-
-- :doc:`installation`
-
-Examples
---------
-
-- :doc:`examples`
-
-Full API reference
-------------------
-
-- :doc:`api_reference`

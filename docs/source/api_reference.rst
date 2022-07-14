@@ -1,5 +1,5 @@
-API reference
-=============
+Full API reference
+==================
 
 
 Device Initialization
