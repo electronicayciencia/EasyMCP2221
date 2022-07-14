@@ -2,24 +2,29 @@
 Easy MCP2221
 =====================================================
 
-Easy MCP2221 is a Python interface for the chip MCP2221(A).
+The objective of this project is to provide a **normal computer** with the capabilities of a **basic microcontroller**.
 
-Some projects, like MicroPython, port Python to a microcontroller.
+Easy MCP2221 is a Python module to interface the chip MCP2221 and MCP2221A.
 
-This one, by contrast, brings microcontroller capabilities to a regular PC.
-So you can play around with GPIO, ADC or I2C and learn in your preferred Windows/Linux Python environment.
+MCP2221 is a simple 14 pin chip with USB interface and these peripherals:
 
-MCP2221 is a simple 14 pin chip with:
-
-- USB HID interface
 - 4 GPIO
 - 3 channel ADC
-- 1 DAC
+- DAC
 - I2C
 - UART
 - Clock Output
 - USB Wake-up via Interrupt Detection.
 
+You can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
+
+
+Docs
+----
+
+Read the install guide, examples and full API reference in:
+
+https://easymcp2221.readthedocs.io/
 
 
 Setup
@@ -28,18 +33,6 @@ Setup
 To do.
 
 .. image:: ./img/mcp2221.PNG
-
-
-Usage
-----------------------------------------------------
-
-To do. Go to examples directory.
-
-
-Examples
-----------------------------------------------------
-
-Go to examples directory.
 
 
 Author
