@@ -973,7 +973,7 @@ class Device:
                 time.sleep(1e-6)
                 pass
 
-            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK or not self._i2c_ack():
                 self.I2C_cancel()
                 raise RuntimeError("I2C write error: device NAK.")
 
@@ -984,6 +984,17 @@ class Device:
         Useful to know when to send more data.
         """
         return self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])[13]
+
+
+    def _i2c_ack(self):
+        """
+        Get the internal engine ACK status.
+        Useful to know when the write transfer has failed.
+        """
+        if self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])[20] & (1 << 6):
+            return False
+        else:
+            return True
 
 
 
