@@ -20,6 +20,9 @@ MCP2221's peripherals:
 So you can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
 
 
+**Disclaimer**: Some examples in this documentation show bare connections from your USB port to a breadboard. Most USB port controllers are protected against short-circuit between power and/or data lines, but some are not. I am not responsible for any damage you may cause to your computer. To be safe, always use an isolated powered USB hub for experimentation.
+
+
 .. toctree::
    :maxdepth: 1
    :caption: Table of Contents
