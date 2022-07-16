@@ -4,11 +4,11 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "EasyMCP2221"
-version = "1.0.1"
+version = "1.5.0"
 authors = [
   { name="Reinoso Guzman", email="electronicayciencia@gmail.com" },
 ]
-description = "Easy MCP2221 is a Python module to interface Microchip MCP2221 and MCP2221A."
+description = "Python module to interface with MCP2221 focused on ease of use."
 readme = "README.rst"
 license = { file="LICENSE" }
 requires-python = ">=3.7"
@@ -23,6 +23,6 @@ dependencies = [
 ]
 
 [project.urls]
+"Documentation" = "https://easymcp2221.readthedocs.io/"
 "Homepage" = "https://github.com/electronicayciencia/EasyMCP2221"
 "Bug Tracker" = "https://github.com/electronicayciencia/EasyMCP2221/issues"
-"Documentation" = "https://easymcp2221.readthedocs.io/"
