@@ -51,6 +51,18 @@ class Device:
         self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
 
 
+    def __str__(self):
+        import json
+        data = self._read_flash_info(raw = False)
+        return json.dumps(data, indent=4, sort_keys=True)
+
+
+    def __del__(self):
+        """ Releases the device. """
+        self.hidhandler.close()
+        del self.hidhandler
+
+
     def send_cmd(self, buf, sleep = 0):
         """ Write a raw USB command to device and get the response.
 
@@ -120,11 +132,6 @@ class Device:
             raise RuntimeError("Write flash data command failed.")
 
         return rbuf[0:64]
-
-    def __str__(self):
-        import json
-        data = self._read_flash_info(raw = False)
-        return json.dumps(data, indent=4, sort_keys=True)
 
     def _read_flash_info(self, raw = False):
         """ Read flash data.
