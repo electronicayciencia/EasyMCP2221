@@ -20,6 +20,29 @@ MCP2221's peripherals:
 So you can practice the basics of digital electronics, microcontrollers, and robotics using nothing more than a regular computer, a breadboard, a few parts, and Python.
 
 
+Quick start
+-----------
+
+.. code-block:: python
+
+	>>> import EasyMCP2221
+	>>> mcp = EasyMCP2221.Device()
+	>>> print(mcp)
+	{
+		"Chip settings": {
+			"Power management options": "enabled",
+			"USB PID": "0x00DD",
+			"USB VID": "0x04D8",
+			"USB requested number of mA": 100
+		},
+		"Factory Serial": "01234567",
+		"GP settings": {},
+		"USB Manufacturer": "Microchip Technology Inc.",
+		"USB Product": "MCP2221 USB-I2C/UART Combo",
+		"USB Serial": "0000000000"
+	}
+
+
 Documentation
 -------------
 
