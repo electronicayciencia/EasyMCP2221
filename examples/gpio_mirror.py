@@ -4,9 +4,8 @@ sys.path.append('../')
 # ----------------------
 
 # GPIO output and input.
-# GP0 and GP1 are inputs, GP2 and GP3 are outputs.
-# The state of GP2 and GP3 mirror GP0 and GP1.
-# Connect 2 leds to the outputs and 2 buttons to the inputs.
+# GP0 is an output, but GP3 will be an input.
+# The state of GP3 will mirror GP0.
 import sys
 sys.path.append('../')
 
@@ -18,14 +17,11 @@ mcp = EasyMCP2221.Device()
 
 # GP0 and GP1 are inputs, GP2 and GP3 are outputs.
 mcp.set_pin_function(
-    gp0 = "GPIO_IN",
-    gp1 = "GPIO_IN",
-    gp2 = "GPIO_OUT",
-    gp3 = "GPIO_OUT")
+    gp0 = "GPIO_OUT",
+    gp3 = "GPIO_IN")
 
 while True:
     inputs = mcp.GPIO_read()
     mcp.GPIO_write(
-        gp2 = inputs[0],
-        gp3 = inputs[1])
+        gp0 = inputs[3])
 

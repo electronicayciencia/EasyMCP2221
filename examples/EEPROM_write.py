@@ -21,6 +21,7 @@ phrase = input("Tell me a phrase: ")
 phrase_bytes = bytes(phrase, encoding = 'utf-8')
 
 # Store in EEPROM
+# Note that internal EEPROM buffer is only 64 bytes.
 mcp.I2C_write(MEM_ADDR,
     MEM_POS.to_bytes(2, byteorder = 'little') +  # position to write
     bytes(phrase, encoding = 'utf-8') +          # data
