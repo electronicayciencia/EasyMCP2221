@@ -17,7 +17,9 @@ Links
 
 
 * CircuitPython Libraries on any Computer with MCP2221.
-  (A similar project but using Adafruit breakout board instead of a bare chip)
+  (A similar project but using Adafruit's MCP2221A breakout board instead of a bare chip)
 
   https://learn.adafruit.com/circuitpython-libraries-on-any-computer-with-mcp2221
+
+  https://github.com/adafruit/Adafruit_Blinka/blob/main/src/adafruit_blinka/microcontroller/mcp2221/mcp2221.py
 
