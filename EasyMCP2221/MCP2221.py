@@ -1079,8 +1079,9 @@ class Device:
         else:
             raise ValueError("Invalid kind of transfer. Allowed: 'regular' or 'restart'.")
 
-        if not self.I2C_is_idle():
-            raise RuntimeError("I2C read error, engine is not in idle state.")
+        # Removed in order to support repeated-start operation.
+        #if not self.I2C_is_idle():
+        #    raise RuntimeError("I2C read error, engine is not in idle state.")
 
         buf = [0] * 4
         buf[0] = cmd
