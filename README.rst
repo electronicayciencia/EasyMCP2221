@@ -23,6 +23,15 @@ So you can practice the basics of digital electronics, microcontrollers, and rob
 Quick start
 -----------
 
+Install:
+
+.. code-block:: console
+
+	$ pip install EasyMCP2221
+
+
+First run:
+
 .. code-block:: python
 
     >>> import EasyMCP2221
@@ -46,9 +55,7 @@ Quick start
 Documentation
 -------------
 
-Read the Install Guide, Examples and full API Reference in:
-
-https://easymcp2221.readthedocs.io/
+Read the Install Guide, Examples and full API Reference here: https://easymcp2221.readthedocs.io/
 
 
 Author
