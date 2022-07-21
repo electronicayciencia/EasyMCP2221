@@ -2,7 +2,12 @@ import time
 from time import sleep
 import EasyMCP2221
 
+from EasyMCP2221 import I2C_Slave
+
 mcp = EasyMCP2221.Device()
+
+ee = I2C_Slave.I2C_Slave(mcp, 0x50)
+
 
 def freq_meter():
 
@@ -24,23 +29,25 @@ def freq_meter():
         old = input
 
 
-mcp.set_pin_function(
-    gp0 = "GPIO_IN",
-    gp1 = "GPIO_IN",
-    gp2 = "GPIO_IN",
-    gp3 = "GPIO_IN")
+def counter():
+
+    mcp.set_pin_function(
+        gp0 = "GPIO_IN",
+        gp1 = "GPIO_IN",
+        gp2 = "GPIO_IN",
+        gp3 = "GPIO_IN")
 
 
-c = 0
-gp_old = mcp.GPIO_read()
+    c = 0
+    gp_old = mcp.GPIO_read()
 
-while True:
-    gp = mcp.GPIO_read()
-    
-    if not gp == gp_old:
-        c = c + 1
-        print(c)
-        gp_old = gp
-    
+    while True:
+        gp = mcp.GPIO_read()
+
+        if not gp == gp_old:
+            c = c + 1
+            print(c)
+            gp_old = gp
+
 
 
