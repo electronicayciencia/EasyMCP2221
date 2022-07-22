@@ -1,0 +1,34 @@
+# Build the package and publish it to PyPI after tests pass.
+# From https://discourse.jupyter.org/t/use-github-workflows-to-automatically-publish-to-pypi-when-new-tags-are-created/14941
+name: Publish to PyPI
+on:
+  push:
+
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - name: Stamp Git tag and version
+        run: |
+          sed -i "s/_GIT_VERSION_/$(git describe --tags)/" pyproject.toml
+          cat pyproject.toml
+      - name: Build package
+        run: |
+          python -m pip install -U pip build
+          python -m build
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.TESTPYPI_KEY }}
+          repository_url: https://test.pypi.org/legacy/
