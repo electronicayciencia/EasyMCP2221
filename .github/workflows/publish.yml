@@ -22,7 +22,7 @@ jobs:
       - name: Stamp Git tag and version
         run: |
           V=$(git describe --tags | tr -d 'v' | tr '-' '.' | cut -d'.' -f 1-4)
-          sed -i "s/_GIT_VERSION_/$V/" README.md
+          sed -i "s/_GIT_VERSION_/$V/" pyproject.toml
           cat pyproject.toml
       - name: Build package
         run: |
