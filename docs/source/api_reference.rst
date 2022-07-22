@@ -40,12 +40,12 @@ DAC
 I2C
 ---
 
+.. autofunction:: EasyMCP2221.Device.I2C_Slave
 .. autofunction:: EasyMCP2221.Device.I2C_write
 .. autofunction:: EasyMCP2221.Device.I2C_read
 .. autofunction:: EasyMCP2221.Device.I2C_cancel
 .. autofunction:: EasyMCP2221.Device.I2C_is_idle
 .. autofunction:: EasyMCP2221.Device.I2C_speed
-
 
 Clock output
 ------------
@@ -72,3 +72,4 @@ Low level functions
 .. autofunction:: EasyMCP2221.Device.SRAM_config
 .. autofunction:: EasyMCP2221.Device.send_cmd
 .. autoattribute:: EasyMCP2221.Device.debug_packets
+

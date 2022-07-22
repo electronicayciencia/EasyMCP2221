@@ -31,6 +31,7 @@ So you can practice the basics of digital electronics, microcontrollers, and rob
    install
    examples
    api_reference
+   i2c_slave
    limitations_bugs
    history
    links

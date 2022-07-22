@@ -2,11 +2,15 @@ import time
 from time import sleep
 import EasyMCP2221
 
-from EasyMCP2221 import I2C_Slave
+#from EasyMCP2221 import I2C_Slave
 
 mcp = EasyMCP2221.Device()
 
-ee = I2C_Slave.I2C_Slave(mcp, 0x50)
+eeprom = mcp.I2C_Slave(0x50)
+pcf    = mcp.I2C_Slave(0x48)
+
+# si lo desocnectas y vuelves a conectar, la priemra vez no lo pilla
+# se queda pillada SDA
 
 
 def freq_meter():

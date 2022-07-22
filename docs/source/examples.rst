@@ -188,3 +188,21 @@ Output:
     $ python EEPROM_read.py
     Phrase stored was: This is an example.
 
+
+I2C Slave helper
+----------------
+
+:class:`EasyMCP2221.I2C_Slave.I2C_Slave` class allows you to interact with I2C devices in a more object-oriented way.
+
+.. literalinclude:: ../../examples/I2C_Slave_example.py
+   :lines: 6-
+
+Output:
+
+.. code-block:: console
+
+	$ python I2C_Slave_example.py
+	Storing...
+	Data:
+	[78, 78, 78, 78, 82, 102, 81, 31, 56, 77]
+

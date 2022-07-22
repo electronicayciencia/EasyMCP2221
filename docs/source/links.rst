@@ -23,3 +23,7 @@ Links
 
   https://github.com/adafruit/Adafruit_Blinka/blob/main/src/adafruit_blinka/microcontroller/mcp2221/mcp2221.py
 
+
+* Another breakout board: Artekit AK-MCP2221
+
+  https://www.artekit.eu/doc/guides/ak-mcp2221/

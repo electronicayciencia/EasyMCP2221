@@ -6,6 +6,8 @@ import hid
 import time
 
 from .Constants import *
+from . import I2C_Slave
+
 
 class Device:
     """ MCP2221(A) device
@@ -51,7 +53,7 @@ class Device:
         self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
 
 
-    def __str__(self):
+    def __repr__(self):
         import json
         data = self._read_flash_info(raw = False)
         return json.dumps(data, indent=4, sort_keys=True)
@@ -1008,11 +1010,12 @@ class Device:
     #######################################################################
     # I2C Read
     #######################################################################
-    def I2C_read(self, addr, size = 0, kind = "regular", timeout_ms = 10):
+    def I2C_read(self, addr, size = 1, kind = "regular", timeout_ms = 10):
         """ Read data from I2C bus.
 
         Maximum value for ``size`` is 65536 bytes.
         If ``size`` is 0, only expect acknowledge from device, but do not read any bytes.
+        Note that reading 0 bytes might cause unexpected behavior in some devices.
 
         Valid values for ``kind`` are:
 
@@ -1021,7 +1024,7 @@ class Device:
 
         Parameters:
             addr (int): I2C slave device **base** address.
-            size (int, optional): how many bytes to read, default 0.
+            size (int, optional): how many bytes to read, default 1 byte.
             kind (str, optional): kind of transfer (see description).
             timeout_ms (int, optional): time to wait for the data in milliseconds (default 10 ms).
 
@@ -1122,6 +1125,29 @@ class Device:
                 break
 
         return bytes(data)
+
+
+    def I2C_Slave(self, addr):
+        """ Create a new I2C_Slave object.
+
+        See :class:`EasyMCP2221.I2C_Slave.I2C_Slave` for more information.
+
+        Parameters:
+            addr (int): Slave's I2C bus address
+
+        Return:
+            I2C_Slave object.
+
+        Example:
+            >>> pcf    = mcp.I2C_Slave(0x48)
+            >>> eeprom = mcp.I2C_Slave(0x50)
+            >>> eeprom
+            EasyMCP2221's I2C slave device at bus address 0x50.
+
+        Note:
+            New from v1.6.
+        """
+        return I2C_Slave.I2C_Slave(self, addr)
 
 
     #######################################################################
