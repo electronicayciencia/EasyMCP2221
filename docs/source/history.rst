@@ -1,6 +1,13 @@
 History
 =======
 
+
+V1.6.0
+------
+
+Add I2C Slave helper class.
+
+
 V1.5.0
 ------
 
