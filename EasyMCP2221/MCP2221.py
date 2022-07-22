@@ -1130,7 +1130,7 @@ class Device:
     def I2C_Slave(self, addr):
         """ Create a new I2C_Slave object.
 
-        See :class:`EasyMCP2221.I2C_Slave.I2C_Slave` for more information.
+        See :class:`EasyMCP2221.I2C_Slave.I2C_Slave` for detailed information.
 
         Parameters:
             addr (int): Slave's I2C bus address
@@ -1145,7 +1145,7 @@ class Device:
             EasyMCP2221's I2C slave device at bus address 0x50.
 
         Note:
-            New from v1.6.
+            New from v1.5.1.
         """
         return I2C_Slave.I2C_Slave(self, addr)
 

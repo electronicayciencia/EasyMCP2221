@@ -5,6 +5,10 @@
 class I2C_Slave:
     """ EasyMCP2221's I2C slave device.
 
+    I2C_Slave helper class allows you to interact with I2C devices in a more object-oriented way.
+
+    Usually you create new instances of this class using :func:`EasyMCP2221.Device.I2C_Slave` function. See *examples* section.
+
     Parameters:
         mcp (EasyMCP2221.Device): MCP2221 connected to this slave
         addr  (int) : Slave's I2C bus address
@@ -14,7 +18,7 @@ class I2C_Slave:
         RuntimeError: If the device didn't acknowledge.
 
     Examples:
-        You should create I2C_Slave objects from inside of an EasyMCP2221.Device:
+        You should create I2C_Slave objects from the inside of an EasyMCP2221.Device:
 
         >>> import EasyMCP2221
         >>> mcp = EasyMCP2221.Device()

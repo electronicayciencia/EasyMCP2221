@@ -2,14 +2,17 @@ History
 =======
 
 
-V1.6.0
-------
+V1.5
+--------
+
+V1.5.1
+~~~~~~
 
 Add I2C Slave helper class.
 
 
 V1.5.0
-------
+~~~~~~
 
 First EasyMCP2221 version.
 
