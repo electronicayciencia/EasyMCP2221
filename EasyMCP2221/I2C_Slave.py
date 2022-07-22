@@ -70,7 +70,7 @@ class I2C_Slave:
         """ Read from a specific register, position or command.
 
         Sequence:
-        
+
         - Start
         - Send device I2C address + R/W bit 0
         - Send register byte, memory position or command
@@ -139,7 +139,7 @@ class I2C_Slave:
         """ Write to a specific register, position or command.
 
         Sequence:
-        
+
         - Start
         - Send device I2C address + R/W bit 0
         - Send register byte, memory position or command
