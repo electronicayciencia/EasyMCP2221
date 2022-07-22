@@ -3,7 +3,7 @@
 # fetch-depth: 0 is needed to make `git describe` work.
 name: Publish to PyPI
 on:
-  push:
+  push
 
 
 jobs:
@@ -21,7 +21,8 @@ jobs:
           python-version: 3.9
       - name: Stamp Git tag and version
         run: |
-          sed -i "s/_GIT_VERSION_/$(git describe --tags)/" pyproject.toml
+          V=$(git describe --tags | tr -d 'v' | tr '-' '.' | cut -d'.' -f 1-4)
+          sed -i "s/_GIT_VERSION_/$V/" README.md
           cat pyproject.toml
       - name: Build package
         run: |
