@@ -1,5 +1,6 @@
 # Build the package and publish it to PyPI after tests pass.
 # From https://discourse.jupyter.org/t/use-github-workflows-to-automatically-publish-to-pypi-when-new-tags-are-created/14941
+# fetch-depth: 0 is needed to make `git describe` work.
 name: Publish to PyPI
 on:
   push:
