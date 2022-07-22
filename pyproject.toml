@@ -4,7 +4,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "EasyMCP2221"
-version = "1.5.0"
+version = "_GIT_VERSION_"
 authors = [
   { name="Reinoso Guzman", email="electronicayciencia@gmail.com" },
 ]
