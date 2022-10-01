@@ -26,18 +26,20 @@ before_last_s  = 0             # y_n-2  (y0)
 
 # No trigonometric function in the main loop
 while True:
-    # set-up next sample time right at the beginning
+    # set-up next sample time before doing anything else
     next_sample = time.perf_counter() + 1/sample_rate
     
-    # Calculate next value and write it to DAC
-    s = 2*W*last_s - before_last_s
-    mcp.DAC_write(int(s*15+15))  # 1 => 30, -1 = 0
+    # Calculate next output value and write it to DAC
+    s = 2*W*last_s - before_last_s    # s between -1 and 1
+    out = s + 1         # out can't be negative
+    out = out * 31      # 5 bit DAC, 0 to 31
+    out = int(out)      # integer
+    mcp.DAC_write(out)
 
     # Update recurrence values
-    before_last_s = last_s
-    last_s = s
+    (before_last_s, last_s) = (last_s, s)
     
-    # Warning if we couldn't catch on time with sample rate!
+    # Warn if we can't keep up with the sample rate!
     if time.perf_counter() > next_sample:
         print("Undersampling!")
     
