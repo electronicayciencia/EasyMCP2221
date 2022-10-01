@@ -31,7 +31,7 @@ while True:
     
     # Calculate next output value and write it to DAC
     s = 2*W*last_s - before_last_s    # s between -1 and 1
-    out = s + 1         # out can't be negative
+    out = (s + 1) / 2   # out between 0 and 1 now
     out = out * 31      # 5 bit DAC, 0 to 31
     out = int(out)      # integer
     mcp.DAC_write(out)
