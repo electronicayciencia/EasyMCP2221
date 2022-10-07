@@ -39,9 +39,14 @@ class Device:
         }
     """
 
+    cmd_retries = 1
+    """int: Times to retry a command if it fails."""
 
-    debug_packets = False
+    trace_packets = False
     """bool: Print all binary commands and responses."""
+    
+    debug_messages = False
+    """bool: Print debugging messages."""
 
 
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
@@ -65,7 +70,7 @@ class Device:
         del self.hidhandler
 
 
-    def send_cmd(self, buf, sleep = 0):
+    def send_cmd(self, buf):
         """ Write a raw USB command to device and get the response.
 
         Write 64 bytes to the HID interface, starting by ``buf`` bytes.
@@ -75,9 +80,6 @@ class Device:
         Parameters:
             buf (list of bytes): Full data to write, including command (64 bytes max).
 
-        Other parameters:
-            sleep (float, optional): Delay (seconds) between writing the command and reading the response.
-
         Returns:
             list of bytes: Full response data (64 bytes).
 
@@ -85,23 +87,39 @@ class Device:
             >>> from EasyMCP2221.Constants import *
             >>> r = mcp.send_cmd([CMD_GET_GPIO_VALUES])
             [81, 0, 238, 239, 238, 239, 238, 239, 238, 239, 0, 0, 0, ... 0, 0]
+            
+        See also:
+            :func:`cmd_retries`.
+            :func:`debug_messages`.
+            :func:`trace_packets`.
         """
-        if self.debug_packets:
-            print(buf)
+        if self.trace_packets:
+            print("CMD:", " ".join("%02x" % i for i in buf))
 
         REPORT_NUM = 0x00
         padding = [0x00] * (PACKET_SIZE - len(buf))
-        self.hidhandler.write([REPORT_NUM] + buf + padding)
 
-        time.sleep(sleep)
+        for retry in range(self.cmd_retries+1):
+            self.hidhandler.write([REPORT_NUM] + buf + padding)
 
-        if buf[0] == CMD_RESET_CHIP:
-            return None
+            if buf[0] == CMD_RESET_CHIP:
+                return None
 
-        r = self.hidhandler.read(PACKET_SIZE)
+            r = self.hidhandler.read(PACKET_SIZE, 50)
+            
+            if not r:
+                if self.debug_messages:
+                    print("Read timeout, retry command.")
+                continue
 
-        if self.debug_packets:
-            print(r)
+            if self.trace_packets:
+                print("RES:", " ".join("%02x" % i for i in r))
+
+            if r[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
+                break
+
+            if self.debug_messages:
+                print("Command returned error. Retry.")
 
         return r
 
@@ -224,7 +242,8 @@ class Device:
         gp0        = None,
         gp1        = None,
         gp2        = None,
-        gp3        = None):
+        gp3        = None,
+        retries    = 1):
         """ Low level SRAM configuration.
 
         Configure Runtime GPIO pins and parameters.
@@ -292,6 +311,7 @@ class Device:
 
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
+
 
 
     #######################################################################
@@ -1247,7 +1267,8 @@ class Device:
         buf[1] = RESET_CHIP_SURE
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
-        self.send_cmd(buf, sleep = 1)
+        self.send_cmd(buf)
+        time.sleep(1)
 
         self.__init__()
 
