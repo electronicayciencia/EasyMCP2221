@@ -14,10 +14,6 @@
 # Tip: you could connect a LDR instead of a potentiometer to
 # make a light level indicator.
 #
-
-import sys
-sys.path.append('../')
-
 import EasyMCP2221
 from time import sleep
 

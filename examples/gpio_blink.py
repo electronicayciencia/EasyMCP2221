@@ -1,7 +1,4 @@
 # How to blink a LED connected to GP0
-import sys
-sys.path.append('../')
-
 import EasyMCP2221
 from time import sleep
 

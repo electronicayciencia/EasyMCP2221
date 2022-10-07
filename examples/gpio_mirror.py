@@ -1,9 +1,6 @@
 # GPIO output and input.
 # GP0 is an output, but GP3 will be an input.
 # The state of GP3 will mirror GP0.
-import sys
-sys.path.append('../')
-
 import EasyMCP2221
 from time import sleep
 
