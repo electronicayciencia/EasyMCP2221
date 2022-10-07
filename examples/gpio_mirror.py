@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # GPIO output and input.
 # GP0 is an output, but GP3 will be an input.
 # The state of GP3 will mirror GP0.

@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # Very simple I2C scan
 import EasyMCP2221
 

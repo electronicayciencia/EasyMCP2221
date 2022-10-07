@@ -1,10 +1,5 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # DAC output
-# MCP2221 have only 1 DAC, connected to GP2 and/or GP3.
+# MCP2221 only have 1 DAC, connected to GP2 and/or GP3.
 import EasyMCP2221
 from time import sleep
 

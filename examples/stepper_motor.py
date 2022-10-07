@@ -1,15 +1,6 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
-
-#while True:
-#    for i in fullsteps:
-#        mcp.GPIO_write(i[0],i[1],i[2],i[3])
-
-from time import sleep
+# Stepper motor control
 import EasyMCP2221
+from time import sleep
 
 
 fullstep = (

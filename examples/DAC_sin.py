@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # DAC output, advanced example.
 # Generate SIN signal using a recurrence relation to avoid calculate sin(x) in the main loop.
 import EasyMCP2221
@@ -10,8 +5,8 @@ import time
 from math import sqrt, cos, pi
 
 # Output freq
-sample_rate = 313 # Hz (unstable above 500Hz)
-freq        = 10  # Hz
+sample_rate = 250 # Hz (unstable above 500Hz)
+freq        = 0.1  # Hz
 
 # Configure device pins and DAC reference.
 # MCP2221 have only 1 DAC, connected to GP2 and/or GP3.

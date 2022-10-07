@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # How to blink a LED connected to GP0
 import sys
 sys.path.append('../')

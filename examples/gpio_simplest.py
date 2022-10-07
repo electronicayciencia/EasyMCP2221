@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # Simple example to show how to initialize class,
 # set pin function and change value.
 import EasyMCP2221

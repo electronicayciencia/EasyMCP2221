@@ -1,9 +1,4 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
-# Simple EEPROM storage.
+# Simple EEPROM reading.
 import EasyMCP2221
 
 # Connect to MCP2221

@@ -1,8 +1,3 @@
-# This is to make examples work just by cloning the repo.
-import sys
-sys.path.append('../')
-# ----------------------
-
 # How to use I2C Slave helper class.
 # Data logger: Read 10 ADC values from a PCF8591 with 1 second interval
 # and store them in an EEPROM. Then, print the stored values.
