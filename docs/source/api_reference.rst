@@ -66,10 +66,12 @@ Device reset
 .. autofunction:: EasyMCP2221.Device.reset
 
 
-Low level functions
+Low level and debug
 -------------------
 
 .. autofunction:: EasyMCP2221.Device.SRAM_config
 .. autofunction:: EasyMCP2221.Device.send_cmd
-.. autoattribute:: EasyMCP2221.Device.debug_packets
+.. autoattribute:: EasyMCP2221.Device.cmd_retries
+.. autoattribute:: EasyMCP2221.Device.debug_messages
+.. autoattribute:: EasyMCP2221.Device.trace_packets
 
