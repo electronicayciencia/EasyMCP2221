@@ -6,7 +6,7 @@ from math import sqrt, cos, pi
 
 # Output freq
 sample_rate = 250 # Hz (unstable above 500Hz)
-freq        = 0.1  # Hz
+freq        = 1   # Hz
 
 # Configure device pins and DAC reference.
 # MCP2221 have only 1 DAC, connected to GP2 and/or GP3.
@@ -28,7 +28,7 @@ while True:
     s = 2*W*last_s - before_last_s    # s between -1 and 1
     out = (s + 1) / 2   # out between 0 and 1 now
     out = out * 31      # 5 bit DAC, 0 to 31
-    out = int(out)      # integer
+    out = round(out)    # integer
     mcp.DAC_write(out)
 
     # Update recurrence values
