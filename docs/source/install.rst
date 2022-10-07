@@ -53,7 +53,7 @@ First create and activate a new virtual environment. Update pip if needed.
 	(easymcp_dev) d:\tmp\easymcp_dev> python -m pip install --upgrade pip
 
 
-Then, clone the home repository and perform the installation in _editable_ (`-e`) mode.
+Then, clone the home repository and perform the installation in *editable* (``-e``) mode.
 
 .. code-block:: console
 
