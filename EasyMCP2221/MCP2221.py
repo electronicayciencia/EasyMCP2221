@@ -44,9 +44,21 @@ class Device:
 
     trace_packets = False
     """bool: Print all binary commands and responses."""
-    
+
     debug_messages = False
     """bool: Print debugging messages."""
+
+    status = {
+        "GPIO": {
+            "settings": {
+                "gp0": None,
+                "gp1": None,
+                "gp2": None,
+                "gp3": None
+            }
+        }
+    }
+    """ Internal status """
 
 
     def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
@@ -56,6 +68,13 @@ class Device:
             raise RuntimeError("No device found with VID %04X and PID %04X." % (VID, PID))
 
         self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
+
+        # Initialize current GPIO settings
+        settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
+        self.status["GPIO"]["settings"]["gp0"] = settings[22]
+        self.status["GPIO"]["settings"]["gp1"] = settings[23]
+        self.status["GPIO"]["settings"]["gp2"] = settings[24]
+        self.status["GPIO"]["settings"]["gp3"] = settings[25]
 
 
     def __repr__(self):
@@ -87,7 +106,7 @@ class Device:
             >>> from EasyMCP2221.Constants import *
             >>> r = mcp.send_cmd([CMD_GET_GPIO_VALUES])
             [81, 0, 238, 239, 238, 239, 238, 239, 238, 239, 0, 0, 0, ... 0, 0]
-            
+
         See also:
             Class variables :attr:`cmd_retries`, :attr:`debug_messages` and :attr:`trace_packets`.
         """
@@ -104,7 +123,7 @@ class Device:
                 return None
 
             r = self.hidhandler.read(PACKET_SIZE, 50)
-            
+
             if not r:
                 if self.debug_messages:
                     print("Read timeout, retry command.")
@@ -120,6 +139,14 @@ class Device:
                 print("Command returned error. Retry.")
 
         return r
+
+
+    def _update_gp_setting_out(self, gp, out):
+        """Update the GP setting (like in SRAM setting) with output values from Set GPIO Output Values command."""
+        if out == True:
+            self.status["GPIO"]["settings"][gp] = self.status["GPIO"]["settings"][gp] | GPIO_OUT_VAL_1
+        else:
+            self.status["GPIO"]["settings"][gp] = self.status["GPIO"]["settings"][gp] & GPIO_OUT_VAL_0
 
 
     #######################################################################
@@ -271,7 +298,6 @@ class Device:
         Note:
             Calling this function unexpectedly resets (not preserve):
 
-            - All GPIO values set via :func:`GPIO_write` method.
             - Reference voltage for ADC set by :func:`ADC_config` (not affected if ref = VDD)
             - Reference voltage for DAC set by :func:`DAC_config` (not affected if ref = VDD)
         """
@@ -281,15 +307,33 @@ class Device:
         if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF
         if int_conf   is not None: int_conf   |= ALTER_INT_CONF
 
+        
+        # Preserve or update GPx for non specified pins
         new_gpconf = None
-        if (gp0, gp1, gp2, gp3) != (None, None, None, None):
+        
+        if gp0 is None:
+            gp0 = self.status["GPIO"]["settings"]["gp0"]
+        else:
             new_gpconf = ALTER_GPIO_CONF
-            # Preserve GPx for non specified pins
-            status = self.send_cmd([CMD_GET_SRAM_SETTINGS])
-            if gp0 is None: gp0 = status[22]
-            if gp1 is None: gp1 = status[23]
-            if gp2 is None: gp2 = status[24]
-            if gp3 is None: gp3 = status[25]
+            self.status["GPIO"]["settings"]["gp0"] = gp0
+
+        if gp1 is None:
+            gp1 = self.status["GPIO"]["settings"]["gp1"]
+        else:
+            new_gpconf = ALTER_GPIO_CONF
+            self.status["GPIO"]["settings"]["gp1"] = gp1
+
+        if gp2 is None:
+            gp2 = self.status["GPIO"]["settings"]["gp2"]
+        else:
+            new_gpconf = ALTER_GPIO_CONF
+            self.status["GPIO"]["settings"]["gp2"] = gp2
+
+        if gp3 is None:
+            gp3 = self.status["GPIO"]["settings"]["gp3"]
+        else:
+            new_gpconf = ALTER_GPIO_CONF
+            self.status["GPIO"]["settings"]["gp3"] = gp3
 
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
@@ -300,10 +344,10 @@ class Device:
         cmd[5]  = adc_ref    or PRESERVE_ADC_REF    # ADC Voltage Reference
         cmd[6]  = int_conf   or PRESERVE_INT_CONF   # Setup the interrupt detection
         cmd[7]  = new_gpconf or PRESERVE_GPIO_CONF  # Alter GPIO configuration
-        cmd[8]  = gp0        or PRESERVE_GPIO_CONF  # GP0 settings
-        cmd[9]  = gp1        or PRESERVE_GPIO_CONF  # GP1 settings
-        cmd[10] = gp2        or PRESERVE_GPIO_CONF  # GP2 settings
-        cmd[11] = gp3        or PRESERVE_GPIO_CONF  # GP3 settings
+        cmd[8]  = gp0                               # GP0 settings
+        cmd[9]  = gp1                               # GP1 settings
+        cmd[10] = gp2                               # GP2 settings
+        cmd[11] = gp3                               # GP3 settings
 
         r = self.send_cmd(cmd)
 
@@ -363,6 +407,11 @@ class Device:
         buf[15] = gp3 or 0
 
         r = self.send_cmd(buf)
+
+        if gp0 is not None and r[3]  != GPIO_ERROR: self._update_gp_setting_out("gp0", gp0)
+        if gp1 is not None and r[7]  != GPIO_ERROR: self._update_gp_setting_out("gp1", gp1)
+        if gp2 is not None and r[11] != GPIO_ERROR: self._update_gp_setting_out("gp2", gp2)
+        if gp3 is not None and r[15] != GPIO_ERROR: self._update_gp_setting_out("gp3", gp3)
 
         if gp0 is not None and r[3] == GPIO_ERROR:
             raise RuntimeError("Pin GP0 is not assigned to GPIO function.")

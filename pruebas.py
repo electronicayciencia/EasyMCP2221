@@ -6,11 +6,38 @@ import EasyMCP2221
 
 mcp = EasyMCP2221.Device()
 
-eeprom = mcp.I2C_Slave(0x50)
-pcf    = mcp.I2C_Slave(0x48)
+#eeprom = mcp.I2C_Slave(0x50)
+#pcf    = mcp.I2C_Slave(0x48)
 
-# si lo desocnectas y vuelves a conectar, la priemra vez no lo pilla
-# se queda pillada SDA
+# SRAM_config to preserve GPIO_write values 
+
+# GP0 and GP1 are inputs, GP2 and GP3 are outputs.
+mcp.set_pin_function(
+    gp0 = "GPIO_OUT",
+    gp1 = "GPIO_OUT",
+    gp2 = "GPIO_OUT",
+    gp3 = "GPIO_OUT")
+
+mcp.GPIO_write(gp2 = True, gp3 = True)
+
+input()
+
+# This will wipe out gp2 value (and shouldn't)
+mcp.set_pin_function(gp1 = "GPIO_IN")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def freq_meter():
@@ -52,6 +79,9 @@ def counter():
             c = c + 1
             print(c)
             gp_old = gp
+
+
+
 
 
 
