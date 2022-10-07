@@ -1,7 +1,9 @@
 Install
 =======
 
-EasyMCP2221 should work in Windows and Linux. Install it using ``pip``.
+
+Installation via PIP
+--------------------
 
 Pip command for Linux:
 
@@ -31,5 +33,38 @@ Try to install the following packages using ``pip``:
 - libusb1
 
 If that doesn't work, try manually installing libhidapi from https://github.com/libusb/hidapi/releases.
+
+
+Editable for testing
+--------------------
+
+You may want to install this library from a cloned GitHub repository, usually for testing or development purposes.
+
+First create and activate a new virtual environment. Update pip if needed.
+
+.. code-block:: console
+
+	d:\tmp>python -m venv init easymcp_dev
+
+	d:\tmp>cd easymcp_dev
+
+	d:\tmp\easymcp_dev>Scripts\activate
+
+	(easymcp_dev) d:\tmp\easymcp_dev> python -m pip install --upgrade pip
+
+
+Then, clone the home repository and perform the installation in _editable_ (`-e`) mode.
+
+.. code-block:: console
+
+    (easymcp_dev) d:\tmp\easymcp_dev>git clone https://github.com/electronicayciencia/EasyMCP2221
+    Cloning into 'EasyMCP2221'...
+    ...
+    
+    (easymcp_dev) d:\tmp\easymcp_dev>pip install -e EasyMCP2221
+    Obtaining file:///D:/tmp/easymcp_dev/EasyMCP2221
+      Installing build dependencies ... done
+    ...
+    Successfully installed EasyMCP2221-0.0+unreleased.local
 
 
