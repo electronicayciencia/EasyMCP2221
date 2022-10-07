@@ -89,9 +89,7 @@ class Device:
             [81, 0, 238, 239, 238, 239, 238, 239, 238, 239, 0, 0, 0, ... 0, 0]
             
         See also:
-            :func:`cmd_retries`.
-            :func:`debug_messages`.
-            :func:`trace_packets`.
+            Class variables :attr:`cmd_retries`, :attr:`debug_messages` and :attr:`trace_packets`.
         """
         if self.trace_packets:
             print("CMD:", " ".join("%02x" % i for i in buf))
