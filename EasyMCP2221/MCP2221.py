@@ -49,14 +49,21 @@ class Device:
     """bool: Print debugging messages."""
 
     status = {
+        # 4   -> output value
+        # 3   -> direction
+        # 2:0 -> designation
         "GPIO": {
-            "settings": {
-                "gp0": None,
-                "gp1": None,
-                "gp2": None,
-                "gp3": None
-            }
-        }
+            "gp0": None,
+            "gp1": None,
+            "gp2": None,
+            "gp3": None
+        },
+        # 2:1 -> reference value,
+        # 0   -> reference source
+        "dac_ref": None,
+        # 2:1 -> reference value,
+        # 0   -> reference source
+        "adc_ref": None
     }
     """ Internal status """
 
@@ -71,10 +78,13 @@ class Device:
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
-        self.status["GPIO"]["settings"]["gp0"] = settings[22]
-        self.status["GPIO"]["settings"]["gp1"] = settings[23]
-        self.status["GPIO"]["settings"]["gp2"] = settings[24]
-        self.status["GPIO"]["settings"]["gp3"] = settings[25]
+        self.status["GPIO"]["gp0"] = settings[22]
+        self.status["GPIO"]["gp1"] = settings[23]
+        self.status["GPIO"]["gp2"] = settings[24]
+        self.status["GPIO"]["gp3"] = settings[25]
+        # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
+        self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
+        self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
 
 
     def __repr__(self):
@@ -144,9 +154,9 @@ class Device:
     def _update_gp_setting_out(self, gp, out):
         """Update the GP setting (like in SRAM setting) with output values from Set GPIO Output Values command."""
         if out == True:
-            self.status["GPIO"]["settings"][gp] = self.status["GPIO"]["settings"][gp] | GPIO_OUT_VAL_1
+            self.status["GPIO"][gp] = self.status["GPIO"][gp] | GPIO_OUT_VAL_1
         else:
-            self.status["GPIO"]["settings"][gp] = self.status["GPIO"]["settings"][gp] & GPIO_OUT_VAL_0
+            self.status["GPIO"][gp] = self.status["GPIO"][gp] & GPIO_OUT_VAL_0
 
 
     #######################################################################
@@ -301,39 +311,50 @@ class Device:
             - Reference voltage for ADC set by :func:`ADC_config` (not affected if ref = VDD)
             - Reference voltage for DAC set by :func:`DAC_config` (not affected if ref = VDD)
         """
+        # Set Alter flag for all non-none parameters
         if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
-        if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF
-        if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
-        if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF
         if int_conf   is not None: int_conf   |= ALTER_INT_CONF
+        if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
+        #if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF   # Recovered from status, not SRAM
+        #if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF   # Recovered from status, not SRAM
 
-        
+
         # Preserve or update GPx for non specified pins
-        new_gpconf = None
-        
+        new_gpconf = None if (gp0, gp1, gp2, gp3) == (None, None, None, None) else ALTER_GPIO_CONF
+
         if gp0 is None:
-            gp0 = self.status["GPIO"]["settings"]["gp0"]
+            gp0 = self.status["GPIO"]["gp0"]
         else:
-            new_gpconf = ALTER_GPIO_CONF
-            self.status["GPIO"]["settings"]["gp0"] = gp0
+            self.status["GPIO"]["gp0"] = gp0
 
         if gp1 is None:
-            gp1 = self.status["GPIO"]["settings"]["gp1"]
+            gp1 = self.status["GPIO"]["gp1"]
         else:
-            new_gpconf = ALTER_GPIO_CONF
-            self.status["GPIO"]["settings"]["gp1"] = gp1
+            self.status["GPIO"]["gp1"] = gp1
 
         if gp2 is None:
-            gp2 = self.status["GPIO"]["settings"]["gp2"]
+            gp2 = self.status["GPIO"]["gp2"]
         else:
-            new_gpconf = ALTER_GPIO_CONF
-            self.status["GPIO"]["settings"]["gp2"] = gp2
+            self.status["GPIO"]["gp2"] = gp2
 
         if gp3 is None:
-            gp3 = self.status["GPIO"]["settings"]["gp3"]
+            gp3 = self.status["GPIO"]["gp3"]
         else:
-            new_gpconf = ALTER_GPIO_CONF
-            self.status["GPIO"]["settings"]["gp3"] = gp3
+            self.status["GPIO"]["gp3"] = gp3
+
+        # This is to fix MCP2221's bug:
+        #   "When the Set SRAM settings command is used for GPIO control,
+        #   the reference voltage for VRM is always reinitialized to the default value (VDD)
+        #   if it is not explicitly set." (datasheet, section 1.8)
+        if dac_ref is None:
+            dac_ref = self.status["dac_ref"] | ALTER_DAC_REF
+        else:
+            self.status["dac_ref"] = dac_ref
+
+        if adc_ref is None:
+            adc_ref = self.status["adc_ref"] | ALTER_ADC_REF
+        else:
+            self.status["adc_ref"] = adc_ref
 
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
@@ -354,6 +375,16 @@ class Device:
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
 
+        # If ADC/DAC Ref is Vrm and GPIO changed, we need to restore the Vrm
+        # It is not valid just sending the desired Vrm value in the above command.
+        # Note: a 2ms gap will be present at DAC output.
+        if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
+            cmd[3]  = dac_ref | ALTER_DAC_REF
+            cmd[5]  = adc_ref | ALTER_ADC_REF
+            cmd[7]  = PRESERVE_GPIO_CONF
+            r = self.send_cmd(cmd)
+            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+                raise RuntimeError("SRAM write error.")
 
 
     #######################################################################
@@ -745,19 +776,19 @@ class Device:
     #######################################################################
     # DAC
     #######################################################################
-    def DAC_config(self, ref, out = 0):
+    def DAC_config(self, ref, out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
         Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
         MCP2221's DAC is 5 bits. So valid values for ``out`` are from 0 to 31.
 
-        ``out`` parameter is optional and defaults to 0.
+        ``out`` parameter is optional and defaults last value.
         Use :func:`DAC_write` to set the DAC output value.
 
         Parameters:
             ref (str): Reference voltage for DAC.
-            out (int, optional): value to output. Default is 0.
+            out (int, optional): value to output. Default is last value.
 
         Raises:
             ValueError: if ``ref`` or ``out`` values are not valid.
@@ -790,7 +821,7 @@ class Device:
         else:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
-        if out not in range(0, 32):
+        if out is not None and out not in range(0, 32):
             raise ValueError("Accepted values for out are from 0 to 31.")
 
         self.SRAM_config(
