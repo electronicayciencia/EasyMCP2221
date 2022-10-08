@@ -306,10 +306,8 @@ class Device:
             >>> mcp.SRAM_config(dac_ref = ADC_REF_VRM | ADC_VRM_2048)
 
         Note:
-            Calling this function unexpectedly resets (not preserve):
-
-            - Reference voltage for ADC set by :func:`ADC_config` (not affected if ref = VDD)
-            - Reference voltage for DAC set by :func:`DAC_config` (not affected if ref = VDD)
+            Calling this function to change GPIO when DAC is active and DAC reference is not Vdd 
+            will create a 2ms gap in DAC output.
         """
         # Set Alter flag for all non-none parameters
         if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
@@ -319,7 +317,8 @@ class Device:
         #if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF   # Recovered from status, not SRAM
 
 
-        # Preserve or update GPx for non specified pins
+        # Preserve GPIO_write status for non specified pins
+        # Note that when ALTER_GPIO_CONF is active, Vrm will be reset.
         new_gpconf = None if (gp0, gp1, gp2, gp3) == (None, None, None, None) else ALTER_GPIO_CONF
 
         if gp0 is None:
@@ -342,27 +341,28 @@ class Device:
         else:
             self.status["GPIO"]["gp3"] = gp3
 
-        # This is to fix MCP2221's bug:
+        # This is to fix a MCP2221's bug:
         #   "When the Set SRAM settings command is used for GPIO control,
         #   the reference voltage for VRM is always reinitialized to the default value (VDD)
         #   if it is not explicitly set." (datasheet, section 1.8)
         if dac_ref is None:
-            dac_ref = self.status["dac_ref"] | ALTER_DAC_REF
+            dac_ref = self.status["dac_ref"]
         else:
             self.status["dac_ref"] = dac_ref
 
         if adc_ref is None:
-            adc_ref = self.status["adc_ref"] | ALTER_ADC_REF
+            adc_ref = self.status["adc_ref"]
         else:
             self.status["adc_ref"] = adc_ref
+
 
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
         cmd[1]  = 0   # don't care
         cmd[2]  = clk_output or PRESERVE_CLK_OUTPUT # Clock Output Divider value
-        cmd[3]  = dac_ref    or PRESERVE_DAC_REF    # DAC Voltage Reference
+        cmd[3]  = dac_ref    |  ALTER_DAC_REF       # DAC Voltage Reference
         cmd[4]  = dac_value  or PRESERVE_DAC_VALUE  # Set DAC output value
-        cmd[5]  = adc_ref    or PRESERVE_ADC_REF    # ADC Voltage Reference
+        cmd[5]  = adc_ref    |  ALTER_ADC_REF       # ADC Voltage Reference
         cmd[6]  = int_conf   or PRESERVE_INT_CONF   # Setup the interrupt detection
         cmd[7]  = new_gpconf or PRESERVE_GPIO_CONF  # Alter GPIO configuration
         cmd[8]  = gp0                               # GP0 settings
@@ -375,9 +375,9 @@ class Device:
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
 
-        # If ADC/DAC Ref is Vrm and GPIO changed, we need to restore the Vrm
+        # If ADC/DAC Ref is Vrm and changed GPIO, we need to explicitly restore Vrm.
         # It is not valid just sending the desired Vrm value in the above command.
-        # Note: a 2ms gap will be present at DAC output.
+        # Note: this will cause a 2ms gap at DAC output.
         if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
             cmd[3]  = dac_ref | ALTER_DAC_REF
             cmd[5]  = adc_ref | ALTER_ADC_REF

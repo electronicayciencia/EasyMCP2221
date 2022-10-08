@@ -12,20 +12,21 @@ mcp = EasyMCP2221.Device()
 
 #mcp.trace_packets = True
 
-
-# SRAM_config shoudn't change ADC/ADC ref 
-mcp.set_pin_function(gp1 = "GPIO_IN", gp2 = "ADC", gp3 = "DAC")
-mcp.DAC_config(ref="4.096V")
-mcp.ADC_config(ref="2.048V")
-mcp.DAC_write(16)
-
-print(mcp.ADC_read())
-
-input()
-
-# This shall not change ADC reference
-mcp.set_pin_function(gp1 = "GPIO_OUT", out1 = 0)
-print(mcp.ADC_read())
+def test_preserve_adc_ref():
+    # SRAM_config shoudn't change ADC/ADC ref 
+    mcp.set_pin_function(gp1 = "GPIO_IN", gp2 = "ADC", gp3 = "DAC")
+    mcp.DAC_config(ref="4.096V")
+    mcp.DAC_write(16)
+    mcp.ADC_config(ref="VDD")
+    print(mcp.ADC_read())
+    mcp.ADC_config(ref="2.048V")
+    print(mcp.ADC_read())
+    
+    input()
+    
+    # This shall not change ADC reference
+    mcp.set_pin_function(gp1 = "GPIO_OUT", out1 = 0)
+    print(mcp.ADC_read())
 
 
 
@@ -100,6 +101,7 @@ def counter():
             gp_old = gp
 
 
+test_preserve_adc_ref()
 
 
 
