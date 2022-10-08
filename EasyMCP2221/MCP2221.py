@@ -692,20 +692,20 @@ class Device:
     #######################################################################
     # ADC
     #######################################################################
-    def ADC_config(self, ref):
+    def ADC_config(self, ref = "VDD"):
         """ Configure ADC reference voltage.
 
         Accepted values for ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
         Parameters:
-            ref (str): ADC reference voltage.
+            ref (str, optional): ADC reference value. Default to supply voltage (Vdd).
 
         Raises:
             ValueError: if ``ref`` value is not valid.
 
         Examples:
 
-            >>> mcp.ADC_config(ref = "VDD")
+            >>> mcp.ADC_config()
 
             >>> mcp.ADC_config("1.024V")
 
@@ -776,7 +776,7 @@ class Device:
     #######################################################################
     # DAC
     #######################################################################
-    def DAC_config(self, ref, out = None):
+    def DAC_config(self, ref = "VDD", out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
         Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
@@ -787,7 +787,7 @@ class Device:
         Use :func:`DAC_write` to set the DAC output value.
 
         Parameters:
-            ref (str): Reference voltage for DAC.
+            ref (str, optional): Reference voltage for DAC. Default to supply voltage (Vdd).
             out (int, optional): value to output. Default is last value.
 
         Raises:

@@ -17,7 +17,7 @@ def test_preserve_adc_ref():
     mcp.set_pin_function(gp1 = "GPIO_IN", gp2 = "ADC", gp3 = "DAC")
     mcp.DAC_config(ref="4.096V")
     mcp.DAC_write(16)
-    mcp.ADC_config(ref="VDD")
+    mcp.ADC_config()
     print(mcp.ADC_read())
     mcp.ADC_config(ref="2.048V")
     print(mcp.ADC_read())
