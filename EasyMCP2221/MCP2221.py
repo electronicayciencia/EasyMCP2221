@@ -167,7 +167,7 @@ class Device:
         Write current status (pin assignments, GPIO output values,
         DAC reference and value, ADC reference, etc.) to flash memory.
 
-        You can save a new configuration as many times as you like.
+        You can save a new configuration as many times as you wish.
         That will be the default state at power up.
 
         Raises:
