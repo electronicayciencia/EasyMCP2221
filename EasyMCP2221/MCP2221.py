@@ -309,18 +309,12 @@ class Device:
             Calling this function to change GPIO when DAC is active and DAC reference is not Vdd 
             will create a 2ms gap in DAC output.
         """
-        # Set Alter flag for all non-none parameters
-        if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
-        if int_conf   is not None: int_conf   |= ALTER_INT_CONF
-        if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
-        #if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF   # Recovered from status, not SRAM
-        #if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF   # Recovered from status, not SRAM
 
-
-        # Preserve GPIO_write status for non specified pins
         # Note that when ALTER_GPIO_CONF is active, Vrm will be reset.
         new_gpconf = None if (gp0, gp1, gp2, gp3) == (None, None, None, None) else ALTER_GPIO_CONF
 
+        # This is to preserve current GPIO output status when writing to SRAM.
+        # Otherwise, output status given with GPIO_write() command will be overwritten.
         if gp0 is None:
             gp0 = self.status["GPIO"]["gp0"]
         else:
@@ -355,14 +349,20 @@ class Device:
         else:
             self.status["adc_ref"] = adc_ref
 
+        # Set Alter flag for all non-none parameters
+        if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
+        if int_conf   is not None: int_conf   |= ALTER_INT_CONF
+        if dac_value  is not None: dac_value  |= ALTER_DAC_VALUE
+        if dac_ref    is not None: dac_ref    |= ALTER_DAC_REF
+        if adc_ref    is not None: adc_ref    |= ALTER_ADC_REF
 
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
         cmd[1]  = 0   # don't care
         cmd[2]  = clk_output or PRESERVE_CLK_OUTPUT # Clock Output Divider value
-        cmd[3]  = dac_ref    |  ALTER_DAC_REF       # DAC Voltage Reference
+        cmd[3]  = dac_ref    or ALTER_DAC_REF       # DAC Voltage Reference
         cmd[4]  = dac_value  or PRESERVE_DAC_VALUE  # Set DAC output value
-        cmd[5]  = adc_ref    |  ALTER_ADC_REF       # ADC Voltage Reference
+        cmd[5]  = adc_ref    or ALTER_ADC_REF       # ADC Voltage Reference
         cmd[6]  = int_conf   or PRESERVE_INT_CONF   # Setup the interrupt detection
         cmd[7]  = new_gpconf or PRESERVE_GPIO_CONF  # Alter GPIO configuration
         cmd[8]  = gp0                               # GP0 settings
@@ -376,11 +376,12 @@ class Device:
             raise RuntimeError("SRAM write error.")
 
         # If ADC/DAC Ref is Vrm and changed GPIO, we need to explicitly restore Vrm.
-        # It is not valid just sending the desired Vrm value in the above command.
+        # It is not valid just sending the desired Vrm value in the above command because
+        # ALTER_GPIO_CONF flag will reset Vrm anyways.
         # Note: this will cause a 2ms gap at DAC output.
         if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
-            cmd[3]  = dac_ref | ALTER_DAC_REF
-            cmd[5]  = adc_ref | ALTER_ADC_REF
+            cmd[3]  = dac_ref
+            cmd[5]  = adc_ref
             cmd[7]  = PRESERVE_GPIO_CONF
             r = self.send_cmd(cmd)
             if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
