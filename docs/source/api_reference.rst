@@ -14,7 +14,7 @@ Pin configuration
 -----------------
 
 .. autofunction:: EasyMCP2221.Device.set_pin_function
-
+.. autofunction:: EasyMCP2221.Device.save_config
 
 GPIO
 ----

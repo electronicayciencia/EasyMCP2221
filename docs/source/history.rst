@@ -4,16 +4,15 @@ Changelog
 V1.6
 --------
 
+.. currentmodule:: EasyMCP2221.Device
 
 Improved USB stability:
 
     * Add timeout in HID read.
     * Add retries in send_cmd.
     * Better USB trace_commands output format.
-    * Removed sleep parameter in send_cmd.
+    * Removed sleep parameter in :func:`send_cmd`.
 
-
-.. currentmodule:: EasyMCP2221.Device
 
 GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
 
@@ -23,6 +22,7 @@ DAC and ADC reference values now defaults to Vdd.
 
 Removed *self* argument from *autodoc* methods.
 
+Add a new function to save current state: :func:`save_config`.
 
 
 V1.5

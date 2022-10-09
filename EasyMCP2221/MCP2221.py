@@ -162,6 +162,68 @@ class Device:
     #######################################################################
     # Flash
     #######################################################################
+    def save_config(self):
+        """
+        Write current status (GPIO, DAC, ADC, etc.) to flash memory.
+
+        You can save a new configuration as many times as you like.
+        That configuration will become the default state at power up.
+
+        Raises:
+            RuntimeError: if command failed.
+            AssertionError: if an accidental flash protection attempt was prevented.
+
+        Example:
+            >>> save_config()
+        """
+        chip = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
+        gp   = self._read_flash_raw(FLASH_DATA_GP_SETTINGS)
+        sram = self.send_cmd([CMD_GET_SRAM_SETTINGS])
+
+        chip = chip[4:14]
+        gp   = gp[4:8]
+        sram = sram[4:26]
+
+        chip.extend([0] * 8) # 8 bytes for writing password that don't come on reading
+
+        if self.debug_messages:
+            print("OLD CHIP:", " ".join("%02x" % i for i in chip))
+
+        chip[FLASH_CHIP_SETTINGS_CDC_SEC] = sram[SRAM_CHIP_SETTINGS_CDC_SEC]
+        chip[FLASH_CHIP_SETTINGS_CLOCK]   = sram[SRAM_CHIP_SETTINGS_CLOCK]
+        chip[FLASH_CHIP_SETTINGS_DAC]     = sram[SRAM_CHIP_SETTINGS_DAC]
+        chip[FLASH_CHIP_SETTINGS_INT_ADC] = sram[SRAM_CHIP_SETTINGS_INT_ADC]
+        chip[FLASH_CHIP_SETTINGS_LVID]    = sram[SRAM_CHIP_SETTINGS_LVID]
+        chip[FLASH_CHIP_SETTINGS_HVID]    = sram[SRAM_CHIP_SETTINGS_HVID]
+        chip[FLASH_CHIP_SETTINGS_LPID]    = sram[SRAM_CHIP_SETTINGS_LPID]
+        chip[FLASH_CHIP_SETTINGS_HPID]    = sram[SRAM_CHIP_SETTINGS_HPID]
+        chip[FLASH_CHIP_SETTINGS_USBPWR]  = sram[SRAM_CHIP_SETTINGS_USBPWR]
+        chip[FLASH_CHIP_SETTINGS_USBMA]   = sram[SRAM_CHIP_SETTINGS_USBMA]
+        chip[FLASH_CHIP_SETTINGS_PWD1]    = sram[SRAM_CHIP_SETTINGS_PWD1]
+        chip[FLASH_CHIP_SETTINGS_PWD2]    = sram[SRAM_CHIP_SETTINGS_PWD2]
+        chip[FLASH_CHIP_SETTINGS_PWD3]    = sram[SRAM_CHIP_SETTINGS_PWD3]
+        chip[FLASH_CHIP_SETTINGS_PWD4]    = sram[SRAM_CHIP_SETTINGS_PWD4]
+        chip[FLASH_CHIP_SETTINGS_PWD5]    = sram[SRAM_CHIP_SETTINGS_PWD5]
+        chip[FLASH_CHIP_SETTINGS_PWD6]    = sram[SRAM_CHIP_SETTINGS_PWD6]
+        chip[FLASH_CHIP_SETTINGS_PWD7]    = sram[SRAM_CHIP_SETTINGS_PWD7]
+        chip[FLASH_CHIP_SETTINGS_PWD8]    = sram[SRAM_CHIP_SETTINGS_PWD8]
+
+        if self.debug_messages:
+            print("NEW CHIP:", " ".join("%02x" % i for i in chip))
+            print("OLD GP:", " ".join("%02x" % i for i in gp))
+
+        gp[FLASH_GP_SETTINGS_GP0]         = self.status["GPIO"]["gp0"]
+        gp[FLASH_GP_SETTINGS_GP1]         = self.status["GPIO"]["gp1"]
+        gp[FLASH_GP_SETTINGS_GP2]         = self.status["GPIO"]["gp2"]
+        gp[FLASH_GP_SETTINGS_GP3]         = self.status["GPIO"]["gp3"]
+
+        if self.debug_messages:
+            print("NEW GP:", " ".join("%02x" % i for i in gp))
+
+        self._write_flash_raw(FLASH_DATA_CHIP_SETTINGS, chip)
+        self._write_flash_raw(FLASH_DATA_GP_SETTINGS,   gp)
+
+
     def _read_flash_raw(self, setting):
         """
         Read flash data and return a list of bytes.
@@ -305,7 +367,7 @@ class Device:
             >>> mcp.SRAM_config(dac_ref = ADC_REF_VRM | ADC_VRM_2048)
 
         Note:
-            Calling this function to change GPIO when DAC is active and DAC reference is not Vdd 
+            Calling this function to change GPIO when DAC is active and DAC reference is not Vdd
             will create a 2ms gap in DAC output.
         """
 
