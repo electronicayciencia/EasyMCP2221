@@ -53,3 +53,20 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 add_module_names = False
+
+
+# Remove self from signatures like (self, arg1, arg2 ...) or (self).
+def hide_first_self(app, what, name, obj, options, signature, return_annotation):
+    if signature:
+
+        if signature.startswith("(self, "):
+            signature = signature.replace("(self, ","(")
+
+        elif signature == "(self)":
+            signature = "()"
+
+    return (signature, return_annotation)
+
+
+def setup(app):
+    app.connect("autodoc-process-signature", hide_first_self)
