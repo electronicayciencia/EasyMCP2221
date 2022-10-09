@@ -164,10 +164,11 @@ class Device:
     #######################################################################
     def save_config(self):
         """
-        Write current status (GPIO, DAC, ADC, etc.) to flash memory.
+        Write current status (pin assignments, GPIO output values,
+        DAC reference and value, ADC reference, etc.) to flash memory.
 
         You can save a new configuration as many times as you like.
-        That configuration will become the default state at power up.
+        That will be the default state at power up.
 
         Raises:
             RuntimeError: if command failed.
@@ -636,6 +637,10 @@ class Device:
             ...
             ValueError: Invalid function for GP0. Could be: GPIO_IN, GPIO_OUT, SSPND, LED_URX
             >>>
+
+        Hint:
+            Pin assignments are active until reset or power cycle. Use :func:`save_config()` to
+            make this configuration the default at next start.
         """
         gp0_funcs = {
             "GPIO_IN"  : GPIO_FUNC_GPIO | GPIO_DIR_IN,
@@ -1312,8 +1317,6 @@ class Device:
             >>> eeprom
             EasyMCP2221's I2C slave device at bus address 0x50.
 
-        Note:
-            New from v1.5.1.
         """
         return I2C_Slave.I2C_Slave(self, addr)
 
