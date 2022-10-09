@@ -174,7 +174,15 @@ class Device:
             AssertionError: if an accidental flash protection attempt was prevented.
 
         Example:
-            >>> save_config()
+            Set all GPIO pins as digital inputs (high impedance state) at start-up to prevent short circuits
+            while breadboarding.
+
+            >>> mcp.set_pin_function(
+            ...     gp0 = "GPIO_IN",
+            ...     gp1 = "GPIO_IN",
+            ...     gp2 = "GPIO_IN",
+            ...     gp3 = "GPIO_IN")
+            >>> mcp.save_config()
         """
         chip = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
         gp   = self._read_flash_raw(FLASH_DATA_GP_SETTINGS)
