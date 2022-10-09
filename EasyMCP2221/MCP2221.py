@@ -277,8 +277,7 @@ class Device:
         gp0        = None,
         gp1        = None,
         gp2        = None,
-        gp3        = None,
-        retries    = 1):
+        gp3        = None):
         """ Low level SRAM configuration.
 
         Configure Runtime GPIO pins and parameters.
