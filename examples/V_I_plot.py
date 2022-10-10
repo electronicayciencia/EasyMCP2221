@@ -4,7 +4,9 @@ from time import sleep
 
 import matplotlib.pyplot as plt
 
-# Configure device pins and DAC reference.
+# Configure device pins ADC and DAC reference.
+# DAC output impedance is about 5k according to datasheet
+# so measurements could be inaccurate as the current increases.
 mcp = EasyMCP2221.Device()
 mcp.set_pin_function(gp2 = "DAC", gp3 = "ADC")
 mcp.DAC_config()
