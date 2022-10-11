@@ -60,7 +60,7 @@ Then, clone the home repository and perform the installation in *editable* (``-e
     (easymcp_dev) d:\tmp\easymcp_dev>git clone https://github.com/electronicayciencia/EasyMCP2221
     Cloning into 'EasyMCP2221'...
     ...
-    
+
     (easymcp_dev) d:\tmp\easymcp_dev>pip install -e EasyMCP2221
     Obtaining file:///D:/tmp/easymcp_dev/EasyMCP2221
       Installing build dependencies ... done
@@ -68,3 +68,31 @@ Then, clone the home repository and perform the installation in *editable* (``-e
     Successfully installed EasyMCP2221-0.0+unreleased.local
 
 
+Update PIP if you get this error: *File "setup.py" not found. Directory cannot be installed in editable mode*.
+
+.. code-block:: console
+
+    > python.exe -m pip install --upgrade pip
+
+
+If you get this one: *EasyMCP2221 does not appear to be a Python project: neither 'setup.py' nor 'pyproject.toml' found.* check working directory.
+
+
+Local documentation
+~~~~~~~~~~~~~~~~~~~
+
+To compile documentation locally you will need ``sphinx`` and ``RTD theme``.
+
+.. code-block:: console
+
+    pip install -U sphinx
+    pip install -U sphinx_rtd_theme
+
+Compilation:
+
+.. code-block:: console
+
+    cd docs
+    make html
+
+Main HTML file is *EasyMCP2221/docs/build/html/index.html*.
