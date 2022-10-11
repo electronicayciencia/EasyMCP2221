@@ -1152,7 +1152,6 @@ class Device:
             # But buffer may not be fully empty in the last chunk
             # This loop could get stuck?
             while last_byte < len(data) and self._i2c_buffer_counter() > 0:
-                time.sleep(1e-6)
                 pass
 
             if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK or not self._i2c_ack():
