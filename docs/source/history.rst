@@ -24,7 +24,7 @@ Removed *self* argument from *autodoc* methods.
 
 Add a new function to save current state: :func:`save_config`.
 
-No sleep in :func:`I2C_write` loop.
+Check for ACK state in :func:`I2C_write` to prevent infinite loop. Also removed sleep.
 
 
 V1.5

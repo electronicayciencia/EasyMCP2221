@@ -1107,7 +1107,8 @@ class Device:
 
         Raises:
             ValueError: if any parameter is not valid.
-            RuntimeError: if the I2C slave didn't acknowledge.
+            RuntimeError: if the I2C slave didn't acknowledge. It will indicate if the
+            transfer failed in the middle or at the end.
 
         Examples:
             >>> mcp.I2C_write(0x50, b'This is data')
@@ -1150,9 +1151,12 @@ class Device:
 
             # Send more data when buffer is empty.
             # But buffer may not be fully empty in the last chunk
-            # This loop could get stuck?
             while last_byte < len(data) and self._i2c_buffer_counter() > 0:
-                pass
+                # Suggested by Riccardo Cavallari (rcvlr) to prevent infinite loop
+                if not self._i2c_ack():
+                    self.I2C_cancel()
+                    raise RuntimeError("I2C write error: chunk rejected (device didn't ack).")
+
 
             if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK or not self._i2c_ack():
                 self.I2C_cancel()
