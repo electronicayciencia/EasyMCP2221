@@ -165,7 +165,7 @@ RESET_CHIP_VERY_SURE      = 0xCD
 RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 
-# For CMD_I2C_READ_DATA_GET_I2C_DATA
+# For CMD_I2C_READ_DATA_GET_I2C_DATA, I2C READ, etc
 I2C_INTERNAL_STATUS_BYTE      = 2
 
 # Internal status machine code
@@ -204,3 +204,7 @@ I2C_ST_STOP                   = 0x60
 I2C_ST_STOP_WAIT              = 0x61
 I2C_ST_STOP_TOUT              = 0x62  # timeout in stop condition (bus busy)
 
+# Bytes in CMD_POLL_STATUS_SET_PARAMETERS response
+I2C_POLL_RESP_SDA             = 22
+I2C_POLL_RESP_SCL             = 23
+I2C_POLL_RESP_STATUS          =  8

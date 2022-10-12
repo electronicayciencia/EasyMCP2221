@@ -1079,18 +1079,21 @@ class Device:
         buf[1] = 0
         buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
 
-        # More than one time is needed to clear timeout status.
-        # And device half writing.
         rbuf = self.send_cmd(buf)
-        #time.sleep(10/1000)
-        #rbuf = self.send_cmd(buf)
 
-        if (rbuf[22] == 0):
+        if rbuf[I2C_POLL_RESP_SCL] == 0:
             raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
 
-        if (rbuf[23] == 0):
+        if rbuf[I2C_POLL_RESP_SDA] == 0:
             raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
 
+        # Return idle if the first cancel attempt worked
+        if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
+            return True
+
+        # Otherwise, sleep, try again and confirm.
+        time.sleep(10/1000)
+        rbuf = self.send_cmd(buf)
         return self.I2C_is_idle()
 
 
@@ -1192,12 +1195,10 @@ class Device:
     #######################################################################
     # I2C Read
     #######################################################################
-    def I2C_read(self, addr, size = 1, kind = "regular"):
+    def I2C_read(self, addr, size = 1, kind = "regular", timeout_ms = 10):
         """ Read data from I2C bus.
 
-        Maximum value for ``size`` is 65536 bytes.
-        If ``size`` is 0, only expect acknowledge from device, but do not read any bytes.
-        Note that reading 0 bytes might cause unexpected behavior in some devices.
+        Maximum value for ``size`` is 65536 bytes. Minimum is 1 byte.
 
         Valid values for ``kind`` are:
 
@@ -1208,6 +1209,9 @@ class Device:
             addr (int): I2C slave device **base** address.
             size (int, optional): how many bytes to read, minimum and default: 1 byte.
             kind (str, optional): kind of transfer (see description).
+            timeout_ms (int, optional): time to wait for the data in milliseconds (default 10 ms).
+                Note this time applies for each 60 bytes chunk.
+                The whole read operation may take much longer than that.
 
         Return:
             bytes: data read
@@ -1222,7 +1226,7 @@ class Device:
             b'This is data'
 
         Hint:
-            You can use :func:`I2C_read` with size 0 to check if there is any device listening
+            You can use :func:`I2C_read` with size 1 to check if there is any device listening
             with that address.
 
             There is a device in ``0x50`` (EEPROM):
@@ -1276,11 +1280,15 @@ class Device:
 
         data = []
 
+        watchdog = time.perf_counter() + timeout_ms/1000
 
         while True:
+            # Protect against infinite loop due to noise in I2C bus
+            if time.perf_counter() > watchdog:
+                self.I2C_cancel()
+                raise RuntimeError("Timeout.")
+
             # Try to read  MCP's buffer content
-            # Return OK if got all data needed (or at least first 60 bytes).
-            # Return 0x41 if device did not ACK or did not send enough data.
             rbuf = self.send_cmd([CMD_I2C_READ_DATA_GET_I2C_DATA])
 
             if self.debug_messages:
@@ -1294,6 +1302,8 @@ class Device:
             elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_READDATA_WAIT:
                 chunk_size = rbuf[3]
                 data += rbuf[4:4+chunk_size]
+                # reset watchdog
+                watchdog = time.perf_counter() + timeout_ms/1000
                 continue
 
             # buffer ready, no more data expected
