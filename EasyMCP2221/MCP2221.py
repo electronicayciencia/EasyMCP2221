@@ -1081,12 +1081,6 @@ class Device:
 
         rbuf = self.send_cmd(buf)
 
-        if rbuf[I2C_POLL_RESP_SCL] == 0:
-            raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
-
-        if rbuf[I2C_POLL_RESP_SDA] == 0:
-            raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
-
         # Return idle if the first cancel attempt worked
         if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
             return True
@@ -1094,6 +1088,13 @@ class Device:
         # Otherwise, sleep, try again and confirm.
         time.sleep(10/1000)
         rbuf = self.send_cmd(buf)
+        
+        if rbuf[I2C_POLL_RESP_SCL] == 0:
+            raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if rbuf[I2C_POLL_RESP_SDA] == 0:
+            raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+
         return self.I2C_is_idle()
 
 
