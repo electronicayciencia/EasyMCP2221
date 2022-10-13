@@ -165,19 +165,23 @@ RESET_CHIP_VERY_SURE      = 0xCD
 RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 
+I2C_CHUNK_LENGTH = 60
+
 # For CMD_I2C_READ_DATA_GET_I2C_DATA, I2C READ, etc
+# but not for CMD_POLL_STATUS_SET_PARAMETERS.
 I2C_INTERNAL_STATUS_BYTE      = 2
 
 # Internal status machine code
 # from Microchip's SMBbus driver example
 # meaning got by trial and error
 I2C_ST_IDLE                   = 0x00
-I2C_ST_START                  = 0x10
+I2C_ST_START                  = 0x10  # sending start condition
 I2C_ST_START_ACK              = 0x11
 I2C_ST_START_TOUT             = 0x12
 I2C_ST_REPSTART               = 0x15
 I2C_ST_REPSTART_ACK           = 0x16
 I2C_ST_REPSTART_TOUT          = 0x17
+
 I2C_ST_WRADDRL                = 0x20
 I2C_ST_WRADDRL_WAITSEND       = 0x21
 I2C_ST_WRADDRL_ACK            = 0x22
@@ -188,18 +192,21 @@ I2C_ST_WRADDRH                = 0x30
 I2C_ST_WRADDRH_WAITSEND       = 0x31
 I2C_ST_WRADDRH_ACK            = 0x32
 I2C_ST_WRADDRH_TOUT           = 0x33
-I2C_ST_WRITEDATA              = 0x40
+
+I2C_ST_WRITEDATA              = 0x40  # sending data chunk to slave
 I2C_ST_WRITEDATA_WAITSEND     = 0x41
 I2C_ST_WRITEDATA_ACK          = 0x42
-I2C_ST_WRITEDATA_WAIT         = 0x43
+I2C_ST_WRITEDATA_WAIT         = 0x43  # waiting for slave to ack after sending a byte
 I2C_ST_WRITEDATA_TOUT         = 0x44
 I2C_ST_WRITEDATA_END_NOSTOP   = 0x45
+
 I2C_ST_READDATA               = 0x50  # reading data from i2c slave
 I2C_ST_READDATA_RCEN          = 0x51
 I2C_ST_READDATA_TOUT          = 0x52  # read data timed out
 I2C_ST_READDATA_ACK           = 0x53
 I2C_ST_READDATA_WAIT          = 0x54  # data buffer is full, more data to come
 I2C_ST_READDATA_WAITGET       = 0x55  # data buffer is full, no more data to come
+
 I2C_ST_STOP                   = 0x60
 I2C_ST_STOP_WAIT              = 0x61
 I2C_ST_STOP_TOUT              = 0x62  # timeout in stop condition (bus busy)

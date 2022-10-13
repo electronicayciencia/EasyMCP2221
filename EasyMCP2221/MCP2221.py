@@ -127,6 +127,7 @@ class Device:
         padding = [0x00] * (PACKET_SIZE - len(buf))
 
         for retry in range(self.cmd_retries+1):
+            print(time.perf_counter()) # TODO
             self.hidhandler.write([REPORT_NUM] + buf + padding)
 
             # This command does not return anything
@@ -1088,7 +1089,7 @@ class Device:
         # Otherwise, sleep, try again and confirm.
         time.sleep(10/1000)
         rbuf = self.send_cmd(buf)
-        
+
         if rbuf[I2C_POLL_RESP_SCL] == 0:
             raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
 
@@ -1106,9 +1107,12 @@ class Device:
 
         Valid values for ``kind`` are:
 
-        - **regular**: start - data to write - stop (this is the default)
-        - **restart**: repeated start - data to write - stop
-        - **nonstop**: start - data to write
+            regular
+                It will send **start**, *data*, **stop** (this is the default)
+            restart
+                It will send **repeated start**, *data*, **stop**
+            nonstop
+                It will send **start**, data to write, (no stop)
 
         Parameters:
             addr (int): I2C slave device **base** address.
@@ -1118,7 +1122,7 @@ class Device:
         Raises:
             ValueError: if any parameter is not valid.
             RuntimeError: if the I2C slave didn't acknowledge. It will indicate if the
-            transfer failed in the middle or at the end.
+                transfer failed in the middle or at the end.
 
         Examples:
             >>> mcp.I2C_write(0x50, b'This is data')
@@ -1203,8 +1207,10 @@ class Device:
 
         Valid values for ``kind`` are:
 
-        - **regular**: start - read data - stop
-        - **restart**: repeated start - read data - stop
+            regular
+                It will send **start**, *data*, **stop** (this is the default)
+            restart
+                It will send **repeated start**, *data*, **stop**
 
         Parameters:
             addr (int): I2C slave device **base** address.
