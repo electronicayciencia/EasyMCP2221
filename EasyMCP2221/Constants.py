@@ -165,7 +165,7 @@ RESET_CHIP_VERY_SURE      = 0xCD
 RESET_CHIP_VERY_VERY_SURE = 0xEF
 
 
-I2C_CHUNK_LENGTH = 60
+I2C_CHUNK_SIZE = 60
 
 # For CMD_I2C_READ_DATA_GET_I2C_DATA, I2C READ, etc
 # but not for CMD_POLL_STATUS_SET_PARAMETERS.
@@ -194,7 +194,7 @@ I2C_ST_WRADDRH_ACK            = 0x32
 I2C_ST_WRADDRH_TOUT           = 0x33
 
 I2C_ST_WRITEDATA              = 0x40  # sending data chunk to slave
-I2C_ST_WRITEDATA_WAITSEND     = 0x41
+I2C_ST_WRITEDATA_WAITSEND     = 0x41  # buffer sent, waiting for additional Write commands
 I2C_ST_WRITEDATA_ACK          = 0x42
 I2C_ST_WRITEDATA_WAIT         = 0x43  # waiting for slave to ack after sending a byte
 I2C_ST_WRITEDATA_TOUT         = 0x44

@@ -127,7 +127,6 @@ class Device:
         padding = [0x00] * (PACKET_SIZE - len(buf))
 
         for retry in range(self.cmd_retries+1):
-            print(time.perf_counter()) # TODO
             self.hidhandler.write([REPORT_NUM] + buf + padding)
 
             # This command does not return anything
@@ -147,9 +146,17 @@ class Device:
             if r[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
                 break
 
-            # Do not retry this commands because the fail status is actually
-            # meaningful and they change internal status
-            if buf[0] == CMD_I2C_READ_DATA_GET_I2C_DATA:
+            # Only retry idempotent commands
+            if buf[0] not in (
+                CMD_READ_FLASH_DATA,
+                CMD_POLL_STATUS_SET_PARAMETERS,
+                CMD_SET_GPIO_OUTPUT_VALUES,
+                CMD_SET_SRAM_SETTINGS,
+                CMD_GET_SRAM_SETTINGS,
+                CMD_READ_FLASH_DATA,
+                CMD_WRITE_FLASH_DATA,
+                CMD_RESET_CHIP
+                ):
                 break
 
             if self.debug_messages:
@@ -1156,33 +1163,39 @@ class Device:
         header[2] = len(data) >> 8 & 0xFF
         header[3] = addr << 1      & 0xFF
 
+        chunks = [data[i:i+I2C_CHUNK_SIZE] for i in range(0, len(data), I2C_CHUNK_SIZE)]
+
         # send data in 60 bytes chunks, repeating the header above
-        for i in range(0, len(data), 60):
-            first_byte = i
-            last_byte  = min(i+60, len(data))
-            data_chunk = list(data)[first_byte:last_byte]
-            r = self.send_cmd(header + data_chunk)
-
+        for chunk in chunks:
             # Send more data when buffer is empty.
-            # But buffer may not be fully empty in the last chunk
-            while last_byte < len(data) and self._i2c_buffer_counter() > 0:
-                # Suggested by Riccardo Cavallari (rcvlr) to prevent infinite loop
-                if not self._i2c_ack():
-                    self.I2C_cancel()
-                    raise RuntimeError("I2C write error: chunk rejected (device didn't ack).")
+            while True:
+                rbuf = self.send_cmd(header + list(chunk))
 
+                # data sent, ok, try to send next chunk
+                if rbuf[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
+                    break
 
-            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK or not self._i2c_ack():
+                # data not sent, why?
+                else:
+                    # still sending last data, try again
+                    if rbuf[I2C_INTERNAL_STATUS_BYTE] in (I2C_ST_WRITEDATA, I2C_ST_WRITEDATA_WAITSEND):
+                        continue
+
+                    # device did not ack last transfer
+                    elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
+                        self.I2C_cancel()
+                        raise RuntimeError("I2C write error: device NAK.")
+
+                    # something else
+                    else:
+                        self.I2C_cancel()
+                        raise RuntimeError("I2C write error. Internal status %02x." %
+                            (rbuf[I2C_INTERNAL_STATUS_BYTE]))
+
+            # check final status
+            if not self._i2c_ack:
                 self.I2C_cancel()
                 raise RuntimeError("I2C write error: device NAK.")
-
-
-    def _i2c_buffer_counter(self):
-        """
-        Get the internal databuffer counter.
-        Useful to know when to send more data.
-        """
-        return self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])[13]
 
 
     def _i2c_ack(self):
