@@ -1106,11 +1106,10 @@ class Device:
         return self.I2C_is_idle()
 
 
-    def I2C_write(self, addr, data, kind = "regular"):
+    def I2C_write(self, addr, data, kind = "regular", timeout_ms = 10):
         """ Write data to an address on I2C bus.
 
-        Maximum ``data`` length is 65536 bytes. If data length is 0, this function
-        will not write anything to the bus.
+        Maximum ``data`` length is 65536 bytes.
 
         Valid values for ``kind`` are:
 
@@ -1125,6 +1124,9 @@ class Device:
             addr (int): I2C slave device **base** address.
             data (bytes): bytes to write
             kind (str, optional): kind of transfer (see description).
+            timeout_ms (int, optional): maximum time to write data chunk in milliseconds (default 10 ms).
+                Note this time applies for each 60 bytes chunk.
+                The whole write operation may take much longer.
 
         Raises:
             ValueError: if any parameter is not valid.
@@ -1145,7 +1147,10 @@ class Device:
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
 
-        if len(data) > 2**16:
+        # If data length is 0, MCP2221 will do nothing at all
+        if len(data) < 1:
+            raise ValueError("Minimum data length is 1 byte.")
+        elif len(data) > 2**16:
             raise ValueError("Data too long (max. 65536).")
 
         if kind == "regular":
@@ -1167,8 +1172,16 @@ class Device:
 
         # send data in 60 bytes chunks, repeating the header above
         for chunk in chunks:
-            # Send more data when buffer is empty.
+
+            watchdog = time.perf_counter() + timeout_ms/1000
+
             while True:
+                # Protect against infinite loop due to noise in I2C bus
+                if time.perf_counter() > watchdog:
+                    self.I2C_cancel()
+                    raise RuntimeError("Timeout.")
+
+                # Send more data when buffer is empty.
                 rbuf = self.send_cmd(header + list(chunk))
 
                 # data sent, ok, try to send next chunk
