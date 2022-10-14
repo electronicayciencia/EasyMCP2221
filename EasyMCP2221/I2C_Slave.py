@@ -13,6 +13,7 @@ class I2C_Slave:
         mcp (EasyMCP2221.Device): MCP2221 connected to this slave
         addr  (int) : Slave's I2C bus address
         force (bool, optional): Create an I2C_Slave even if the target device does not answer. Default: False.
+        speed (int, optional): I2C bus speed. Valid values from 50000 to 400000. See :func:`EasyMCP2221.Device.I2C_speed`.
 
     Raises:
         RuntimeError: If the device didn't acknowledge.
@@ -40,9 +41,11 @@ class I2C_Slave:
     mcp = None
     addr = None
 
-    def __init__(self, mcp, addr, force = False):
+    def __init__(self, mcp, addr, force = False, speed = 100000):
         self.mcp = mcp
         self.addr = addr
+
+        mcp.I2C_speed(speed)
 
         if not force and not self.is_present():
             raise RuntimeError("No device found at address 0x%02X." % (addr))

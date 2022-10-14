@@ -1178,7 +1178,10 @@ class Device:
                 # data not sent, why?
                 else:
                     # still sending last data, try again
-                    if rbuf[I2C_INTERNAL_STATUS_BYTE] in (I2C_ST_WRITEDATA, I2C_ST_WRITEDATA_WAITSEND):
+                    if rbuf[I2C_INTERNAL_STATUS_BYTE] in (
+                        I2C_ST_WRITEDATA,
+                        I2C_ST_WRITEDATA_WAITSEND,
+                        I2C_ST_WRITEDATA_ACK):
                         continue
 
                     # device did not ack last transfer
@@ -1342,7 +1345,7 @@ class Device:
 
 
 
-    def I2C_Slave(self, addr):
+    def I2C_Slave(self, addr, force = False, speed = 100000):
         """ Create a new I2C_Slave object.
 
         See :class:`EasyMCP2221.I2C_Slave.I2C_Slave` for detailed information.
@@ -1360,7 +1363,7 @@ class Device:
             EasyMCP2221's I2C slave device at bus address 0x50.
 
         """
-        return I2C_Slave.I2C_Slave(self, addr)
+        return I2C_Slave.I2C_Slave(self, addr, force, speed)
 
 
     #######################################################################

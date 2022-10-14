@@ -13,18 +13,25 @@ Improved USB stability:
     * Better USB trace_commands output format.
     * Removed sleep parameter in :func:`send_cmd`.
 
+GPIO / ADC and DAC:
 
-GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
+    * GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
+    * Restore ADC/DAC Vref when calling :func:`SRAM_config` (see :doc:`limitations_bugs`).
+    * DAC and ADC reference values now defaults to Vdd.
 
-Restore ADC/DAC Vref when calling :func:`SRAM_config` (see :doc:`limitations_bugs`).
+More robust I2C functions:
 
-DAC and ADC reference values now defaults to Vdd.
+    * Rewritten :func:`I2C_read` to take into account internal I2C engine status.
+    * Rewritten :func:`I2C_write` to prevent infinite loop, quicker write and ACK checking.
 
-Removed *self* argument from *autodoc* methods.
+New features:
+    
+    * Function to save current state: :func:`save_config`.
+    * Add speed parameter in I2C Slave class.
 
-Add a new function to save current state: :func:`save_config`.
+Documentation:
 
-Check for ACK state in :func:`I2C_write` to prevent infinite loop. Also removed sleep.
+    * Removed *self* argument from *autodoc* methods.
 
 
 V1.5
