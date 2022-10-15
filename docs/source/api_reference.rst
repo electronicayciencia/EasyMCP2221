@@ -26,15 +26,15 @@ GPIO
 ADC
 ---
 
-.. autofunction:: EasyMCP2221.Device.ADC_config
 .. autofunction:: EasyMCP2221.Device.ADC_read
+.. autofunction:: EasyMCP2221.Device.ADC_config
 
 
 DAC
 ---
 
-.. autofunction:: EasyMCP2221.Device.DAC_config
 .. autofunction:: EasyMCP2221.Device.DAC_write
+.. autofunction:: EasyMCP2221.Device.DAC_config
 
 
 I2C

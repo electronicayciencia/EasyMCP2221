@@ -90,6 +90,10 @@ class Device:
         # set i2c status
         self.status["i2c_dirty"] = not self.I2C_is_idle()
 
+        # Pre-configure ADC and DAC for Vdd reference.
+        self.ADC_config()
+        self.DAC_config()
+
 
     def __repr__(self):
         import json
@@ -788,6 +792,10 @@ class Device:
     def ADC_config(self, ref = "VDD"):
         """ Configure ADC reference voltage.
 
+        Hint:
+            ADC is pre-configured for use Vdd as reference. You need to call this function only if
+            you want to change it.
+
         Accepted values for ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
         Parameters:
@@ -871,6 +879,10 @@ class Device:
     #######################################################################
     def DAC_config(self, ref = "VDD", out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
+
+        Hint:
+            DAC is pre-configured to use Vdd as reference. You need to call this function only if
+            you want to change it.
 
         Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 

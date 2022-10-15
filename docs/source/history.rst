@@ -17,7 +17,7 @@ GPIO / ADC and DAC:
 
     * GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
     * Restore ADC/DAC Vref when calling :func:`SRAM_config` (see :doc:`limitations_bugs`).
-    * DAC and ADC reference values now defaults to Vdd.
+    * Pre-configure DAC and ADC to use Vdd as reference value (calling to :func:`DAC_config` and :func:`ADC_config` is now optional).
 
 More robust I2C functions:
 
@@ -28,7 +28,7 @@ More robust I2C functions:
     * Automatically try to recover an I2C error from past execution.
 
 New features:
-    
+
     * Function to save current state: :func:`save_config`.
     * Add speed parameter in I2C Slave class.
 
