@@ -75,3 +75,9 @@ Low level and debug
 .. autoattribute:: EasyMCP2221.Device.debug_messages
 .. autoattribute:: EasyMCP2221.Device.trace_packets
 
+
+Exceptions
+----------
+
+.. autoexception:: EasyMCP2221.exceptions.NotAckError
+.. autoexception:: EasyMCP2221.exceptions.TimeoutError
