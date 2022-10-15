@@ -63,7 +63,9 @@ class Device:
         "dac_ref": None,
         # 2:1 -> reference value,
         # 0   -> reference source
-        "adc_ref": None
+        "adc_ref": None,
+        # mark i2c bus as dirty
+        "i2c_dirty": False
     }
     """ Internal status """
 
@@ -85,6 +87,8 @@ class Device:
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
         self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
+        # set i2c status
+        self.status["i2c_dirty"] = not self.I2C_is_idle()
 
 
     def __repr__(self):
@@ -997,8 +1001,10 @@ class Device:
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
 
         if rbuf[8]:
+            self.status["i2c_dirty"] = True
             return False
         else:
+            self.status["i2c_dirty"] = False
             return True
 
 
@@ -1072,9 +1078,11 @@ class Device:
         rbuf = self.send_cmd(buf)
 
         if rbuf[I2C_POLL_RESP_SCL] == 0:
+            self.status["i2c_dirty"] = True
             raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
 
         if rbuf[I2C_POLL_RESP_SDA] == 0:
+            self.status["i2c_dirty"] = True
             raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
 
         return self.I2C_is_idle()
@@ -1144,6 +1152,10 @@ class Device:
             cmd = CMD_I2C_WRITE_DATA_NO_STOP
         else:
             raise ValueError("Invalid kind of transfer. Allowed: 'regular', 'restart', 'nonstop'.")
+
+        # Try to clean last I2C error condition
+        if self.status["i2c_dirty"]:
+            self.I2C_cancel()
 
         header = [0] * 4
         header[0] = cmd
@@ -1294,6 +1306,10 @@ class Device:
         # Removed in order to support repeated-start operation.
         #if not self.I2C_is_idle():
         #    raise RuntimeError("I2C read error, engine is not in idle state.")
+
+        # Try to clean last I2C error condition
+        if self.status["i2c_dirty"]:
+            self.I2C_cancel()
 
         buf = [0] * 4
         buf[0] = cmd
