@@ -1106,10 +1106,8 @@ class Device:
         return self.I2C_is_idle()
 
 
-    def I2C_write(self, addr, data, kind = "regular", timeout_ms = 25):
+    def I2C_write(self, addr, data, kind = "regular", timeout_ms = 20):
         """ Write data to an address on I2C bus.
-
-        Maximum ``data`` length is 65536 bytes.
 
         Valid values for ``kind`` are:
 
@@ -1122,9 +1120,9 @@ class Device:
 
         Parameters:
             addr (int): I2C slave device **base** address.
-            data (bytes): bytes to write
+            data (bytes): bytes to write. Maximum length is 65535 bytes, minimum is 1.
             kind (str, optional): kind of transfer (see description).
-            timeout_ms (int, optional): maximum time to write data chunk in milliseconds (default 25 ms).
+            timeout_ms (int, optional): maximum time to write data chunk in milliseconds (default 20 ms).
                 Note this time applies for each 60 bytes chunk.
                 The whole write operation may take much longer.
 
@@ -1132,7 +1130,7 @@ class Device:
             ValueError: if any parameter is not valid.
             RuntimeError: if an unspecific error occurs.
             EasyMCP2221.exceptions.NotAckError: if the I2C slave didn't acknowledge.
-            EasyMCP2221.exceptions.TimeoutError: if the writing time is exceeded.
+            EasyMCP2221.exceptions.TimeoutError: if the writing timeout is exceeded.
 
         Examples:
             >>> mcp.I2C_write(0x50, b'This is data')
@@ -1144,15 +1142,23 @@ class Device:
             Traceback (most recent call last):
             ...
             EasyMCP2221.exceptions.NotAckError: Device did not ACK.
-            """
+
+        Note:
+            MCP2221 writes data in 60-byte chunks.
+
+            The default timeout of 20 ms is twice the time required to send 60 bytes at
+            the minimum supported rate (47 kHz).
+
+            MCP2221's internal I2C engine has additional timeout controls.
+        """
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
 
         # If data length is 0, MCP2221 will do nothing at all
         if len(data) < 1:
             raise ValueError("Minimum data length is 1 byte.")
-        elif len(data) > 2**16:
-            raise ValueError("Data too long (max. 65536).")
+        elif len(data) > 2**16-1:
+            raise ValueError("Data too long (max. 65535).")
 
         if kind == "regular":
             cmd = CMD_I2C_WRITE_DATA
@@ -1199,6 +1205,10 @@ class Device:
                         I2C_ST_WRITEDATA_ACK):
                         continue
 
+                    elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_TOUT:
+                        self.I2C_cancel()
+                        raise RuntimeError("Internal I2C engine timeout.")
+
                     # device did not ack last transfer
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
                         self.I2C_cancel()
@@ -1207,7 +1217,7 @@ class Device:
                     # something else
                     else:
                         self.I2C_cancel()
-                        raise RuntimeError("I2C write error. Internal status %02x." %
+                        raise RuntimeError("I2C write error. Internal status %02x. Try again." %
                             (rbuf[I2C_INTERNAL_STATUS_BYTE]))
 
         # check final status
@@ -1231,10 +1241,8 @@ class Device:
     #######################################################################
     # I2C Read
     #######################################################################
-    def I2C_read(self, addr, size = 1, kind = "regular", timeout_ms = 25):
+    def I2C_read(self, addr, size = 1, kind = "regular", timeout_ms = 20):
         """ Read data from I2C bus.
-
-        Maximum value for ``size`` is 65536 bytes. Minimum is 1 byte.
 
         Valid values for ``kind`` are:
 
@@ -1245,11 +1253,11 @@ class Device:
 
         Parameters:
             addr (int): I2C slave device **base** address.
-            size (int, optional): how many bytes to read, minimum and default: 1 byte.
+            size (int, optional): how many bytes to read. Maximum is 65535 bytes. Minimum is 1 byte.
             kind (str, optional): kind of transfer (see description).
-            timeout_ms (int, optional): time to wait for the data in milliseconds (default 25 ms).
+            timeout_ms (int, optional): time to wait for the data in milliseconds (default 20 ms).
                 Note this time applies for each 60 bytes chunk.
-                The whole read operation may take much longer than that.
+                The whole read operation may take much longer.
 
         Return:
             bytes: data read
@@ -1258,7 +1266,7 @@ class Device:
             ValueError: if any parameter is not valid.
             RuntimeError: if an unspecific error occurs.
             EasyMCP2221.exceptions.NotAckError: if the I2C slave didn't acknowledge.
-            EasyMCP2221.exceptions.TimeoutError: if the writing time is exceeded.
+            EasyMCP2221.exceptions.TimeoutError: if the writing timeout is exceeded.
 
         Examples:
 
@@ -1283,7 +1291,11 @@ class Device:
 
 
         Note:
-            If a timeout occurs in the middle of character reading, the I2C may get locked.
+            MCP2221 reads data in 60-byte chunks.
+
+            The default timeout of 20 ms is twice the time required to receive 60 bytes at
+            the minimum supported rate (47 kHz).
+            If a timeout or other error occurs in the middle of character reading, the I2C may get locked.
             See :func:`I2C_cancel`.
         """
         if addr < 0 or addr > 127:
@@ -1291,8 +1303,8 @@ class Device:
 
         if size < 1:
             raise ValueError("Minimum read size is 1 byte.")
-        elif size > 2**16:
-            raise ValueError("Data too long (max. 65536).")
+        elif size > 2**16-1:
+            raise ValueError("Data too long (max. 65535).")
 
         if kind == "regular":
             cmd = CMD_I2C_READ_DATA
@@ -1322,7 +1334,8 @@ class Device:
                 raise NotAckError("Device did not ACK read command.")
             else:
                 self.I2C_cancel()
-                raise RuntimeError("I2C command read error. Internal status %02x." % (rbuf[I2C_INTERNAL_STATUS_BYTE]))
+                raise RuntimeError("I2C command read error. Internal status %02x. Try again." %
+                    (rbuf[I2C_INTERNAL_STATUS_BYTE]))
 
 
         data = []
