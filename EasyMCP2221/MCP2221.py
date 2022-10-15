@@ -7,7 +7,7 @@ import time
 
 from .Constants import *
 from . import I2C_Slave
-from .exceptions import NotAckError, TimeoutError
+from .exceptions import NotAckError, TimeoutError, LowSCLError, LowSDAError
 
 class Device:
     """ MCP2221(A) device
@@ -1003,54 +1003,28 @@ class Device:
 
 
     def I2C_cancel(self):
-        """ Cancel an active I2C transfer.
-
-        This command can fail in two ways.
-
-        - SCL keeps low. This is caused by:
-
-          - Missing pull-up resistor or to high value.
-          - A slave device is using clock stretching while doing an operation (e.g. writing to EEPROM).
-          - Another device is using the bus.
-
-        - SDA keeps low. Caused by:
-
-          - Missing pull-up resistor or to high value.
-          - A i2c read transfer timed out while slave was sending data and now the I2C
-            bus is locked-up. Read the Hint.
+        """ Try to cancel an active I2C read or write command.
 
         Return:
             bool: True if device is now ready to go. False if the engine is not idle.
 
         Raises:
-            RuntimeError: if I2C engine detects the **SCL** line does not go up (read description).
-            RuntimeError: if I2C engine detects the **SDA** line does not go up (read description).
+            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
+            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
 
         Examples:
 
             Last transfer was cancel, and engine is ready for the next operation:
+
             >>> mcp.I2C_cancel()
             True
+
+            Last transfer failed, and cancel failed too because I2C bus seems busy:
 
             >>> mcp.I2C_cancel()
             Traceback (most recent call last):
             ...
-            RuntimeError: SCL is low. I2C bus is busy or missing pull-up resistor.
-
-        Hint:
-            About the I2C bus locking-up.
-
-            Sometimes, due to a glitch or premature timeout, the master terminates the transfer.
-            But the slave was in the middle of sending a byte. So it is expecting a few more clocks
-            cycles to send the rest of the byte.
-
-            Since the master gave up, it will not clock the bus anymore, and so the slave won't
-            release SDA line. The master, seeing SDA line busy, refuses to initiate any new
-            I2C transfer. If the slave does not implement any timeout (SMB slaves do have it,
-            but I2C ones don't), the I2C bus is locked-up forever.
-
-            MCP2221's I2C engine cannot solve this problem. You can either manually clock the
-            bus using any GPIO line, or cycle the power supply.
+            EasyMCP2221.exceptions.LowSCLError: SCL is low. I2C bus is busy or missing pull-up resistor.
 
         Note:
             Do not call this function without issuing a :func:`I2C_read` or
@@ -1098,10 +1072,10 @@ class Device:
         rbuf = self.send_cmd(buf)
 
         if rbuf[I2C_POLL_RESP_SCL] == 0:
-            raise RuntimeError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
 
         if rbuf[I2C_POLL_RESP_SDA] == 0:
-            raise RuntimeError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
 
         return self.I2C_is_idle()
 
@@ -1129,8 +1103,10 @@ class Device:
         Raises:
             ValueError: if any parameter is not valid.
             RuntimeError: if an unspecific error occurs.
-            EasyMCP2221.exceptions.NotAckError: if the I2C slave didn't acknowledge.
-            EasyMCP2221.exceptions.TimeoutError: if the writing timeout is exceeded.
+            NotAckError: if the I2C slave didn't acknowledge.
+            TimeoutError: if the writing timeout is exceeded.
+            LowSDAError: See :func:`I2C_cancel`.
+            LowSCLError: See :func:`I2C_cancel`.
 
         Examples:
             >>> mcp.I2C_write(0x50, b'This is data')
@@ -1265,8 +1241,10 @@ class Device:
         Raises:
             ValueError: if any parameter is not valid.
             RuntimeError: if an unspecific error occurs.
-            EasyMCP2221.exceptions.NotAckError: if the I2C slave didn't acknowledge.
-            EasyMCP2221.exceptions.TimeoutError: if the writing timeout is exceeded.
+            NotAckError: if the I2C slave didn't acknowledge.
+            TimeoutError: if the writing timeout is exceeded.
+            LowSDAError: See :func:`I2C_cancel`.
+            LowSCLError: See :func:`I2C_cancel`.
 
         Examples:
 

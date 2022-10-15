@@ -79,5 +79,36 @@ Low level and debug
 Exceptions
 ----------
 
+To capture EasyMCP2221.exceptions you must qualify them as ``EasyMCP2221.exceptions``:
+
+.. code-block:: python
+
+    try:
+        mcp.I2C_read(0x51, 1)
+    except EasyMCP2221.exceptions.NotAckError:
+        print("No device")
+        exit()
+    except EasyMCP2221.exceptions.LowSCLError:
+        print("SCL low")
+
+or import them explicitly:
+
+.. code-block:: python
+
+    from EasyMCP2221.exceptions import *
+
+    ...
+
+    try:
+        mcp.I2C_read(0x51, 1)
+    except NotAckError:
+        print("No device")
+        exit()
+    except LowSCLError:
+        print("SCL low")
+
+
 .. autoexception:: EasyMCP2221.exceptions.NotAckError
 .. autoexception:: EasyMCP2221.exceptions.TimeoutError
+.. autoexception:: EasyMCP2221.exceptions.LowSCLError
+.. autoexception:: EasyMCP2221.exceptions.LowSDAError
