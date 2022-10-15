@@ -141,7 +141,10 @@ class Device:
             if buf[0] == CMD_RESET_CHIP:
                 return None
 
-            r = self.hidhandler.read(PACKET_SIZE, 50)
+            try:
+                r = self.hidhandler.read(PACKET_SIZE, 50)
+            except OSError:
+                continue
 
             if not r:
                 if self.debug_messages:
@@ -154,7 +157,7 @@ class Device:
             if r[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
                 break
 
-            # Only retry idempotent commands
+            # On error, only retry idempotent commands
             if buf[0] not in (
                 CMD_READ_FLASH_DATA,
                 CMD_POLL_STATUS_SET_PARAMETERS,
