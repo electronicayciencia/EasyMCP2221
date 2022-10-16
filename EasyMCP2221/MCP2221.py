@@ -109,8 +109,9 @@ class Device:
         """ Write a raw USB command to device and get the response.
 
         Write 64 bytes to the HID interface, starting by ``buf`` bytes.
-        Optionally wait ``sleep`` seconds.
         Then read 64 bytes from HID and return them as a list.
+        In case of failure (USB read/write or command error) it will retry.
+        To prevent this, set :attr:`cmd_retries` to zero.
 
         Parameters:
             buf (list of bytes): Full data to write, including command (64 bytes max).
@@ -184,9 +185,7 @@ class Device:
                 else:
                     return r
 
-
         raise RuntimeError("Command failed.")
-
 
 
     def _update_gp_setting_out(self, gp, out):
@@ -284,6 +283,7 @@ class Device:
 
         return rbuf[0:64]
 
+
     def _write_flash_raw(self, setting, data):
         """
         Write flash data.
@@ -298,6 +298,7 @@ class Device:
             raise RuntimeError("Write flash data command failed.")
 
         return rbuf[0:64]
+
 
     def _read_flash_info(self, raw = False):
         """ Read flash data.
