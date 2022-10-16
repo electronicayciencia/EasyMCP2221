@@ -153,7 +153,7 @@ class Device:
             # Read response
             try:
                 r = self.hidhandler.read(PACKET_SIZE, 50)
-            except OSError: # TODO: si falla se sale del bucle y se devuelve vacio
+            except OSError:
                 if retry < self.cmd_retries:
                     continue
                 else:
