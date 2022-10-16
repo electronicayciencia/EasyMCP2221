@@ -44,44 +44,42 @@ First create and activate a new virtual environment. Update pip if needed.
 
 .. code-block:: console
 
-	d:\tmp>python -m venv init easymcp_dev
-
-	d:\tmp>cd easymcp_dev
-
-	d:\tmp\easymcp_dev>Scripts\activate
-
-	(easymcp_dev) d:\tmp\easymcp_dev> python -m pip install --upgrade pip
+	> python -m venv init easymcp_dev
+	> cd easymcp_dev
+	> Scripts\activate
+	> python -m pip install --upgrade pip
 
 
-Then, clone the home repository and perform the installation in *editable* (``-e``) mode.
+Then, clone the home repository inside that virtual environment and perform the 
+installation in *editable* (``-e``) mode.
 
 .. code-block:: console
 
-    (easymcp_dev) d:\tmp\easymcp_dev>git clone https://github.com/electronicayciencia/EasyMCP2221
+    > git clone https://github.com/electronicayciencia/EasyMCP2221
     Cloning into 'EasyMCP2221'...
     ...
 
-    (easymcp_dev) d:\tmp\easymcp_dev>pip install -e EasyMCP2221
+    > pip install -e EasyMCP2221
     Obtaining file:///D:/tmp/easymcp_dev/EasyMCP2221
       Installing build dependencies ... done
     ...
     Successfully installed EasyMCP2221-0.0+unreleased.local
 
 
-Update PIP if you get this error: *File "setup.py" not found. Directory cannot be installed in editable mode*.
+If you get this error: *"File "setup.py" not found. Directory cannot be installed in editable mode"*, update PIP.
 
 .. code-block:: console
 
-    > python.exe -m pip install --upgrade pip
+    > python -m pip install --upgrade pip
 
 
-If you get this one: *EasyMCP2221 does not appear to be a Python project: neither 'setup.py' nor 'pyproject.toml' found.* check working directory.
+If you get this one: *"EasyMCP2221 does not appear to be a Python project: neither 'setup.py' nor 'pyproject.toml' found."*, please check working directory. You must be in the root of the cloned GitHub repository.
 
 
 Local documentation
 ~~~~~~~~~~~~~~~~~~~
 
-To compile documentation locally you will need ``sphinx`` and ``RTD theme``.
+This is an optional step. To compile documentation locally you will need ``sphinx`` and ``RTD theme``.
 
 .. code-block:: console
 
