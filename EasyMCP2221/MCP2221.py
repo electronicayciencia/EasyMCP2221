@@ -87,7 +87,7 @@ class Device:
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
         self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
-        # After power-up, Vrm may be set but it is not working like when you change GPIO in flash
+        # After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM
         self._reclaim_vrm(self.status["dac_ref"], self.status["adc_ref"])
         # set i2c status
         self.status["i2c_dirty"] = not self.I2C_is_idle()
@@ -132,30 +132,37 @@ class Device:
         REPORT_NUM = 0x00
         padding = [0x00] * (PACKET_SIZE - len(buf))
 
-        for retry in range(self.cmd_retries+1):
-            self.hidhandler.write([REPORT_NUM] + buf + padding)
+        for retry in range(0, self.cmd_retries + 1):
+
+            if self.debug_messages and retry > 0:
+                print("Command re-try", retry)
+
+            # Write command
+            try:
+                self.hidhandler.write([REPORT_NUM] + buf + padding)
+            except OSError:
+                if retry < self.cmd_retries:
+                    continue
+                else:
+                    raise
 
             # This command does not return anything
             if buf[0] == CMD_RESET_CHIP:
                 return None
 
+            # Read response
             try:
                 r = self.hidhandler.read(PACKET_SIZE, 50)
             except OSError: # TODO: si falla se sale del bucle y se devuelve vacio
-                continue
-
-            if not r:
-                if self.debug_messages:
-                    print("Read timeout, retry command.")
-                continue
+                if retry < self.cmd_retries:
+                    continue
+                else:
+                    raise
 
             if self.trace_packets:
                 print("RES:", " ".join("%02x" % i for i in r))
 
-            if r[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
-                break
-
-            # On error, only retry idempotent commands
+            # Always return if the error is caused by non idempotent commands
             if buf[0] not in (
                 CMD_READ_FLASH_DATA,
                 CMD_POLL_STATUS_SET_PARAMETERS,
@@ -166,12 +173,20 @@ class Device:
                 CMD_WRITE_FLASH_DATA,
                 CMD_RESET_CHIP
                 ):
-                break
+                return r
 
-            if self.debug_messages:
-                print("Command returned error. Retry.")
+            # Return if ok
+            if r[RESPONSE_STATUS_BYTE] == RESPONSE_RESULT_OK:
+                return r
+            else:
+                if retry < self.cmd_retries:
+                    continue
+                else:
+                    return r
 
-        return r
+
+        raise RuntimeError("Command failed.")
+
 
 
     def _update_gp_setting_out(self, gp, out):
