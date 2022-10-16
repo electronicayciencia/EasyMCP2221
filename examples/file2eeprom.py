@@ -12,59 +12,59 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog = textwrap.dedent("""
         Delete a 24LC512:
-          file2eeprom.py -k 512 -p 128 -r 400 -w 5 -d 
-            
-        Write file to a 24LC128: 
+          file2eeprom.py -k 512 -p 128 -r 400 -w 5 -d
+
+        Write file to a 24LC128:
           file2eeprom.py -k 128 -p 64 -r 400 -w 5 -f /tmp/eeprom
         """)
     )
 
 parser.add_argument(
-    '-a','--address', 
+    '-a','--address',
     type=hexint,
-    required=False, 
+    required=False,
     default=0x50,
     help = "I2C slave 7 bit address in hex. E.g.: 50 for a common 24xx.")
 
 parser.add_argument(
-    '-r','--rate', 
+    '-r','--rate',
     type=int,
     required=False,
     default=400,
     help = "I2C clock rate in kHz (default 400kHz).")
 
 parser.add_argument(
-    '-k','--kbits', 
-    type=int, 
-    required=True, 
+    '-k','--kbits',
+    type=int,
+    required=True,
     help = "Memory size in kbits. E.g.: 128 for a 24xx128.")
 
 parser.add_argument(
-    '-p','--page', 
+    '-p','--page',
     type=int,
-    required=True, 
+    required=True,
     help = "Page size (EEPROM's internal buffer) in bytes. E.g.: 64 for a 24xx128, 128 for a 24xx512.")
 
 parser.add_argument(
-    '-f','--file', 
+    '-f','--file',
     type=str,
-    required=False, 
+    required=False,
     help = "File to save EEPROM content.")
 
 parser.add_argument(
-    '-w','--wait', 
+    '-w','--wait',
     type=int,
     default=5,
-    required=False, 
+    required=False,
     help = "Wait time for write cycle in ms. Usually 5.")
 
 #parser.add_argument(
-#    '-d','--delete', 
+#    '-d','--delete',
 #    type=bool,
-#    required=False, 
+#    required=False,
 #    help = "Clear memory contents instead of reading a file.")
 parser.add_argument(
-    '-d', '--delete', 
+    '-d', '--delete',
     action='store_true',
     help = "Clear memory contents instead of reading a file.")
 
@@ -89,22 +89,22 @@ if args.delete:
         print("Page %d/%d." %(i+1, memsize / args.page))
         buffer = b'\xff' * args.page
         buffer = eeprom.write_register(i * args.page, buffer, reg_bytes=2)
-        
+
         until = time.perf_counter() + args.wait / 1000
         while time.perf_counter() < until:
             pass
-    
+
 else:
     with open(args.file, 'rb') as f:
         for i in range(memsize//args.page):
             print("Page %d/%d." %(i+1, memsize / args.page))
             buffer = f.read(args.page)
             buffer = eeprom.write_register(i * args.page, buffer, reg_bytes=2)
-            
+
             until = time.perf_counter() + args.wait / 1000
             while time.perf_counter() < until:
                 pass
-    
+
 end = time.perf_counter()
-    
+
 print("Elapsed time: %.1fs" % (end - start))

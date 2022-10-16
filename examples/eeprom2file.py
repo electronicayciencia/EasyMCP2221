@@ -12,37 +12,37 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog = textwrap.dedent("""
         Read a 24LC512:
-          eeprom2file.py -k 512 -p 128 -f /tmp/eeprom 
-            
-        Read a 24LC128: 
+          eeprom2file.py -k 512 -p 128 -f /tmp/eeprom
+
+        Read a 24LC128:
           eeprom2file.py -k 128 -p 64 -f /tmp/eeprom
         """)
         )
-        
+
 parser.add_argument(
-    '-a','--address', 
+    '-a','--address',
     type=hexint,
-    required=False, 
+    required=False,
     default=0x50,
     help = "I2C slave 7 bit address in hex. E.g.: 50 for a common 24xx.")
 
 parser.add_argument(
-    '-r','--rate', 
+    '-r','--rate',
     type=int,
     required=False,
     default=400,
     help = "I2C clock rate in kHz (default 400kHz).")
 
 parser.add_argument(
-    '-k','--kbits', 
-    type=int, 
-    required=True, 
+    '-k','--kbits',
+    type=int,
+    required=True,
     help = "Memory size in kbits. E.g.: 128 for a 24xx128.")
 
 parser.add_argument(
-    '-f','--file', 
+    '-f','--file',
     type=str,
-    required=True, 
+    required=True,
     help = "File to save EEPROM content.")
 
 args = parser.parse_args()
@@ -59,14 +59,14 @@ with open(args.file, 'wb') as f:
 
     start = time.perf_counter()
     index = 0
-    
+
     while index < memsize:
         # MCP2221's max length for a I2C operation is 65535 bytes.
         if memsize - index > 65535:
             m = 65535
         else:
             m = memsize - index
-    
+
         buffer = eeprom.read_register(index, m, reg_bytes=2)
         f.write(buffer)
         index = index + m
