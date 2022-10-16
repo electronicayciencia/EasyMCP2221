@@ -29,11 +29,11 @@ This is compensated by software. But, due to the calling interval, there will be
 I2C crashes
 ~~~~~~~~~~~
 
-Eventually, due to a glitch or unexpected timeout, the MCP2221 cancels an I2C transfer. The slave may be in the middle of sending a byte, and expecting some clocks cycles to send the rest of the byte. 
+Eventually, due to a glitch or unexpected timeout, the MCP2221 cancels an I2C transfer. The slave may be in the middle of sending a byte, and expecting some clocks cycles to send the rest of the byte.
 
 MCP2221 is unable to start a new I2C transfer while SDA line is still busy. And the slave won't release SDA until next clock cycle. So the whole bus hangs.
 
-See :func:`I2C_cancel()`.
+See :any:`LowSDAError`.
 
 
 Misc

@@ -1230,7 +1230,9 @@ class Device:
                         I2C_ST_WRITEDATA_ACK):
                         continue
 
-                    elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_TOUT:
+                    elif rbuf[I2C_INTERNAL_STATUS_BYTE] in (
+                        I2C_ST_WRITEDATA_TOUT, 
+                        I2C_ST_STOP_TOUT):
                         self.I2C_cancel()
                         raise RuntimeError("Internal I2C engine timeout.")
 

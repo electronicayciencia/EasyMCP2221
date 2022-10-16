@@ -3,15 +3,73 @@ from time import sleep
 import EasyMCP2221
 from EasyMCP2221.Constants import *
 
-#from EasyMCP2221 import I2C_Slave
-
 mcp = EasyMCP2221.Device()
+#mcp.trace_packets = 1
+mcp.debug_messages = 1
+input()
+print(mcp.ADC_read())
 
 
-#eeprom = mcp.I2C_Slave(0x50)
-#pcf    = mcp.I2C_Slave(0x48)
+exit()
+
+
+from EasyMCP2221.exceptions import *
+mcp.trace_packets = 1
+#mcp.I2C_write(0x50, b'This is data')
+try:
+    mcp.I2C_read(0x51, 1)
+except NotAckError:
+    print("No device")
+    exit()
+except EasyMCP2221.exceptions.LowSCLError:
+    print("SCL low")
+
+exit()
+
+
+text = b"And Saint Attila raised the hand grenade up on high, saying, 'O Lord, bless this thy hand grenade, that with it thou mayst blow thine enemies to tiny bits, in thy mercy.' And the Lord did grin. And the people did feast upon the lambs, and sloths, and carp, and anchovies, and orangutans, and breakfast cereals, and fruit bats, and large chulapas. And the Lord spake, saying, 'First shalt thou take out the Holy Pin. Then shalt thou count to three, no more, no less. Three shall be the number thou shalt count, and the number of the counting shall be three. Four shalt thou not count, neither count thou two, excepting that thou then proceed to three. Five is right out. Once the number three, being the third number, be reached, then lobbest thou thy Holy Hand Grenade of Antioch towards thy foe, who, being naughty in My sight, shall snuff it.\n"
+
+totalsize = int(512 * 1024 / 8)
+pagesize  = 128
+
+#text = "." * 100
+
+text = b'\xff' * totalsize 
 
 #mcp.trace_packets = True
+
+
+eeprom = mcp.I2C_Slave(0x50, speed = 47000)
+
+pages = [text[i:i+pagesize] for i in range(0, len(text), pagesize)]
+
+p = 0
+for page in pages:
+
+    eeprom.write_register(p * pagesize, page, reg_bytes=2)
+
+    end = time.perf_counter() + 5/1000  # 5ms nominal write time
+    while time.perf_counter() < end:
+        pass
+    
+    p = p + 1
+    print("Byte: %d / %d" % (p * pagesize, totalsize))
+
+#p = 0
+#while p < len(pages):
+#    
+#    try:
+#        eeprom.write_register(p * pagesize, pages[0], reg_bytes=2)
+#
+#        p = p + 1
+#        print("Byte: %d / %d" % (p * pagesize, totalsize))
+#        
+#    except:
+#        print("waiting")
+#        continue
+
+
+
 
 
 def test_save_config():
