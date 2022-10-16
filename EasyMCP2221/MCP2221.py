@@ -1020,6 +1020,7 @@ class Device:
         rbuf = self.send_cmd(buf)
 
         if (rbuf[3] != 0x20):
+            self.I2C_cancel()
             raise RuntimeError("I2C speed is not valid or bus is busy.")
 
 

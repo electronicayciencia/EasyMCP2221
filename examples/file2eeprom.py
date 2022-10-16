@@ -16,6 +16,8 @@ parser = argparse.ArgumentParser(
 
         Write file to a 24LC128:
           file2eeprom.py -k 128 -p 64 -r 400 -w 5 -f /tmp/eeprom
+
+        24AA16 uses a different protocol.
         """)
     )
 
@@ -58,11 +60,6 @@ parser.add_argument(
     required=False,
     help = "Wait time for write cycle in ms. Usually 5.")
 
-#parser.add_argument(
-#    '-d','--delete',
-#    type=bool,
-#    required=False,
-#    help = "Clear memory contents instead of reading a file.")
 parser.add_argument(
     '-d', '--delete',
     action='store_true',
@@ -72,6 +69,11 @@ args = parser.parse_args()
 
 if not args.file and not args.delete:
     print("Error: File is needed if not delete.")
+    parser.print_help()
+    exit()
+
+if args.file and args.delete:
+    print("Error: File and delete are mutually exclusive.")
     parser.print_help()
     exit()
 
@@ -86,9 +88,9 @@ start = time.perf_counter()
 
 if args.delete:
     for i in range(memsize//args.page):
-        print("Page %d/%d." %(i+1, memsize / args.page))
+        print("Bytes %d/%d." %((i+1) * args.page, memsize))
         buffer = b'\xff' * args.page
-        buffer = eeprom.write_register(i * args.page, buffer, reg_bytes=2)
+        eeprom.write_register(i * args.page, buffer, reg_bytes=2)
 
         until = time.perf_counter() + args.wait / 1000
         while time.perf_counter() < until:
@@ -97,9 +99,14 @@ if args.delete:
 else:
     with open(args.file, 'rb') as f:
         for i in range(memsize//args.page):
-            print("Page %d/%d." %(i+1, memsize / args.page))
+            print("Bytes %d/%d." %((i+1) * args.page, memsize))
             buffer = f.read(args.page)
-            buffer = eeprom.write_register(i * args.page, buffer, reg_bytes=2)
+
+            if not buffer:
+                print("End of file.")
+                break
+
+            eeprom.write_register(i * args.page, buffer, reg_bytes=2)
 
             until = time.perf_counter() + args.wait / 1000
             while time.perf_counter() < until:

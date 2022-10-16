@@ -16,6 +16,8 @@ parser = argparse.ArgumentParser(
 
         Read a 24LC128:
           eeprom2file.py -k 128 -p 64 -f /tmp/eeprom
+
+        24AA16 uses a different protocol.
         """)
         )
 
