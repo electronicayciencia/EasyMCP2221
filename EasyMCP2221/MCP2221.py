@@ -87,12 +87,10 @@ class Device:
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
         self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
+        # After power-up, Vrm may be set but it is not working like when you change GPIO in flash
+        self._reclaim_vrm(self.status["dac_ref"], self.status["adc_ref"])
         # set i2c status
         self.status["i2c_dirty"] = not self.I2C_is_idle()
-
-        # Pre-configure ADC and DAC for Vdd reference.
-        self.ADC_config()
-        self.DAC_config()
 
 
     def __repr__(self):
@@ -143,7 +141,7 @@ class Device:
 
             try:
                 r = self.hidhandler.read(PACKET_SIZE, 50)
-            except OSError:
+            except OSError: # TODO: si falla se sale del bucle y se devuelve vacio
                 continue
 
             if not r:
@@ -208,6 +206,8 @@ class Device:
             ...     gp1 = "GPIO_IN",
             ...     gp2 = "GPIO_IN",
             ...     gp3 = "GPIO_IN")
+            >>> mcp.DAC_config(ref = "OFF")
+            >>> mcp.ADC_config(ref = "VDD")
             >>> mcp.save_config()
         """
         chip = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
@@ -475,12 +475,18 @@ class Device:
         # ALTER_GPIO_CONF flag will reset Vrm anyways.
         # Note: this will cause a 2ms gap at DAC output.
         if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
-            cmd[3]  = dac_ref
-            cmd[5]  = adc_ref
-            cmd[7]  = PRESERVE_GPIO_CONF
-            r = self.send_cmd(cmd)
-            if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-                raise RuntimeError("SRAM write error.")
+            self._reclaim_vrm(dac_ref, adc_ref)
+
+
+    def _reclaim_vrm(self, dac_ref, adc_ref):
+        """ Configure only Vrm part and nothing more """
+        cmd = [0] * 12
+        cmd[0]  = CMD_SET_SRAM_SETTINGS
+        cmd[3]  = dac_ref | ALTER_DAC_REF
+        cmd[5]  = adc_ref | ALTER_ADC_REF
+        r = self.send_cmd(cmd)
+        if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
+            raise RuntimeError("SRAM write error.")
 
 
     #######################################################################
@@ -795,10 +801,6 @@ class Device:
     def ADC_config(self, ref = "VDD"):
         """ Configure ADC reference voltage.
 
-        Hint:
-            ADC is pre-configured for use Vdd as reference. You need to call this function only if
-            you want to change it.
-
         Accepted values for ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
         Parameters:
@@ -817,6 +819,10 @@ class Device:
             Traceback (most recent call last):
             ...
             ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
+
+        Hint:
+            ADC configuration is saved when you call :func:`save_config` and reloaded at power-up.
+            You only need to call this function if you want to change it.
         """
         if ref == "OFF":
             ref = ADC_REF_VRM
@@ -883,10 +889,6 @@ class Device:
     def DAC_config(self, ref = "VDD", out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
-        Hint:
-            DAC is pre-configured to use Vdd as reference. You need to call this function only if
-            you want to change it.
-
         Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
 
         MCP2221's DAC is 5 bits. So valid values for ``out`` are from 0 to 31.
@@ -910,6 +912,10 @@ class Device:
             Traceback (most recent call last):
             ...
             ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
+
+        Hint:
+            DAC configuration is saved when you call :func:`save_config` and reloaded at power-up.
+            You only need to call this function if you want to change it.
         """
         if ref == "OFF":
             ref = DAC_REF_VRM

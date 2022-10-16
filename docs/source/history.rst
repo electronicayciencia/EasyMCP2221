@@ -17,7 +17,7 @@ GPIO / ADC and DAC:
 
     * GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
     * Restore ADC/DAC Vref when calling :func:`SRAM_config` (see :doc:`limitations_bugs`).
-    * Pre-configure DAC and ADC to use Vdd as reference value (calling to :func:`DAC_config` and :func:`ADC_config` is now optional).
+    * Reload Vrm after power-up according to saved configuration.
 
 More robust I2C functions:
 
