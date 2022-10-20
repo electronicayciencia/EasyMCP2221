@@ -1312,9 +1312,11 @@ class Device:
 
             Write then Read without releasing the bus:
 
-            >>> mcp.I2C_write(0x50, b'\x00\x00', 'nonstop')
-            >>> mcp.I2C_read(0x50, 25, 'restart')
-            b'En un lugar de la Mancha,'
+            .. code-block:: python
+
+                >>> mcp.I2C_write(0x50, position, 'nonstop')
+                >>> mcp.I2C_read(0x50, length, 'restart')
+                b'En un lugar de la Mancha...'
 
         Hint:
             You can use :func:`I2C_read` with size 1 to check if there is any device listening
