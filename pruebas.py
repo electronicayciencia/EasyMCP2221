@@ -4,6 +4,11 @@ import EasyMCP2221
 from EasyMCP2221.Constants import *
 
 mcp = EasyMCP2221.Device()
+mcp.I2C_write(0x50, b'\x00\x00', 'nonstop')
+mcp.I2C_read(0x50, 25, 'restart')
+
+exit()
+
 #mcp.trace_packets = 1
 mcp.debug_messages = 1
 input()
@@ -34,7 +39,7 @@ pagesize  = 128
 
 #text = "." * 100
 
-text = b'\xff' * totalsize 
+text = b'\xff' * totalsize
 
 #mcp.trace_packets = True
 
@@ -51,19 +56,19 @@ for page in pages:
     end = time.perf_counter() + 5/1000  # 5ms nominal write time
     while time.perf_counter() < end:
         pass
-    
+
     p = p + 1
     print("Byte: %d / %d" % (p * pagesize, totalsize))
 
 #p = 0
 #while p < len(pages):
-#    
+#
 #    try:
 #        eeprom.write_register(p * pagesize, pages[0], reg_bytes=2)
 #
 #        p = p + 1
 #        print("Byte: %d / %d" % (p * pagesize, totalsize))
-#        
+#
 #    except:
 #        print("waiting")
 #        continue

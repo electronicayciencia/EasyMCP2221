@@ -1109,6 +1109,7 @@ class Device:
 
         # Return idle if the first cancel attempt worked
         if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
+            self.status["i2c_dirty"] = False
             return True
 
         # Otherwise, sleep, try again and confirm.
@@ -1136,7 +1137,7 @@ class Device:
             restart
                 It will send **repeated start**, *data*, **stop**
             nonstop
-                It will send **start**, data to write, (no stop)
+                It will send **start**, data to write, (no stop). Please note that you must use 'restart' mode to read or write after a *nonstop* write.
 
         Parameters:
             addr (int): I2C slave device **base** address.
@@ -1148,11 +1149,11 @@ class Device:
 
         Raises:
             ValueError: if any parameter is not valid.
-            RuntimeError: if an unspecific error occurs.
             NotAckError: if the I2C slave didn't acknowledge.
             TimeoutError: if the writing timeout is exceeded.
             LowSDAError: See :func:`I2C_cancel`.
             LowSCLError: See :func:`I2C_cancel`.
+            RuntimeError: if some other error occurs.
 
         Examples:
             >>> mcp.I2C_write(0x50, b'This is data')
@@ -1224,15 +1225,16 @@ class Device:
 
                 # data not sent, why?
                 else:
-                    # still sending last data, try again
+                    # temporary error, try again until timeout
                     if rbuf[I2C_INTERNAL_STATUS_BYTE] in (
                         I2C_ST_WRITEDATA,
                         I2C_ST_WRITEDATA_WAITSEND,
                         I2C_ST_WRITEDATA_ACK):
                         continue
 
+                    # internal timeout condition
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] in (
-                        I2C_ST_WRITEDATA_TOUT, 
+                        I2C_ST_WRITEDATA_TOUT,
                         I2C_ST_STOP_TOUT):
                         self.I2C_cancel()
                         raise RuntimeError("Internal I2C engine timeout.")
@@ -1241,6 +1243,11 @@ class Device:
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
                         self.I2C_cancel()
                         raise NotAckError("Device did not ACK.")
+
+                    # after non-stop
+                    elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_END_NOSTOP:
+                        self.I2C_cancel()
+                        raise RuntimeError("You must use 'restart' mode to write after a 'nonstop' write.")
 
                     # something else
                     else:
@@ -1292,16 +1299,22 @@ class Device:
 
         Raises:
             ValueError: if any parameter is not valid.
-            RuntimeError: if an unspecific error occurs.
             NotAckError: if the I2C slave didn't acknowledge.
             TimeoutError: if the writing timeout is exceeded.
             LowSDAError: See :func:`I2C_cancel`.
             LowSCLError: See :func:`I2C_cancel`.
+            RuntimeError: if some other error occurs.
 
         Examples:
 
             >>> mcp.I2C_read(0x50, 12)
             b'This is data'
+
+            Write then Read without releasing the bus:
+
+            >>> mcp.I2C_write(0x50, b'\x00\x00', 'nonstop')
+            >>> mcp.I2C_read(0x50, 25, 'restart')
+            b'En un lugar de la Mancha,'
 
         Hint:
             You can use :func:`I2C_read` with size 1 to check if there is any device listening
@@ -1366,6 +1379,12 @@ class Device:
             if rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
                 self.I2C_cancel()
                 raise NotAckError("Device did not ACK read command.")
+
+            # after non-stop
+            elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_END_NOSTOP:
+                self.I2C_cancel()
+                raise RuntimeError("You must use 'restart' mode to read after a 'nonstop' write.")
+
             else:
                 self.I2C_cancel()
                 raise RuntimeError("I2C command read error. Internal status %02x. Try again." %

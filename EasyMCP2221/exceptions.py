@@ -9,7 +9,7 @@ class TimeoutError(Exception):
     Possible causes:
 
         - I2C bus noise
-        - incorrect command, protocol or speep
+        - incorrect command, protocol or speed
         - slave device busy (e.g. EEPROM write cycle)
     """
 

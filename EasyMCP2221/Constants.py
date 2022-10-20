@@ -194,11 +194,11 @@ I2C_ST_WRADDRH_ACK            = 0x32
 I2C_ST_WRADDRH_TOUT           = 0x33
 
 I2C_ST_WRITEDATA              = 0x40  # sending data chunk to slave
-I2C_ST_WRITEDATA_WAITSEND     = 0x41  # buffer sent, waiting for additional Write commands
+I2C_ST_WRITEDATA_WAITSEND     = 0x41  # happens sometimes, retry works ok
 I2C_ST_WRITEDATA_ACK          = 0x42
 I2C_ST_WRITEDATA_WAIT         = 0x43  # waiting for slave to ack after sending a byte
 I2C_ST_WRITEDATA_TOUT         = 0x44
-I2C_ST_WRITEDATA_END_NOSTOP   = 0x45
+I2C_ST_WRITEDATA_END_NOSTOP   = 0x45  # last transfer finished, in non stop mode
 
 I2C_ST_READDATA               = 0x50  # reading data from i2c slave
 I2C_ST_READDATA_RCEN          = 0x51
