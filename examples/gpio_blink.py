@@ -1,12 +1,11 @@
-# How to blink a LED connected to GP0
+# How to blink a LED connected to GP2
 import EasyMCP2221
 from time import sleep
 
-# Connect to device
+# Connect to the device
 mcp = EasyMCP2221.Device()
 
-# Reclaim GP0 for General Purpose Input Output, as an Output.
-# Default output is logical level 0.
+# Reclaim GP2 for General Purpose Input Output, as an Output.
 mcp.set_pin_function(gp2 = "GPIO_OUT")
 
 while True:

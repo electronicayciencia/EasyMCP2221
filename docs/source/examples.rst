@@ -3,7 +3,14 @@ Examples
 
 .. currentmodule:: EasyMCP2221
 
-Just import ``EasyMCP2221`` and create a new :class:`Device`. 
+Getting started
+---------------
+
+Minimal components layout. This is not the recommended design, but it should work. See MCP2221's datasheet for more information.
+
+.. image:: img/sch_getting_started.png
+
+To check the communication, import ``EasyMCP2221`` and create a new :class:`Device`. 
 
 .. literalinclude:: ../../examples/device.py
 
@@ -34,14 +41,7 @@ The output should be like this:
 Basic GPIO
 ----------
 
-Basic digital output
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-Configure pin function using :func:`set_pin_function`, then use :func:`GPIO_write` to change its output.
-
-.. literalinclude:: ../../examples/gpio_simplest.py
+Configure pin function using :func:`set_pin_function` to GPIO_IN or GPIO_OUT. Then use :func:`GPIO_write` to change its output. Or :func:`GPIO_read` to read the status.
 
 
 Digital output: LED blinking
@@ -51,13 +51,24 @@ Digital output: LED blinking
 
 Same as before, but use :func:`GPIO_write` in a loop to change its output periodically.
 
+Schematic:
+
+.. image:: img/sch_led_blink.png
+    :align: center
+    :scale: 66%
+
+Breadboard:
+
+.. image:: img/brd_led_blink.gif
+   :align: center
+
+Code:
+
 .. literalinclude:: ../../examples/gpio_blink.py
 
 
 Digital input: Mirror state
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-We introduce :func:`GPIO_read` this time.
 
 In order to illustrate how to read from GPIO digital input, let's setup GP2 and GP3 to mimic the state of GP0 and GP1.
 
@@ -114,10 +125,54 @@ We will use the analog level in GP3 to set the state or three leds connected to 
 DAC: LED fading
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We use :func:`DAC_config` and :func:`DAC_write` to make a LED (connected to GP3 or GP2) to fade-in and fade-out.
+We use :func:`DAC_config` and :func:`DAC_write` to make a LED (connected to GP3 or GP2) to fade-in and fade-out with a triangular wave.
 
 .. literalinclude:: ../../examples/DAC.py
 
+
+Advanced analog
+---------------
+
+Sinusoidal generator
+~~~~~~~~~~~~~~~~~~~~
+
+Max 500Hz sample rate. 250Hz waveform.
+Real time wait.
+
+.. image:: img/dac_sin.png
+    :align: center
+
+.. literalinclude:: ../../examples/DAC_sin.py
+
+
+Capacitor charge
+~~~~~~~~~~~~~~~~
+
+.. image:: img/sch_capacitor.png
+    :align: center
+
+.. image:: img/v_t_c.png
+    :align: center
+
+.. literalinclude:: ../../examples/V_T_plot_C.py
+
+
+LED curve plotter
+~~~~~~~~~~~~~~~~~
+
+Not draw much intensity from DAC
+
+.. image:: img/sch_led_adc.png
+    :align: center
+
+.. image:: img/brd_led_adc.png
+    :align: center
+
+.. image:: img/v_i_leds.png
+    :align: center
+
+
+.. literalinclude:: ../../examples/V_I_plot.py
 
 
 I2C bus
@@ -129,6 +184,9 @@ I2C bus scan
 We will use :func:`I2C_read` to send a read command to any possible I2C address in the bus. The moment we get an acknowledge, we know there is some slave connected.
 
 To make this example work, you need to get an EEPROM (e.g. 24LC128) and connect it properly to the SCA and SCL lines, as well as power supply.
+
+.. image:: img/sch_eeprom.png
+
 
 .. literalinclude:: ../../examples/I2C_scan.py
 
@@ -163,9 +221,8 @@ Read from an EEPROM
 
 Same as before but reading
 
-We seek the first position writing ``0x0000``, then func:`I2C_read` 100 bytes and print until the first null.
+We seek the first position writing ``0x0000``, then :func:`I2C_read` 100 bytes and print until the first null.
 
-On slower devices, the read may fail. Yo need to :func:`I2C_cancel` then and try again increasing func:`I2C_read` timeout parameter.
 
 .. literalinclude:: ../../examples/EEPROM_read.py
 

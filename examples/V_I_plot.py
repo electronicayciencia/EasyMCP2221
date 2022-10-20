@@ -12,6 +12,8 @@ mcp.set_pin_function(gp2 = "DAC", gp3 = "ADC")
 mcp.DAC_config()
 mcp.ADC_config()
 
+R = 1000
+
 V = 32 * [0]
 I = 32 * [0]
 
@@ -24,7 +26,7 @@ for step in range(0,32):
     V3 = V3 / 1024 * 5
     
     # I = V/R
-    I_r = (V2 - V3) / 1000
+    I_r = (V2 - V3) / R
     
     V[step] = V2
     I[step] = I_r * 1000 # mA
