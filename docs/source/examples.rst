@@ -6,11 +6,11 @@ Examples
 Getting started
 ---------------
 
-This is the minimal components layout. 
+This is the minimum part layout. 
 
 .. figure:: img/sch_getting_started.png
 
-Although this is **not recommended design**, it should work fine. See the MCP2221 data sheet for more information.
+Although this is **not a recommended design**, it should work fine. See the MCP2221 data sheet for more information.
 
 Import ``EasyMCP2221`` module and try to create a new :class:`Device` object with default parameters.
 
@@ -57,14 +57,15 @@ Schematic:
 .. figure:: img/sch_led_blink.png
     :scale: 66%
 
-Breadboard:
-
-.. figure:: img/brd_led_blink.gif
-   :scale: 75%
-
 Code:
 
 .. literalinclude:: ../../examples/gpio_blink.py
+
+
+Result:
+
+.. figure:: img/brd_led_blink.gif
+   :scale: 75%
 
 
 Digital input: Mirror state
@@ -161,22 +162,21 @@ A GPIO output can be used to charge or discharge a capacitor through a resistor 
 .. figure:: img/sch_capacitor.png
    :scale: 50%
 
-This is a classic capacitor charge curve:
+Program:
+
+.. literalinclude:: ../../examples/V_T_plot_C.py
+
+This will produce the classic capacitor charge curve:
 
 .. figure:: img/v_t_c.png
 
 
-Code:
-
-.. literalinclude:: ../../examples/V_T_plot_C.py
-
-
-LED curve plotter
+LED V/I plotter
 ~~~~~~~~~~~~~~~~~
 
-We can read ADC values while we play with DAC output in order to characterize some part.
+We can read the ADC values ​​while we are changing the DAC output to characterize some part.
 
-Note that the DAC output impedance is 5k (according to the datasheet), so you can't draw much intensity from it unless using an output buffer.
+Note that the DAC output impedance is 5k (according to the datasheet), so you can't draw much current from it.
 
 .. figure:: img/sch_led_adc.png
    :scale: 50%
@@ -187,15 +187,14 @@ The breadboard connections are pretty straightforward:
 .. figure:: img/brd_led_adc.png
    :scale: 50%
 
+Program:
+
+.. literalinclude:: ../../examples/V_I_plot.py
+
 This is the output for an infrared, red, green and blue LEDs.
 
 .. figure:: img/v_i_leds.png
 
-
-
-Code:
-
-.. literalinclude:: ../../examples/V_I_plot.py
 
 
 I2C bus
