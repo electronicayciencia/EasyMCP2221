@@ -10,32 +10,31 @@ This is the minimal components layout.
 
 .. figure:: img/sch_getting_started.png
 
-It is not the recommended design, but it should work. See MCP2221's datasheet for more information.
+Although this is **not recommended design**, it should work fine. See the MCP2221 data sheet for more information.
 
-To check the communication, import ``EasyMCP2221`` and create a new :class:`Device`. 
+Import ``EasyMCP2221`` module and try to create a new :class:`Device` object with default parameters.
 
-.. literalinclude:: ../../examples/device.py
+.. code-block:: python
 
-The output should be like this:
-
-.. code-block:: console
-
-	MCP2221 is there!
-	{
-		"Chip settings": {
-			"Power management options": "enabled",
-			"USB PID": "0x00DD",
-			"USB VID": "0x04D8",
-			"USB requested number of mA": 100
-		},
-		"Factory Serial": "01234567",
-		"GP settings": {},
-		"USB Manufacturer": "Microchip Technology Inc.",
-		"USB Product": "MCP2221 USB-I2C/UART Combo",
-		"USB Serial": "0000000000"
-	}
+    >>> import EasyMCP2221
+    >>> mcp = EasyMCP2221.Device()
+    >>> print(mcp)
+    {
+        "Chip settings": {
+            "Power management options": "enabled",
+            "USB PID": "0x00DD",
+            "USB VID": "0x04D8",
+            "USB requested number of mA": 100
+        },
+        "Factory Serial": "01234567",
+        "GP settings": {},
+        "USB Manufacturer": "Microchip Technology Inc.",
+        "USB Product": "MCP2221 USB-I2C/UART Combo",
+        "USB Serial": "0000000000"
+    }
 
 
+In case of error, make sure MCP2221A is properly connected. Use Microchip's tool to find the device. Also read the troubleshooting section of :doc:`install`.
 
 .. currentmodule:: EasyMCP2221.Device
 
@@ -137,14 +136,17 @@ Advanced analog
 Sinusoidal generator
 ~~~~~~~~~~~~~~~~~~~~
 
-DAC's resolution is 5 only bit.
+In the following example, we will use DAC to generate a ``sin`` waveform with a period of 1 second.
 
-.. figure:: img/DAC_sin_5Hz.png
+DAC's maximum update rate is 500Hz, one sample every 2ms on average. It really depends on the load of the host and USB bus controller.
 
+DAC's resolution is only 5 bit. That means 32 different values. 
 
-Maximum update rate is 500Hz. High frequency output noise can be greatly reduced using a simple RC low pass filter.
+.. figure:: img/DAC_sin_1Hz.png
 
-.. figure:: img/DAC_sin_5Hz_lowpass.png
+Noise comes from USB traffic and it is in kHz region. Since ADC output frequency is much lower, it can be greatly reduced with a simple RC low pass filter.
+
+.. figure:: img/DAC_sin_1Hz_lowpass.png
 
 Notice the usage of ``time.perf_counter()`` instead of ``sleep`` to get a more or less constant rate in a multitask operating system. 
 

@@ -2,8 +2,8 @@ Install
 =======
 
 
-Installation via PIP
---------------------
+Regular installation via PIP
+----------------------------
 
 Pip command for Linux:
 
@@ -17,6 +17,9 @@ Pip command for Windows:
 
     py -m pip install EasyMCP2221
 
+
+Troubleshooting
+~~~~~~~~~~~~~~~
 
 EasyMCP2221 depends on ``hidapi``, which in fact needs some backend depending on OS. Sometimes this is troublesome.
 
