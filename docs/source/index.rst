@@ -25,6 +25,8 @@ I am not related to Microchip Inc in any way. This library is unofficial and for
 
 Some examples in this documentation show bare connections from your USB port to a breadboard. Most USB port controllers are protected against short-circuit between power and/or data lines, but some are not. I am not responsible for any damage you may cause to your computer. To be safe, always use an isolated powered USB hub for experimentation.
 
+Many thanks to Microchip for providing samples of MCP2221A, and for openly publishing the datasheet and documentation used to write this library.
+
 
 .. toctree::
    :maxdepth: 1

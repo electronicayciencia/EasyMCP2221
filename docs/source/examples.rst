@@ -8,7 +8,8 @@ Getting started
 
 Minimal components layout. This is not the recommended design, but it should work. See MCP2221's datasheet for more information.
 
-.. image:: img/sch_getting_started.png
+.. figure:: img/sch_getting_started.png
+   :scale: 50%
 
 To check the communication, import ``EasyMCP2221`` and create a new :class:`Device`. 
 
@@ -53,14 +54,13 @@ Same as before, but use :func:`GPIO_write` in a loop to change its output period
 
 Schematic:
 
-.. image:: img/sch_led_blink.png
-    :align: center
+.. figure:: img/sch_led_blink.png
     :scale: 66%
 
 Breadboard:
 
-.. image:: img/brd_led_blink.gif
-   :align: center
+.. figure:: img/brd_led_blink.gif
+   :scale: 75%
 
 Code:
 
@@ -136,11 +136,19 @@ Advanced analog
 Sinusoidal generator
 ~~~~~~~~~~~~~~~~~~~~
 
-Max 500Hz sample rate. 250Hz waveform.
-Real time wait.
+DAC's resolution is 5 only bit.
 
-.. image:: img/dac_sin.png
-    :align: center
+.. figure:: img/DAC_sin_5Hz.png
+
+
+Maximum update rate is 500Hz. High frequency output noise can be greatly reduced using a simple RC low pass filter.
+
+.. figure:: img/DAC_sin_5Hz_lowpass.png
+
+
+Code:
+
+Notice the usage of ``time.perf_counter()`` instead of ``sleep`` to get a more or less constant rate in a multitask operating system. 
 
 .. literalinclude:: ../../examples/DAC_sin.py
 
@@ -148,11 +156,17 @@ Real time wait.
 Capacitor charge
 ~~~~~~~~~~~~~~~~
 
-.. image:: img/sch_capacitor.png
-    :align: center
+A GPIO output can be used to charge or discharge a capacitor through a resistor while we are sampling ADC values at regular intervals:
 
-.. image:: img/v_t_c.png
-    :align: center
+.. figure:: img/sch_capacitor.png
+   :scale: 50%
+
+This is a classic capacitor charge curve:
+
+.. figure:: img/v_t_c.png
+
+
+Code:
 
 .. literalinclude:: ../../examples/V_T_plot_C.py
 
@@ -160,17 +174,26 @@ Capacitor charge
 LED curve plotter
 ~~~~~~~~~~~~~~~~~
 
-Not draw much intensity from DAC
+We can read ADC values while we play with DAC output in order to characterize some part.
 
-.. image:: img/sch_led_adc.png
-    :align: center
+Note that the DAC output impedance is 5k (according to the datasheet), so you can't draw much intensity from it unless using an output buffer.
 
-.. image:: img/brd_led_adc.png
-    :align: center
+.. figure:: img/sch_led_adc.png
+   :scale: 50%
 
-.. image:: img/v_i_leds.png
-    :align: center
+The breadboard connections are pretty straightforward:
 
+
+.. figure:: img/brd_led_adc.png
+   :scale: 50%
+
+This is the output for an infrared, red, green and blue LEDs.
+
+.. figure:: img/v_i_leds.png
+
+
+
+Code:
 
 .. literalinclude:: ../../examples/V_I_plot.py
 
@@ -185,7 +208,7 @@ We will use :func:`I2C_read` to send a read command to any possible I2C address 
 
 To make this example work, you need to get an EEPROM (e.g. 24LC128) and connect it properly to the SCA and SCL lines, as well as power supply.
 
-.. image:: img/sch_eeprom.png
+.. figure:: img/sch_eeprom.png
 
 
 .. literalinclude:: ../../examples/I2C_scan.py
@@ -249,4 +272,5 @@ Output:
 	Storing...
 	Data:
 	[78, 78, 78, 78, 82, 102, 81, 31, 56, 77]
+
 

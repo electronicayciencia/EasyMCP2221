@@ -6,7 +6,7 @@ from math import sqrt, cos, pi
 
 # Output freq
 sample_rate = 250 # Hz (unstable above 500Hz)
-freq        = 1   # Hz
+freq        = 5   # Hz
 
 # Configure device pins and DAC reference.
 # MCP2221 have only 1 DAC, connected to GP2 and/or GP3.
