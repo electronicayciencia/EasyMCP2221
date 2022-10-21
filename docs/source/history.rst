@@ -25,7 +25,7 @@ More robust I2C functions:
     * Rewritten :func:`I2C_write` to prevent infinite loop, quicker write and ACK checking.
     * Timeout and early failure check in read and write to prevent infinite loop.
     * Custom exceptions for better error handling (see *Exceptions* in :doc:`api_reference`)
-    * Automatically try to recover an I2C error from past execution.
+    * Automatically try to recover from an I2C error in past operation.
 
 New features:
 
@@ -35,6 +35,8 @@ New features:
 Documentation:
 
     * Removed *self* argument from *autodoc* methods.
+	* Add pictures and schematics.
+	* Add advanced ADC/DAC examples section.
 
 
 V1.5
