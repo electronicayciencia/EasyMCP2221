@@ -6,10 +6,11 @@ Examples
 Getting started
 ---------------
 
-Minimal components layout. This is not the recommended design, but it should work. See MCP2221's datasheet for more information.
+This is the minimal components layout. 
 
 .. figure:: img/sch_getting_started.png
-   :scale: 50%
+
+It is not the recommended design, but it should work. See MCP2221's datasheet for more information.
 
 To check the communication, import ``EasyMCP2221`` and create a new :class:`Device`. 
 
@@ -145,9 +146,6 @@ Maximum update rate is 500Hz. High frequency output noise can be greatly reduced
 
 .. figure:: img/DAC_sin_5Hz_lowpass.png
 
-
-Code:
-
 Notice the usage of ``time.perf_counter()`` instead of ``sleep`` to get a more or less constant rate in a multitask operating system. 
 
 .. literalinclude:: ../../examples/DAC_sin.py
@@ -201,15 +199,22 @@ Code:
 I2C bus
 ----------
 
+
+To make these examples work, you need to get an EEPROM (e.g. 24LC128) and connect it properly to the SCA and SCL lines, as well as power supply.
+
+.. figure:: img/sch_eeprom.png
+
+This is it in the breadboard. Don't forget to connect *WP* pin to either ``Vcc`` or ``Gnd``.
+
+.. figure:: img/brd_eeprom.png
+   :scale: 50%
+
+
+
 I2C bus scan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We will use :func:`I2C_read` to send a read command to any possible I2C address in the bus. The moment we get an acknowledge, we know there is some slave connected.
-
-To make this example work, you need to get an EEPROM (e.g. 24LC128) and connect it properly to the SCA and SCL lines, as well as power supply.
-
-.. figure:: img/sch_eeprom.png
-
 
 .. literalinclude:: ../../examples/I2C_scan.py
 
