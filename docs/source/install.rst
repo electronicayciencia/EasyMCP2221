@@ -37,6 +37,10 @@ Try to install the following packages using ``pip``:
 
 If that doesn't work, try manually installing libhidapi from https://github.com/libusb/hidapi/releases.
 
+Sometimes, yo need to manually copy ``libusb-1.0.dll`` to ``C:\Windows\System32``. It used to be in ``C:\Users\[username]\AppData\Local\Programs\Python\Python39\Lib\site-packages\libusb\_platform\_windows\x64\libusb-1.0.dll`` or similar path.
+
+If the library loads but it does not find your device, try using any of the Microchip's official tools to verify that everything is working fine.
+
 
 Editable for testing
 --------------------
