@@ -122,6 +122,12 @@ class Device:
 
         See also:
             Class variables :attr:`cmd_retries`, :attr:`debug_messages` and :attr:`trace_packets`.
+
+        Hint:
+            The response does not wait until the actual command execution is finished. Instead, it is generated right after the device receives the command. So an error response might indicate:
+
+            - the most recent command is not valid
+            - the previous command finished with an error condition (case of I2C write).
         """
         if self.trace_packets:
             print("CMD:", " ".join("%02x" % i for i in buf))
@@ -602,15 +608,13 @@ class Device:
 
         .. figure:: img/MCP2221_pinout.svg
 
-        - For **GP0**:
-
+        **GP0** functions:
             - **GPIO_IN**  (*in*) : Digital input
             - **GPIO_OUT** (*out*): Digital output
             - **SSPND**    (*out*): Signals when the host has entered Suspend mode
             - **LED_URX**  (*out*): UART Rx LED activity output (factory default)
 
-        - For **GP1**:
-
+        **GP1** functions:
             - **GPIO_IN**  (*in*) : Digital input
             - **GPIO_OUT** (*out*): Digital output
             - **ADC**      (*in*) : ADC Channel 1
@@ -618,16 +622,14 @@ class Device:
             - **IOC**      (*in*) : External Interrupt Edge Detector
             - **LED_UTX**  (*out*): UART Tx LED activity output (factory default)
 
-        - For **GP2**:
-
+        **GP2** functions:
             - **GPIO_IN**  (*in*) : Digital input
             - **GPIO_OUT** (*out*): Digital output
             - **ADC**      (*in*) : ADC Channel 2
             - **DAC**      (*out*): DAC Output 1
             - **USBCFG**   (*out*): USB device-configured status (factory default)
 
-        - For **GP3**:
-
+        **GP3** functions:
             - **GPIO_IN**  (*in*) : Digital input
             - **GPIO_OUT** (*out*): Digital output
             - **ADC**      (*in*) : ADC Channel 3
@@ -747,10 +749,20 @@ class Device:
     def clock_config(self, duty, freq):
         """ Configure clock output frequency and Duty Cycle.
 
-        Accepted values for **duty** are: `0`, `25`, `50` and `75`.
+        ``duty`` values:
+            - 0
+            - 25
+            - 50
+            - 75
 
-        Valid **freq** values are:
-        `375kHz`, `750kHz`, `1.5MHz`, `3MHz`, `6MHz`, `12MHz` or `24MHz`.
+        ``freq`` values:
+            - "375kHz"
+            - "750kHz"
+            - "1.5MHz"
+            - "3MHz"
+            - "6MHz"
+            - "12MHz"
+            - "24MHz"
 
         To output clock signal, you also need to assign GP1 function to `CLK_OUT`
         (see :func:`set_pin_function`).
@@ -815,7 +827,7 @@ class Device:
     def ADC_config(self, ref = "VDD"):
         """ Configure ADC reference voltage.
 
-        Accepted values for ``ref``:
+        ``ref`` values:
             - "OFF"
             - "1.024V"
             - "2.048V"
@@ -908,7 +920,7 @@ class Device:
     def DAC_config(self, ref = "VDD", out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
-        ``ref`` may be:
+        ``ref`` values:
             - "OFF"
             - "1.024V"
             - "2.048V"

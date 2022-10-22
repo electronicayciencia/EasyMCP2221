@@ -8,14 +8,13 @@ EasyMCP2221 is a **Python** module to interface with Microchip MCP2221 and MCP22
 The MCP2221 is a fully integrated USB-to-UART/I2C serial converter with four GP pins providing miscellaneous functionalities. 
 
 MCP2221's peripherals:
-
-- 4 GPIO
-- 3 channel ADC
-- DAC
-- I2C
-- UART
-- Clock Output
-- USB Wake-up via Interrupt Detection.
+    - 4 General Purpose Input/Output (GPIO) pins
+    - 3 channel 10 bit ADC
+    - One 5 bit DAC
+    - I2C
+    - UART
+    - Clock Output with PWM
+    - USB Wake-up via Interrupt Detection.
 
 .. figure:: img/MCP2221_pinout.svg
 
@@ -26,7 +25,7 @@ With this chip and this library you can practice the basics of digital electroni
 Disclaimer
 ----------
 
-I am not related to Microchip Inc in any way. This library is unofficial and for personal use only.
+I am not related to Microchip Inc. in any way. This library is unofficial and for personal use only.
 
 Some examples in this documentation show bare connections from your USB port to a breadboard. Most USB port controllers are protected against short-circuit between power and/or data lines, but some are not. I am not responsible for any damage you may cause to your computer. To be safe, always use an isolated powered USB hub for experimentation.
 

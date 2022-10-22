@@ -35,6 +35,7 @@ Documentation:
     * Added advanced ADC/DAC examples section.
     * Added license.
     * Corrected typos.
+    * Formatting.
 
 
 V1.5
