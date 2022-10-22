@@ -1,7 +1,3 @@
-# API library for MCP2221(A).
-# Electronicayciencia. 10/07/2022
-# Original work: Yuta KItagami (https://github.com/nonNoise/PyMCP2221A)
-
 import hid
 import time
 

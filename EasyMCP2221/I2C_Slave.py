@@ -1,7 +1,3 @@
-# API library for MCP2221(A).
-# Electronicayciencia. 21/07/2022
-
-
 class I2C_Slave:
     """ EasyMCP2221's I2C slave device.
 
