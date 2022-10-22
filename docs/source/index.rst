@@ -20,7 +20,7 @@ MCP2221's peripherals:
 .. figure:: img/MCP2221_pinout.svg
 
 
-Using this chip you can practice the basics of digital electronics, microcontrollers, and robotics with regular computer and Python.
+With this chip and this library you can practice the basics of digital electronics, microcontrollers, and robotics with a regular computer and regular Python. See :doc:`examples`.
 
 
 Disclaimer
