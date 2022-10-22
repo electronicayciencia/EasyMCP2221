@@ -1,10 +1,13 @@
 Changelog
 =========
 
+.. currentmodule:: EasyMCP2221.Device
+
 V1.6
 --------
 
-.. currentmodule:: EasyMCP2221.Device
+V1.6.0
+~~~~~~
 
 Improved USB stability:
     * Added timeout in HID read.
