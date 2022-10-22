@@ -6,7 +6,7 @@ Changelog
 V1.6
 --------
 
-V1.6.0
+V1.6.1
 ~~~~~~
 
 Improved USB stability:
@@ -39,6 +39,11 @@ Documentation:
     * Added license.
     * Corrected typos.
     * Formatting.
+
+V1.6.0
+~~~~~~
+
+Released 1.5.1 again by mistake.
 
 
 V1.5
