@@ -7,20 +7,17 @@ V1.6
 .. currentmodule:: EasyMCP2221.Device
 
 Improved USB stability:
-
-    * Add timeout in HID read.
-    * Add retries in send_cmd.
+    * Added timeout in HID read.
+    * Added retries in send_cmd.
     * Better USB trace_commands output format.
     * Removed sleep parameter in :func:`send_cmd`.
 
 GPIO / ADC and DAC:
-
     * GPIO output values given with :func:`GPIO_write` function are now preserved when calling :func:`SRAM_config` (like to change DAC value, or pin function).
     * Restore ADC/DAC Vref when calling :func:`SRAM_config` (see :doc:`limitations_bugs`).
     * Reload Vrm after power-up according to saved configuration.
 
-More robust I2C functions:
-
+More reliable I2C functions:
     * Rewritten :func:`I2C_read` to take into account internal I2C engine status.
     * Rewritten :func:`I2C_write` to prevent infinite loop, quicker write and ACK checking.
     * Timeout and early failure check in read and write to prevent infinite loop.
@@ -28,15 +25,15 @@ More robust I2C functions:
     * Automatically try to recover from an I2C error in past operation.
 
 New features:
-
     * Function to save current state: :func:`save_config`.
-    * Add speed parameter in I2C Slave class.
+    * Added speed parameter in I2C Slave class.
 
 Documentation:
-
     * Removed *self* argument from *autodoc* methods.
-	* Add pictures and schematics.
-	* Add advanced ADC/DAC examples section.
+    * Added pictures and schematics.
+    * Added MCP2221 pinout guide.
+    * Added advanced ADC/DAC examples section.
+    * Added license.
 
 
 V1.5

@@ -600,6 +600,8 @@ class Device:
 
         Accepted functions depends on the pin.
 
+        .. figure:: img/MCP2221_pinout.svg
+
         - For **GP0**:
 
             - **GPIO_IN**  (*in*) : Digital input

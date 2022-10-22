@@ -17,6 +17,9 @@ MCP2221's peripherals:
 - Clock Output
 - USB Wake-up via Interrupt Detection.
 
+.. figure:: img/MCP2221_pinout.svg
+
+
 Using this chip you can practice the basics of digital electronics, microcontrollers, and robotics with regular computer and Python.
 
 
@@ -30,10 +33,8 @@ Some examples in this documentation show bare connections from your USB port to 
 Many thanks to Microchip for providing free samples of MCP2221A, and for openly publishing the datasheet and documentation used to write this library.
 
 
-License
--------
-
 MIT License
+-----------
 
 Copyright (c) 2022 Reinoso Guzman
 
