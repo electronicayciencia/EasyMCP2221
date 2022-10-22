@@ -815,7 +815,12 @@ class Device:
     def ADC_config(self, ref = "VDD"):
         """ Configure ADC reference voltage.
 
-        Accepted values for ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+        Accepted values for ``ref``:
+            - "OFF"
+            - "1.024V"
+            - "2.048V"
+            - "4.096V"
+            - "VDD"
 
         Parameters:
             ref (str, optional): ADC reference value. Default to supply voltage (Vdd).
@@ -903,7 +908,12 @@ class Device:
     def DAC_config(self, ref = "VDD", out = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
-        Valid values from ``ref`` are "0", "1.024V", "2.048V", "4.096V" and "VDD".
+        ``ref`` may be:
+            - "OFF"
+            - "1.024V"
+            - "2.048V"
+            - "4.096V"
+            - "VDD"
 
         MCP2221's DAC is 5 bits. So valid values for ``out`` are from 0 to 31.
 
@@ -1505,11 +1515,10 @@ class Device:
         """ Configure interruption edge.
 
         Valid values for ``edge``:
-
-        - **none**: disable interrupt detection
-        - **raising**: fire interruption in raising edge (i.e. when GP1 goes from Low to High).
-        - **falling**: fire interruption in falling edge (i.e. when GP1 goes from High to Low).
-        - **both**: fire interruption in both (i.e. when GP1 state changes).
+            - **none**: disable interrupt detection
+            - **raising**: fire interruption in raising edge (i.e. when GP1 goes from Low to High).
+            - **falling**: fire interruption in falling edge (i.e. when GP1 goes from High to Low).
+            - **both**: fire interruption in both (i.e. when GP1 state changes).
 
         In order to trigger, GP1 must be assigned to IOC function (see :func:`set_pin_function`).
 

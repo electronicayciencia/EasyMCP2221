@@ -34,6 +34,7 @@ Documentation:
     * Added MCP2221 pinout guide.
     * Added advanced ADC/DAC examples section.
     * Added license.
+	* Corrected typos.
 
 
 V1.5

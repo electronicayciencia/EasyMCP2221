@@ -7,7 +7,6 @@ class TimeoutError(Exception):
     """ I2C transaction timed out.
 
     Possible causes:
-
         - I2C bus noise
         - incorrect command, protocol or speed
         - slave device busy (e.g. EEPROM write cycle)
@@ -19,8 +18,8 @@ class LowSCLError(Exception):
     SCL should go up when I2C bus is idle.
 
     Possible causes:
-
         - Missing pull-up resistor or too high.
+        - Signal integrity issues due to noise.
         - A slave device is using clock stretching to indicate it is busy.
         - Another device is using the bus.
     """
@@ -31,8 +30,8 @@ class LowSDAError(Exception):
     SDA should go up when I2C bus is idle.
 
     Possible causes:
-
         - Missing pull-up resistor or too high.
+        - Signal integrity issues due to noise.
         - An I2C read transfer timed out while slave was sending data, and now the I2C
           bus is locked-up. Read the Hint.
 
