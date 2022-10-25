@@ -212,6 +212,6 @@ I2C_ST_STOP_WAIT              = 0x61
 I2C_ST_STOP_TOUT              = 0x62  # timeout in stop condition (bus busy)
 
 # Bytes in CMD_POLL_STATUS_SET_PARAMETERS response
-I2C_POLL_RESP_SDA             = 22
-I2C_POLL_RESP_SCL             = 23
+I2C_POLL_RESP_SCL             = 22
+I2C_POLL_RESP_SDA             = 23
 I2C_POLL_RESP_STATUS          =  8
