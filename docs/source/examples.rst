@@ -34,7 +34,7 @@ Import ``EasyMCP2221`` module and try to create a new :class:`Device` object wit
     }
 
 
-In case of error, make sure MCP2221A is properly connected. Use Microchip's tool to find the device. Also read the troubleshooting section of :doc:`install`.
+In case of error, make sure MCP2221A is properly connected. Use Microchip's tool to find the device. Also read the troubleshooting section in :doc:`install`.
 
 .. currentmodule:: EasyMCP2221.Device
 
