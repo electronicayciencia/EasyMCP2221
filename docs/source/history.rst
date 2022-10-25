@@ -6,6 +6,17 @@ Changelog
 V1.6
 --------
 
+V1.6.2
+~~~~~~
+
+Fixed bug: when ADC reference is VDD and DAC reference is VRM and a new GPIO configuration is applied, DAC stops working. It seems to be related with a known MCP limitation.
+
+Modified reset time from 1s to 200ms.
+
+Low SCL and low SDA exceptions were swapped. Fixed.
+
+
+
 V1.6.1
 ~~~~~~
 

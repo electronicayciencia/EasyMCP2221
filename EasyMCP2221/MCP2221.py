@@ -57,6 +57,7 @@ class Device:
         # 2:1 -> reference value,
         # 0   -> reference source
         "dac_ref": None,
+        "dac_value": None,
         # 2:1 -> reference value,
         # 0   -> reference source
         "adc_ref": None,
@@ -82,9 +83,10 @@ class Device:
         self.status["GPIO"]["gp3"] = settings[25]
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
         self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
+        self.status["dac_value"] = (settings[6])      & 0b00011111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
         # After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM
-        self._reclaim_vrm(self.status["dac_ref"], self.status["adc_ref"])
+        self._reclaim_vrm()
         # set i2c status
         self.status["i2c_dirty"] = not self.I2C_is_idle()
 
@@ -462,6 +464,18 @@ class Device:
         else:
             self.status["adc_ref"] = adc_ref
 
+        if dac_value is None:
+            dac_value = self.status["dac_value"]
+        else:
+            self.status["dac_value"] = dac_value
+
+        # Must turn off VRM when applying new GPIO configuration
+        # otherwise it fails if ADC_ref = VDD and DAC_ref = VRM
+        # dac value seems also to be lost
+        if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
+            dac_ref = DAC_REF_VRM | DAC_VRM_OFF
+            adc_ref = ADC_REF_VRM | ADC_VRM_OFF
+
         # Set Alter flag for all non-none parameters
         if clk_output is not None: clk_output |= ALTER_CLK_OUTPUT
         if int_conf   is not None: int_conf   |= ALTER_INT_CONF
@@ -473,9 +487,9 @@ class Device:
         cmd[0]  = CMD_SET_SRAM_SETTINGS
         cmd[1]  = 0   # don't care
         cmd[2]  = clk_output or PRESERVE_CLK_OUTPUT # Clock Output Divider value
-        cmd[3]  = dac_ref    or ALTER_DAC_REF       # DAC Voltage Reference
+        cmd[3]  = dac_ref                           # DAC Voltage Reference
         cmd[4]  = dac_value  or PRESERVE_DAC_VALUE  # Set DAC output value
-        cmd[5]  = adc_ref    or ALTER_ADC_REF       # ADC Voltage Reference
+        cmd[5]  = adc_ref                           # ADC Voltage Reference
         cmd[6]  = int_conf   or PRESERVE_INT_CONF   # Setup the interrupt detection
         cmd[7]  = new_gpconf or PRESERVE_GPIO_CONF  # Alter GPIO configuration
         cmd[8]  = gp0                               # GP0 settings
@@ -493,15 +507,16 @@ class Device:
         # ALTER_GPIO_CONF flag will reset Vrm anyways.
         # Note: this will cause a 2ms gap at DAC output.
         if new_gpconf and ( (dac_ref & DAC_REF_VRM) or (adc_ref & ADC_REF_VRM) ):
-            self._reclaim_vrm(dac_ref, adc_ref)
+            self._reclaim_vrm()
 
 
-    def _reclaim_vrm(self, dac_ref, adc_ref):
+    def _reclaim_vrm(self):
         """ Configure only Vrm part and nothing more """
         cmd = [0] * 12
         cmd[0]  = CMD_SET_SRAM_SETTINGS
-        cmd[3]  = dac_ref | ALTER_DAC_REF
-        cmd[5]  = adc_ref | ALTER_ADC_REF
+        cmd[3]  = self.status["dac_ref"]   | ALTER_DAC_REF
+        cmd[4]  = self.status["dac_value"] | ALTER_DAC_VALUE
+        cmd[5]  = self.status["adc_ref"]   | ALTER_ADC_REF
         r = self.send_cmd(cmd)
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
@@ -1049,7 +1064,11 @@ class Device:
         """ Check if the I2C engine is idle.
 
         Returns:
-            bool: True if idle, False if engine is in the middle of a transfer (timeout detected).
+            bool: True if idle, False if engine is in the middle of a transfer or busy.
+
+        Raises:
+            LowSDAError: if **SCL** line is down (read exception description).
+            LowSCLError: if **SDA** line is down (read exception description).
 
         Example:
             >>> mcp.I2C_is_idle()
@@ -1058,7 +1077,15 @@ class Device:
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
 
-        if rbuf[8]:
+        if rbuf[I2C_POLL_RESP_SCL] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if rbuf[I2C_POLL_RESP_SDA] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+
+        if rbuf[I2C_POLL_RESP_STATUS]:
             self.status["i2c_dirty"] = True
             return False
         else:
@@ -1578,7 +1605,7 @@ class Device:
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
         self.send_cmd(buf)
-        time.sleep(1)
+        time.sleep(0.2)
 
         self.__init__()
 
