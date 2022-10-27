@@ -6,6 +6,7 @@
 
 import unittest
 import json
+from random import randbytes
 from time import sleep
 
 import EasyMCP2221
@@ -39,20 +40,6 @@ class GPIO(unittest.TestCase):
         self.assertEqual(
             data["USB Product"],
             "MCP2221 USB-I2C/UART Combo")
-
-
-#    Floating input in GP0 gives unexpected result.
-#    def test_all_inputs(self):
-#        """All inputs, no voltage source."""
-#        self.mcp.set_pin_function(
-#            gp0 = "GPIO_IN",
-#            gp1 = "GPIO_IN",
-#            gp2 = "GPIO_IN",
-#            gp3 = "GPIO_IN")
-#
-#        self.assertEqual(
-#            self.mcp.GPIO_read(),
-#            (0,0,0,0))
 
 
     def test_all_off_with_pinfunction(self):
@@ -159,6 +146,23 @@ class GPIO(unittest.TestCase):
             self.mcp.GPIO_read()[3],
             True)
 
+    def test_gpio_read_gp2_3_on(self):
+        """SRAM_config must preserve GPIO_write values."""
+        self.mcp.set_pin_function(
+            gp0 = "GPIO_IN",
+            gp1 = "GPIO_IN",
+            gp2 = "GPIO_OUT", out2 = 1,
+            gp3 = "GPIO_IN")
+
+        gp3_in = self.mcp.GPIO_read()[3]
+        self.assertTrue(self.mcp.GPIO_read()[3])
+
+        self.mcp.GPIO_write(gp2 = False)
+        self.assertFalse(self.mcp.GPIO_read()[3])
+
+        # This shall not change gp2 output value
+        self.mcp.set_pin_function(gp0 = "GPIO_IN")
+        self.assertFalse(self.mcp.GPIO_read()[3])
 
 
 class ADC_DAC(unittest.TestCase):
@@ -226,7 +230,7 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "VDD")
         self.mcp.DAC_config(ref = "VDD")
         self.mcp.DAC_write(31)
@@ -239,7 +243,7 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "VDD")
         self.mcp.DAC_config(ref = "4.096V")
         self.mcp.DAC_write(31)
@@ -253,13 +257,13 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "2.048V")
         self.mcp.DAC_config(ref = "VDD")
         self.mcp.DAC_write(13)
-        sleep(0.01) # time to settle-up
+        sleep(0.05) # time to settle-up
         adc = self.mcp.ADC_read()[1]
-        self.assertTrue(990 < adc < 1010)
+        self.assertTrue(990 < adc < 1023)
 
 
     def test_adc_vrm_dac_vrm(self):
@@ -267,7 +271,7 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "2.048V")
         self.mcp.DAC_config(ref = "2.048V")
         self.mcp.DAC_write(15)
@@ -281,7 +285,7 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "2.048V")
         self.mcp.DAC_config(ref = "2.048V")
         self.mcp.DAC_write(15)
@@ -296,7 +300,7 @@ class ADC_DAC(unittest.TestCase):
         self.mcp.set_pin_function(
             gp2 = "ADC",
             gp3 = "DAC")
-            
+
         self.mcp.ADC_config(ref = "VDD")
         self.mcp.DAC_config(ref = "2.048V")
         self.mcp.DAC_write(31)
@@ -310,13 +314,19 @@ class I2C(unittest.TestCase):
 
     def setUp(self):
         self.i2caddr = 0x50
-        
-        self.mcp = EasyMCP2221.Device()
+        self.NO_i2caddr = 0x51
+
+        self.mcp = EasyMCP2221.Device(trace_packets = False)
+        #import pdb
+        #pdb.set_trace()
         self.mcp.set_pin_function(
             gp0 = "GPIO_OUT", out0 = 1, # pull-up SCL
             gp1 = "GPIO_OUT", out1 = 1, # pull-up SCL
             gp2 = "GPIO_IN",
             gp3 = "GPIO_IN")
+
+        self.mcp.I2C_speed(100000)
+
 
     def tearDown(self):
         """Safe status """
@@ -326,50 +336,275 @@ class I2C(unittest.TestCase):
             gp2 = "GPIO_IN",
             gp3 = "GPIO_IN")
 
-
-    def test_i2c_idle(self):
-        self.assertTrue(self.mcp.I2C_is_idle())
-
-
+    
     def test_i2c_low_scl(self):
         """SCL down"""
         self.mcp.GPIO_write(gp0 = 0)
-        
+
         with self.assertRaises(LowSCLError):
-            self.assertTrue(self.mcp.I2C_is_idle())
+            self.assertTrue(self.mcp.I2C_read(self.i2caddr, 1))
 
 
     def test_i2c_low_sda(self):
         """SDA down"""
         self.mcp.GPIO_write(gp1 = 0)
-        
+
         with self.assertRaises(LowSDAError):
-            self.assertTrue(self.mcp.I2C_is_idle())
+            self.assertTrue(self.mcp.I2C_read(self.i2caddr, 1))
 
 
-    def test_i2c_read_1_bit(self):
-        """Read 1 bit from a known device"""
+    def test_i2c_read_1_byte(self):
+        """Read 1 byte from a known device"""
         self.mcp.I2C_read(self.i2caddr, 1)
 
 
-    def test_i2c_read_1_bit_no_device(self):
-        """Read 1 bit from a wrong device address."""
-        
+    def test_i2c_read_1_byte_no_device(self):
+        """Read 1 byte from a wrong device address."""
+
         with self.assertRaises(NotAckError):
-            self.mcp.I2C_read(self.i2caddr + 1, 1)
+            self.mcp.I2C_read(self.NO_i2caddr, 1)
 
 
-    def test_i2c_write_1_bit(self):
-        """Write 1 bit from a known device"""
+    def test_i2c_write_1_byte(self):
+        """Write 1 byte from a known device"""
         self.mcp.I2C_write(self.i2caddr, b'1')
 
 
-    def test_i2c_write_1_bit_no_device(self):
-        """Write 1 bit from a wrong device address."""
+    def test_i2c_write_1_byte_no_device(self):
+        """Write 1 byte from a wrong device address."""
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_write(self.NO_i2caddr, b'1')
+
+
+    def test_i2c_write_read_1_byte(self):
+        """Write 1 byte to and EEPROM and read it back."""
+        content = randbytes(1)
+
+        self.mcp.I2C_write(self.i2caddr, b'\x00\x00' + content)
+        sleep(0.01)
+
+        self.mcp.I2C_write(self.i2caddr, b'\x00\x00', "nonstop")
+        response = self.mcp.I2C_read(self.i2caddr, 1, "restart")
+
+        self.assertEqual(response, content)
+
+
+    def test_i2c_write_read_chunk(self):
+        """Write 58,59,60,61,62 bytes to and EEPROM and read them back."""
+        # The eeprom must have at least 64 bytes page (e.g. 24lc128)
+
+        for l in range(55,65):
+
+            content = randbytes(l)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00' + content)
+            sleep(0.01)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00', "nonstop")
+            response = self.mcp.I2C_read(self.i2caddr, l, "restart")
+
+            self.assertEqual(response, content)
+
+
+    def test_i2c_write_read_chunk_slowest(self):
+        """Write multiple bytes to and EEPROM and read them back at slowest speed."""
+        # The eeprom must have at least 64 bytes page (e.g. 24lc128)
+
+        self.mcp.I2C_speed(47000)
+
+        for l in range(55,65):
+
+            content = randbytes(l)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00' + content)
+            sleep(0.05)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00', "nonstop")
+            response = self.mcp.I2C_read(self.i2caddr, l, "restart")
+
+            self.assertEqual(response, content)
+
+
+    def test_i2c_write_read_chunk_fastest(self):
+        """Write multiple bytes to and EEPROM and read them back at fastest speed."""
+        # The eeprom must have at least 64 bytes page (e.g. 24lc128)
+
+        self.mcp.I2C_speed(500000)
+
+        for l in range(55,65):
+
+            content = randbytes(l)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00' + content)
+            sleep(0.005)
+
+            self.mcp.I2C_write(self.i2caddr, b'\x00\x00', "nonstop")
+            response = self.mcp.I2C_read(self.i2caddr, l, "restart")
+
+            self.assertEqual(response, content)
+
+
+    def test_i2c_write_1_byte_scl_down(self):
+        """Try to write while SCL is down."""
+        self.mcp.GPIO_write(gp0 = False)
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr, b'1')
+
+
+    def test_i2c_write_1_byte_sda_down(self):
+        """Try to write while SDA is down."""
+        self.mcp.GPIO_write(gp1 = False)
+
+        with self.assertRaises(LowSDAError):
+            self.mcp.I2C_write(self.i2caddr, b'1')
+
+
+    def test_i2c_write_2_chunk_scl_down(self):
+        """Try to write >1 chunk while SCL is down."""
+        self.mcp.GPIO_write(gp0 = False)
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr,  b'A' * 65)
+
+
+    def test_i2c_write_1_chunk_sda_down(self):
+        """Try to write >1 chunk while SDA is down."""
+        self.mcp.GPIO_write(gp1 = False)
+
+        with self.assertRaises(LowSDAError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+
+    def test_i2c_write_1_chunk_no_device(self):
+        """Try to write 1 chunk wrong address."""
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_write(self.NO_i2caddr, b'A'* 40)
+
+
+    def test_i2c_write_2_chunks_no_device(self):
+        """Try to write 2 chunks wrong address."""
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_write(self.NO_i2caddr, b'A' * 65)
+
+
+    def test_i2c_read_1_chunk_no_device(self):
+        """Try to read 1 chunk wrong address."""
         
         with self.assertRaises(NotAckError):
-            self.mcp.I2C_write(self.i2caddr + 1, b'1')
+            self.mcp.I2C_read(self.NO_i2caddr, 40)
 
+
+    def test_i2c_read_2_chunks_no_device(self):
+        """Try to read 2 chunks wrong address."""
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_read(self.NO_i2caddr, 65)
+
+
+    def test_i2c_dirty_recover_write_SCL(self):
+        """Recover from dirty condition from SCL low, writing."""
+
+        self.mcp.GPIO_write(gp0 = False)
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp0 = True)
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_write(self.NO_i2caddr, b'1')
+
+
+    def test_i2c_dirty_recover_read_SCL(self):
+        """Recover from dirty condition from SCL low, reading."""
+
+        self.mcp.GPIO_write(gp0 = False)
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp0 = True)
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_read(self.NO_i2caddr, 1)
+
+
+    def test_i2c_dirty_recover_write_SDA(self):
+        """Recover from dirty condition from SDA low, writing."""
+
+        self.mcp.GPIO_write(gp1 = False)
+
+        with self.assertRaises(LowSDAError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp1 = True)
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_write(self.NO_i2caddr, b'1')
+
+
+    def test_i2c_dirty_recover_read_SDA(self):
+        """Recover from dirty condition from SDA low, reading."""
+
+        self.mcp.GPIO_write(gp1 = False)
+
+        with self.assertRaises(LowSDAError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp1 = True)
+
+        with self.assertRaises(NotAckError):
+            self.mcp.I2C_read(self.NO_i2caddr, 1)
+
+
+
+    def test_i2c_speed_low_lines(self):
+        """Try to set the speed with lines low."""
+
+        content = randbytes(1)
+        self.mcp.I2C_write(self.i2caddr, b"\x00\x00" + content)
+
+        self.mcp.reset()
+        self.mcp.set_pin_function(
+            gp0 = "GPIO_OUT", out0 = 0, # pull-up SCL
+            gp1 = "GPIO_OUT", out1 = 0, # pull-up SDA
+            gp2 = "GPIO_IN",
+            gp3 = "GPIO_IN")
+        
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_speed(100000)
+        
+        # Try to use the bus
+        self.mcp.GPIO_write(gp0 = 1, gp1 = 1)
+        
+        self.mcp.I2C_write(self.i2caddr, b'\x00\x00', "nonstop")
+        response = self.mcp.I2C_read(self.i2caddr, len(content), "restart")
+        
+        self.assertEqual(response, content)
+
+
+class Config(unittest.TestCase):
+
+    def setUp(self):
+        self.mcp = EasyMCP2221.Device()
+        self.mcp.set_pin_function(
+            gp0 = "GPIO_IN",
+            gp1 = "GPIO_IN",
+            gp2 = "GPIO_IN",
+            gp3 = "GPIO_IN")
+
+
+    def tearDown(self):
+        """ Safe status """
+        self.mcp.set_pin_function(
+            gp0 = "GPIO_IN",
+            gp1 = "GPIO_IN",
+            gp2 = "GPIO_IN",
+            gp3 = "GPIO_IN")
 
 
 
@@ -377,15 +612,22 @@ class I2C(unittest.TestCase):
 #        import pdb;
 #        pdb.set_trace()
 
+# write non-stop, write normal
 
-# test saveconfig, saveconfig tras gpio_write
-# test ioc energy
-#i2c low scl
-#i2c low sda
-#i2c timeout
+
+# test saveconfig, 
+# saveconfig tras gpio_write
+# saveconfig and recover Vrm just after reset
+# test ioc flash
 
 
 if __name__ == '__main__':
     unittest.main()
 
 
+
+
+#encuentra device
+#no encuentra device
+#saveconfig + reset
+#saveconfig + gpio_write

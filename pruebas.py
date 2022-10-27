@@ -1,9 +1,91 @@
+from sys import exit
 import time
 from time import sleep
 import EasyMCP2221
 from EasyMCP2221.Constants import *
 
-mcp = EasyMCP2221.Device()
+mcp = EasyMCP2221.Device(trace_packets = True)
+
+mcp.set_pin_function(
+    gp0 = "GPIO_OUT", out0 = 1, # pull-up SCL
+    gp1 = "GPIO_OUT", out1 = 1, # pull-up SDA
+    gp2 = "GPIO_IN",
+    gp3 = "GPIO_IN")
+
+mcp.I2C_speed(100000)
+
+#mcp.I2C_cancel()
+#mcp.I2C_is_idle()
+
+mcp.GPIO_write(gp1=0)
+
+try:
+    mcp.I2C_write(0x50, b'A' * 65)
+except:
+    pass
+
+mcp.GPIO_write(gp1=1)
+
+try:
+    mcp.I2C_read(0x51, 1)
+except:
+    print("Failed ok")
+
+#mcp.reset()
+exit()
+
+
+
+
+mcp.set_pin_function(
+    gp0 = "GPIO_OUT", out0 = 1, # pull-up SCL
+    gp1 = "GPIO_OUT", out1 = 1, # pull-up SDA
+    gp2 = "GPIO_IN",
+    gp3 = "GPIO_IN")
+
+mcp = EasyMCP2221.Device(trace_packets = True)
+
+
+
+exit()
+
+#import pdb
+#pdb.set_trace()
+
+#mcp.I2C_speed(100000)
+
+
+#mcp.GPIO_write(gp1 = False)
+    
+try:
+    mcp.I2C_read(0x51,1)
+except:
+    pass
+    
+#mcp.GPIO_write(gp1 = True)
+
+
+mcp.I2C_read(0x51,1)
+
+
+exit()
+
+
+mcp.ADC_config(ref = "VDD")
+mcp.DAC_config(ref = "2.048V")
+mcp.DAC_write(31)
+
+mcp.set_pin_function(
+    gp2 = "ADC",
+    gp3 = "DAC")
+
+
+
+#In [36]: mcp.ADC_read()
+#Out[36]: (1023, 991, 991)
+
+exit()
+
 mcp.I2C_write(0x50, b'\x00\x00', 'nonstop')
 mcp.I2C_read(0x50, 25, 'restart')
 

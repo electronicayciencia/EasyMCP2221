@@ -61,13 +61,15 @@ class Device:
         # 2:1 -> reference value,
         # 0   -> reference source
         "adc_ref": None,
-        # mark i2c bus as dirty
-        "i2c_dirty": False
+        # mark i2c bus as dirty, to call cancel before then next operation
+        "i2c_dirty": None
     }
     """ Internal status """
 
 
-    def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0):
+    def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0, trace_packets = False):
+        self.trace_packets = trace_packets
+
         self.hidhandler = hid.device()
         devices = hid.enumerate(VID, PID)
         if not devices or len(devices) < devnum:
@@ -85,10 +87,14 @@ class Device:
         self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
         self.status["dac_value"] = (settings[6])      & 0b00011111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
-        # After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM
+        ## After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM
         self._reclaim_vrm()
-        # set i2c status
-        self.status["i2c_dirty"] = not self.I2C_is_idle()
+        # Read I2C status and try to release the bus if needed.
+        # (i2c lines might not be up right now)
+        try:
+            self._i2c_release()
+        except:
+            pass
 
 
     def __repr__(self):
@@ -1047,6 +1053,10 @@ class Device:
         if bus_speed < 0 or bus_speed > 255:
             raise ValueError("Speed must be between 47kHz and 400kHz.")
 
+        # Try to clean last I2C error condition
+        if self.status["i2c_dirty"]:
+            self._i2c_release()
+
         buf = [0] * 5
         buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
         buf[1] = 0
@@ -1055,123 +1065,10 @@ class Device:
         buf[4] = bus_speed
         rbuf = self.send_cmd(buf)
 
-        if (rbuf[3] != 0x20):
-            self.I2C_cancel()
+        if (rbuf[I2C_POLL_RESP_NEWSPEED_STATUS] != 0x20):
+            self.status["i2c_dirty"] = True
             raise RuntimeError("I2C speed is not valid or bus is busy.")
 
-
-    def I2C_is_idle(self):
-        """ Check if the I2C engine is idle.
-
-        Returns:
-            bool: True if idle, False if engine is in the middle of a transfer or busy.
-
-        Raises:
-            LowSDAError: if **SCL** line is down (read exception description).
-            LowSCLError: if **SDA** line is down (read exception description).
-
-        Example:
-            >>> mcp.I2C_is_idle()
-            True
-            >>>
-        """
-        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
-
-        if rbuf[I2C_POLL_RESP_SCL] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
-
-        if rbuf[I2C_POLL_RESP_SDA] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
-
-        if rbuf[I2C_POLL_RESP_STATUS]:
-            self.status["i2c_dirty"] = True
-            return False
-        else:
-            self.status["i2c_dirty"] = False
-            return True
-
-
-    def I2C_cancel(self):
-        """ Try to cancel an active I2C read or write command.
-
-        Return:
-            bool: True if device is now ready to go. False if the engine is not idle.
-
-        Raises:
-            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
-            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
-
-        Examples:
-
-            Last transfer was cancel, and engine is ready for the next operation:
-
-            >>> mcp.I2C_cancel()
-            True
-
-            Last transfer failed, and cancel failed too because I2C bus seems busy:
-
-            >>> mcp.I2C_cancel()
-            Traceback (most recent call last):
-            ...
-            EasyMCP2221.exceptions.LowSCLError: SCL is low. I2C bus is busy or missing pull-up resistor.
-
-        Note:
-            Do not call this function without issuing a :func:`I2C_read` or
-            :func:`I2C_write` first. It could render I2C engine inoperative until
-            the next reset.
-
-            >>> mcp.reset()
-            >>> mcp.I2C_is_idle()
-            True
-            >>> mcp.I2C_cancel()
-            False
-
-            Now the bus is busy until the next reset.
-
-            >>> mcp.I2C_speed(100000)
-            Traceback (most recent call last):
-            ...
-            RuntimeError: I2C speed is not valid or bus is busy.
-            >>> mcp.I2C_cancel()
-            False
-            >>> mcp.I2C_is_idle()
-            False
-            >>> mcp.I2C_cancel()
-            False
-
-            After a reset, it will work again.
-
-            >>> mcp.reset()
-            >>> mcp.I2C_is_idle()
-            True
-        """
-        buf = [0] * 3
-        buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
-        buf[1] = 0
-        buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
-
-        rbuf = self.send_cmd(buf)
-
-        # Return idle if the first cancel attempt worked
-        if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
-            self.status["i2c_dirty"] = False
-            return True
-
-        # Otherwise, sleep, try again and confirm.
-        time.sleep(10/1000)
-        rbuf = self.send_cmd(buf)
-
-        if rbuf[I2C_POLL_RESP_SCL] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
-
-        if rbuf[I2C_POLL_RESP_SDA] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
-
-        return self.I2C_is_idle()
 
 
     def I2C_write(self, addr, data, kind = "regular", timeout_ms = 20):
@@ -1198,8 +1095,8 @@ class Device:
             ValueError: if any parameter is not valid.
             NotAckError: if the I2C slave didn't acknowledge.
             TimeoutError: if the writing timeout is exceeded.
-            LowSDAError: See :func:`I2C_cancel`.
-            LowSCLError: See :func:`I2C_cancel`.
+            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
+            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
             RuntimeError: if some other error occurs.
 
         Examples:
@@ -1241,7 +1138,7 @@ class Device:
 
         # Try to clean last I2C error condition
         if self.status["i2c_dirty"]:
-            self.I2C_cancel()
+            self._i2c_release()
 
         header = [0] * 4
         header[0] = cmd
@@ -1259,7 +1156,7 @@ class Device:
             while True:
                 # Protect against infinite loop due to noise in I2C bus
                 if time.perf_counter() > watchdog:
-                    self.I2C_cancel()
+                    self._i2c_release()
                     raise TimeoutError("Timeout.")
 
 
@@ -1283,46 +1180,73 @@ class Device:
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] in (
                         I2C_ST_WRITEDATA_TOUT,
                         I2C_ST_STOP_TOUT):
-                        self.I2C_cancel()
+                        self._i2c_release()
                         raise RuntimeError("Internal I2C engine timeout.")
 
                     # device did not ack last transfer
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
-                        self.I2C_cancel()
+                        self._i2c_release()
                         raise NotAckError("Device did not ACK.")
 
                     # after non-stop
                     elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_END_NOSTOP:
-                        self.I2C_cancel()
+                        self._i2c_release()
                         raise RuntimeError("You must use 'restart' mode to write after a 'nonstop' write.")
 
                     # something else
                     else:
-                        self.I2C_cancel()
+                        self._i2c_release()
                         raise RuntimeError("I2C write error. Internal status %02x. Try again." %
                             (rbuf[I2C_INTERNAL_STATUS_BYTE]))
 
-        # check final status
-        if not self._i2c_ack():
-            self.I2C_cancel()
-            raise NotAckError("Device did not ACK.")
+        # check final status using CMD_POLL_STATUS_SET_PARAMETERS instead another write
+        watchdog = time.perf_counter() + timeout_ms/1000
+
+        while True:
+            # Protect against infinite loop due to noise in I2C bus
+            if time.perf_counter() > watchdog:
+                self._i2c_release()
+                raise TimeoutError("Timeout.")
+
+            i2c_status = self._i2c_status()
+
+            if i2c_status["st"] in (I2C_ST_IDLE, I2C_ST_WRITEDATA_END_NOSTOP):
+                return
+
+            # data not sent, why?
+            else:
+                # temporary error, try again until timeout
+                if i2c_status["st"] in (
+                    I2C_ST_WRITEDATA,
+                    I2C_ST_WRITEDATA_WAITSEND,
+                    I2C_ST_WRITEDATA_ACK):
+                    continue
+
+                # internal timeout condition
+                elif i2c_status["st"] in (
+                    I2C_ST_WRITEDATA_TOUT,
+                    I2C_ST_STOP_TOUT):
+                    self._i2c_release()
+                    raise RuntimeError("Internal I2C engine timeout.")
+
+                # device did not ack last transfer
+                elif i2c_status["st"] == I2C_ST_WRADDRL_NACK_STOP:
+                    self._i2c_release()
+                    raise NotAckError("Device did not ACK.")
+
+                # after non-stop
+                elif i2c_status["st"] == I2C_ST_WRITEDATA_END_NOSTOP:
+                    self._i2c_release()
+                    raise RuntimeError("You must use 'restart' mode to write after a 'nonstop' write.")
+
+                # something else
+                else:
+                    self._i2c_release()
+                    raise RuntimeError("I2C write error. Internal status %02x. Try again." %
+                        (i2c_status["st"]))
 
 
-    def _i2c_ack(self):
-        """
-        Get the internal engine ACK status.
-        Useful to know when the write transfer has failed.
-        """
-        if self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])[20] & (1 << 6):
-            return False
-        else:
-            return True
 
-
-
-    #######################################################################
-    # I2C Read
-    #######################################################################
     def I2C_read(self, addr, size = 1, kind = "regular", timeout_ms = 20):
         """ Read data from I2C bus.
 
@@ -1348,8 +1272,8 @@ class Device:
             ValueError: if any parameter is not valid.
             NotAckError: if the I2C slave didn't acknowledge.
             TimeoutError: if the writing timeout is exceeded.
-            LowSDAError: See :func:`I2C_cancel`.
-            LowSCLError: See :func:`I2C_cancel`.
+            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
+            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
             RuntimeError: if some other error occurs.
 
         Examples:
@@ -1388,7 +1312,7 @@ class Device:
             The default timeout of 20 ms is twice the time required to receive 60 bytes at
             the minimum supported rate (47 kHz).
             If a timeout or other error occurs in the middle of character reading, the I2C may get locked.
-            See :func:`I2C_cancel`.
+            See :any:`LowSDAError`.
         """
         if addr < 0 or addr > 127:
             raise ValueError("Slave address not valid.")
@@ -1411,7 +1335,7 @@ class Device:
 
         # Try to clean last I2C error condition
         if self.status["i2c_dirty"]:
-            self.I2C_cancel()
+            self._i2c_release()
 
         buf = [0] * 4
         buf[0] = cmd
@@ -1423,19 +1347,19 @@ class Device:
         # This command return OK always unless bus were busy.
         # Also triggers data reading and place it into a buffer (until 60 bytes).
         rbuf = self.send_cmd(buf)
+
         if rbuf[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
-            self.I2C_cancel()
+
+            self._i2c_release()
+
             if rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
-                self.I2C_cancel()
                 raise NotAckError("Device did not ACK read command.")
 
             # after non-stop
             elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRITEDATA_END_NOSTOP:
-                self.I2C_cancel()
                 raise RuntimeError("You must use 'restart' mode to read after a 'nonstop' write.")
 
             else:
-                self.I2C_cancel()
                 raise RuntimeError("I2C command read error. Internal status %02x. Try again." %
                     (rbuf[I2C_INTERNAL_STATUS_BYTE]))
 
@@ -1447,7 +1371,7 @@ class Device:
         while True:
             # Protect against infinite loop due to noise in I2C bus
             if time.perf_counter() > watchdog:
-                self.I2C_cancel()
+                self._i2c_release()
                 raise TimeoutError("Timeout.")
 
             # Try to read  MCP's buffer content
@@ -1478,11 +1402,11 @@ class Device:
                 return bytes(data)
 
             elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
-                self.I2C_cancel()
+                self._i2c_release()
                 raise NotAckError("Device did not ACK read command.")
 
             else:
-                self.I2C_cancel()
+                self._i2c_release()
                 raise RuntimeError("I2C read error. Internal status %02x." % (rbuf[I2C_INTERNAL_STATUS_BYTE]))
 
 
@@ -1506,6 +1430,82 @@ class Device:
 
         """
         return I2C_Slave.I2C_Slave(self, addr, force, speed)
+
+
+
+    def _i2c_release(self):
+        """ Try to cancel an active I2C read or write command.
+        Determine if the bus is
+
+        """
+        i2c_status = self._i2c_status()
+
+        # Only call a cancel command if I2C has been used already,
+        # otherwise I2C will crash in 0x62 status.
+        if i2c_status["initialized"]:
+            buf = [0] * 3
+            buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
+            buf[1] = 0
+            buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
+
+            for _ in range(3):
+                rbuf = self.send_cmd(buf)
+                # Cancel always return status 60. Cannot use rbuf.
+                # You need to check idle status as it own.
+                i2c_status = self._i2c_status()
+
+                if (i2c_status["st"] == 0 and
+                    i2c_status["sda"] == 1 and
+                    i2c_status["scl"] == 1):
+
+                    self.status["i2c_dirty"] = False
+                    return
+
+                # Otherwise, sleep and try again
+                time.sleep(10/1000)
+
+        i2c_status = self._i2c_status()
+
+        if (i2c_status["st"] == 0 and
+            i2c_status["sda"] == 1 and
+            i2c_status["scl"] == 1):
+
+            self.status["i2c_dirty"] = False
+            return True
+
+        if i2c_status["scl"] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if i2c_status["sda"] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+
+        self.status["i2c_dirty"] = True
+        raise RuntimeError("Unable to cancel. I2C crashed.")
+
+
+    def _i2c_status(self):
+        """ Return I2C status
+        Document this. And remove i2c_is_idle.
+        """
+        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+        i2c_status = {
+            "rlen" : (rbuf[I2C_POLL_RESP_REQ_LEN_H] << 8) + rbuf[I2C_POLL_RESP_REQ_LEN_L],
+            "txlen": (rbuf[I2C_POLL_RESP_TX_LEN_H]  << 8) + rbuf[I2C_POLL_RESP_TX_LEN_L],
+
+            "div" : rbuf[I2C_POLL_RESP_CLKDIV],
+
+            "ack" : rbuf[I2C_POLL_RESP_ACK] & (1 << 6),
+            "st"  : rbuf[I2C_POLL_RESP_STATUS],
+            "scl" : rbuf[I2C_POLL_RESP_SCL],
+            "sda" : rbuf[I2C_POLL_RESP_SDA],
+        }
+
+        # Determine if you can call cancel or not.
+        i2c_status["initialized"] = (i2c_status["rlen"] > 0)
+
+        return i2c_status
 
 
     #######################################################################
@@ -1605,7 +1605,7 @@ class Device:
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
         self.send_cmd(buf)
-        time.sleep(0.2)
+        time.sleep(1)
 
         self.__init__()
 
