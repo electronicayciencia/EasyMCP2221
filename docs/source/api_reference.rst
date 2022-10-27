@@ -70,6 +70,9 @@ Low level and debug
 
 .. autofunction:: EasyMCP2221.Device.SRAM_config
 .. autofunction:: EasyMCP2221.Device.send_cmd
+.. autofunction:: EasyMCP2221.Device._i2c_release
+.. autofunction:: EasyMCP2221.Device._i2c_status
+
 .. autoattribute:: EasyMCP2221.Device.cmd_retries
 .. autoattribute:: EasyMCP2221.Device.debug_messages
 .. autoattribute:: EasyMCP2221.Device.trace_packets

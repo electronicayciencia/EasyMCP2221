@@ -12,6 +12,7 @@ class Device:
         VID (int, optional): Vendor Id (default to ``0x04D8``)
         PID (int, optional): Product Id (default to ``0x00DD``)
         devnum (int, optional): Device index if multiple device found with the same PID and VID.
+        trace_packets (bool, optional): For debug only. See :any:`trace_packets`.
 
     Raises:
         RuntimeError: if no device found with given VID and PID.
@@ -36,7 +37,7 @@ class Device:
     """
 
     cmd_retries = 1
-    """int: Times to retry a command if it fails."""
+    """int: Times to retry an USB command if it fails."""
 
     trace_packets = False
     """bool: Print all binary commands and responses."""
@@ -67,8 +68,10 @@ class Device:
     """ Internal status """
 
 
-    def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0, trace_packets = False):
-        self.trace_packets = trace_packets
+    def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0, trace_packets = None):
+
+        if trace_packets is not None:
+            self.trace_packets = trace_packets
 
         self.hidhandler = hid.device()
         devices = hid.enumerate(VID, PID)
@@ -1137,7 +1140,8 @@ class Device:
             raise ValueError("Invalid kind of transfer. Allowed: 'regular', 'restart', 'nonstop'.")
 
         # Try to clean last I2C error condition
-        if self.status["i2c_dirty"]:
+        # Also test for bus confusion due to external SDA activity
+        if self.status["i2c_dirty"] or self._i2c_status()["confused"]:
             self._i2c_release()
 
         header = [0] * 4
@@ -1334,7 +1338,7 @@ class Device:
         #    raise RuntimeError("I2C read error, engine is not in idle state.")
 
         # Try to clean last I2C error condition
-        if self.status["i2c_dirty"]:
+        if self.status["i2c_dirty"] or self._i2c_status()["confused"]:
             self._i2c_release()
 
         buf = [0] * 4
@@ -1434,9 +1438,19 @@ class Device:
 
 
     def _i2c_release(self):
-        """ Try to cancel an active I2C read or write command.
-        Determine if the bus is
+        """ Try to make the I2C bus ready for the next operation.
 
+        If there is an active transfer, cancel it. Try multiple times.
+
+        Determine if the bus is ready monitoring SDA and SCL lines.
+
+        Raises:
+            LowSDAError
+            LowSCLError
+            RuntimeError: if multiple cancel attempts did not work. Undetermined cause.
+
+        Note:
+            Calling *Cancel* command on an uninitialized I2C engine can make it crash in 0x62 status until next reset. This function uses :func:`_i2c_status` heuristics to determine if it can issue a Cancel now or not.
         """
         i2c_status = self._i2c_status()
 
@@ -1486,8 +1500,14 @@ class Device:
 
 
     def _i2c_status(self):
-        """ Return I2C status
-        Document this. And remove i2c_is_idle.
+        """ Return I2C status based on POLL_STATUS_SET_PARAMETERS command.
+
+        It uses *last transfer length* to guess if the I2C bus has been used previously in order to tell if Cancel command might cause a crash.
+
+        Note:
+            Ticking SDA line while bus is initialized but idle will cause the next transfer to be bogus.
+            To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
+            There is no official way to determine we are in this situation. The only byte that changes when that happens is bit 18, which is not documented.
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
         i2c_status = {
@@ -1500,6 +1520,15 @@ class Device:
             "st"  : rbuf[I2C_POLL_RESP_STATUS],
             "scl" : rbuf[I2C_POLL_RESP_SCL],
             "sda" : rbuf[I2C_POLL_RESP_SDA],
+
+
+            # Meaning of this byte might be:
+            #   0x00 -> unused bus yet
+            #   0x08 -> sda activity detected ? (also is normal after nonstop write)
+            #   0x10 -> ok
+            "confused" : (
+                rbuf[I2C_POLL_RESP_UNDOCUMENTED_1] == 8 and
+                rbuf[I2C_POLL_RESP_STATUS]         != I2C_ST_WRITEDATA_END_NOSTOP )
         }
 
         # Determine if you can call cancel or not.
@@ -1598,6 +1627,9 @@ class Device:
 
         This operation do not reset any I2C slave devices.
 
+        Note:
+            This function also waits 1 second after the reset command.
+            This time should be enough for the host to re-enumerate the device.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
