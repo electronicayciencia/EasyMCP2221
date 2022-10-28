@@ -6,7 +6,38 @@ from EasyMCP2221.Constants import *
 
 mcp = EasyMCP2221.Device(trace_packets = False)
 
-print(mcp)
+mcp.set_pin_function(
+    gp0 = "GPIO_IN",
+    gp1 = "GPIO_IN",
+    gp2 = "ADC",
+    gp3 = "DAC")
+    
+mcp.ADC_config("VDD")
+mcp.DAC_config("VDD")
+
+mcp.DAC_write(31)
+
+adc1 = mcp.ADC_read()[1]
+
+# should be around 812
+# (31/32*4.096)/5*1024
+print(adc1)
+
+mcp.debug_messages = True
+mcp.save_config()
+mcp.reset()
+
+#print("Comparar esto:")
+#mcp.send_cmd([CMD_GET_SRAM_SETTINGS])
+#mcp.set_pin_function(gp2 = "ADC",gp3 = "DAC")
+#print("Con esto:")
+#mcp.send_cmd([CMD_GET_SRAM_SETTINGS])
+
+adc1 = mcp.ADC_read()[1]
+
+# should be around 812
+# (31/32*4.096)/5*1024
+print(adc1)
 
 
 exit()
