@@ -140,7 +140,7 @@ class GPIO(unittest.TestCase):
             self.mcp.GPIO_read()[3],
             True)
 
-    def test_gpio_read_gp2_3_on(self):
+    def test_gpio_sram_preserve_gpio(self):
         """SRAM_config must preserve GPIO_write values."""
         self.mcp.set_pin_function(
             gp0 = "GPIO_IN",
