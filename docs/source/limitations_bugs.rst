@@ -41,8 +41,6 @@ Misc
 
 * The ADC seems to be always connected. So leakage current for GP1, GP2 and GP3 is greater than for GP0. Think of it as a very weak *pull-down* resistor on these pins.
 
-* MCP2221 status is saved only to SRAM, so it is non persistent. Only USB power options are written to Flash. See :func:`save_config()`.
-
 * This library does not work with password protected devices. You cannot use it to set or clear MCP2221's Flash password.
 
 
