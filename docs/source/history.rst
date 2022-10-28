@@ -9,12 +9,16 @@ V1.6
 V1.6.2
 ~~~~~~
 
-Fixed bug: when ADC reference is VDD and DAC reference is VRM and a new GPIO configuration is applied, DAC stops working. It seems to be related with a known MCP limitation.
+ADC/DAC:
+	* Fixed bug: when ADC reference is VDD and DAC reference is VRM and a new GPIO configuration is applied, DAC stops working. It seems to be related with a known MCP limitation.
 
-Modified reset time from 1s to 200ms.
+I2C:
+	* **Deprecated** *I2C_cancel* and *I2C_is_idle*. Bus is now managed automatically. You can use :any:`_i2c_release` and :any:`_i2c_status` as replacement if needed.
+	* Fixed. Low SCL and low SDA exceptions were swapped. Fixed.
+	* When the I2C bus detects SDA activity, the next transfer does not work fine. Prevented via software. See :any:`_i2c_status`.
 
-Low SCL and low SDA exceptions were swapped. Fixed.
-
+Misc:
+	* Added test suite.
 
 
 V1.6.1

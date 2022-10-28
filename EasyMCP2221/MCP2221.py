@@ -1440,13 +1440,15 @@ class Device:
     def _i2c_release(self):
         """ Try to make the I2C bus ready for the next operation.
 
+        This is a private method, the **API can change** without previous notice.
+
         If there is an active transfer, cancel it. Try multiple times.
 
         Determine if the bus is ready monitoring SDA and SCL lines.
 
         Raises:
-            LowSDAError
-            LowSCLError
+            LowSDAError: if **SCL** line is down (read exception description).
+            LowSCLError: if **SDA** line is down (read exception description).
             RuntimeError: if multiple cancel attempts did not work. Undetermined cause.
 
         Note:
@@ -1502,12 +1504,37 @@ class Device:
     def _i2c_status(self):
         """ Return I2C status based on POLL_STATUS_SET_PARAMETERS command.
 
-        It uses *last transfer length* to guess if the I2C bus has been used previously in order to tell if Cancel command might cause a crash.
+        This is a private method, the **API can change** without previous notice.
+
+        It uses *last transfer length* to guess if the I2C bus has been used previously in order to tell if *Cancel* command might cause a crash.
+
+        Returns:
+            Dictionary with I2C internal details.
+
+            .. code-block:: raw
+
+                {
+                  'rlen' : 65,  <- Value of the requested I2C transfer length
+                  'txlen': 0,   <- Value of the already transferred (through I2C) number of bytes
+                  'div'  : 118, <- Current I2C communication speed divider value
+                  'ack'  : 0,   <- If ACK was received from client value is 0, else 1.
+                  'st'   : 98,  <- I2C Communication state
+                  'scl'  : 1,   <- SCL line value as read from the pin
+                  'sda'  : 0,   <- SDA line value as read from the pin
+                  'confused': False,
+                  'initialized': True
+                }
+
+
+        Hint:
+            If your project does not use I2C, you could reuse SCL and SDA as digital inputs. Call this method to get its logic value.
 
         Note:
-            Ticking SDA line while bus is initialized but idle will cause the next transfer to be bogus.
-            To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
-            There is no official way to determine we are in this situation. The only byte that changes when that happens is bit 18, which is not documented.
+            About **confused** status.
+
+            Due to a firmware bug or a library bug (I don't know), ticking SDA line while I2C bus is initialized but idle will cause the next transfer to be bogus. To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
+
+            Unfortunately, there is no official way to determine that we are in this situation. The only byte that changes when it happens seems to be bit 18, which is *not documented*.
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
         i2c_status = {
@@ -1535,6 +1562,148 @@ class Device:
         i2c_status["initialized"] = (i2c_status["rlen"] > 0)
 
         return i2c_status
+
+
+    #######################################################################
+    # I2C deprecated
+    #######################################################################
+
+    def I2C_is_idle(self):
+        """ Check if the I2C engine is idle.
+
+        Warning:
+            **Deprecated.**
+
+            There is no need for this method anymore. The bus is managed automatically.
+            You can use :func:`_i2c_status` function to know the I2C internal status details.
+
+        Returns:
+            bool: True if idle, False if engine is in the middle of a transfer or busy.
+
+        Raises:
+            LowSDAError: if **SCL** line is down (read exception description).
+            LowSCLError: if **SDA** line is down (read exception description).
+
+        Example:
+            >>> mcp.I2C_is_idle()
+            True
+            >>>
+        """
+        import warnings
+        warnings.warn("This method is deprecated and will be removed in the next release.",
+            DeprecationWarning,
+            stacklevel=2)
+
+        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+
+        if rbuf[I2C_POLL_RESP_SCL] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if rbuf[I2C_POLL_RESP_SDA] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+
+        if rbuf[I2C_POLL_RESP_STATUS]:
+            self.status["i2c_dirty"] = True
+            return False
+        else:
+            self.status["i2c_dirty"] = False
+            return True
+
+
+    def I2C_cancel(self):
+        """ Try to cancel an active I2C read or write command.
+
+        Warning:
+            **Deprecated.**
+
+            There is no need for this method anymore. The bus is managed automatically.
+            You can use :func:`_i2c_release` function to manually cancel a transfer.
+
+        Return:
+            bool: True if device is now ready to go. False if the engine is not idle.
+
+        Raises:
+            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
+            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
+
+        Examples:
+
+            Last transfer was cancel, and engine is ready for the next operation:
+
+            >>> mcp.I2C_cancel()
+            True
+
+            Last transfer failed, and cancel failed too because I2C bus seems busy:
+
+            >>> mcp.I2C_cancel()
+            Traceback (most recent call last):
+            ...
+            EasyMCP2221.exceptions.LowSCLError: SCL is low. I2C bus is busy or missing pull-up resistor.
+
+        Note:
+            Do not call this function without issuing a :func:`I2C_read` or
+            :func:`I2C_write` first. It could render I2C engine inoperative until
+            the next reset.
+
+            >>> mcp.reset()
+            >>> mcp.I2C_is_idle()
+            True
+            >>> mcp.I2C_cancel()
+            False
+
+            Now the bus is busy until the next reset.
+
+            >>> mcp.I2C_speed(100000)
+            Traceback (most recent call last):
+            ...
+            RuntimeError: I2C speed is not valid or bus is busy.
+            >>> mcp.I2C_cancel()
+            False
+            >>> mcp.I2C_is_idle()
+            False
+            >>> mcp.I2C_cancel()
+            False
+
+            After a reset, it will work again.
+
+            >>> mcp.reset()
+            >>> mcp.I2C_is_idle()
+            True
+        """
+        import warnings
+        warnings.warn("This method is deprecated and will be removed in the next release.",
+            DeprecationWarning,
+            stacklevel=2)
+
+        buf = [0] * 3
+        buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
+        buf[1] = 0
+        buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
+
+        rbuf = self.send_cmd(buf)
+
+        # Return idle if the first cancel attempt worked
+        if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
+            self.status["i2c_dirty"] = False
+            return True
+
+        # Otherwise, sleep, try again and confirm.
+        time.sleep(10/1000)
+        rbuf = self.send_cmd(buf)
+
+        if rbuf[I2C_POLL_RESP_SCL] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
+
+        if rbuf[I2C_POLL_RESP_SDA] == 0:
+            self.status["i2c_dirty"] = True
+            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
+
+        return self.I2C_is_idle()
+
+
 
 
     #######################################################################

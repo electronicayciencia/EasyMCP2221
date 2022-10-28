@@ -4,7 +4,11 @@ from time import sleep
 import EasyMCP2221
 from EasyMCP2221.Constants import *
 
-mcp = EasyMCP2221.Device(trace_packets = True)
+mcp = EasyMCP2221.Device(trace_packets = False)
+
+mcp.I2C_cancel()
+
+exit()
 
 mcp.set_pin_function(
     gp0 = "GPIO_OUT", out0 = 1, # pull-up SCL
