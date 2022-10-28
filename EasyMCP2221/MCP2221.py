@@ -88,7 +88,7 @@ class Device:
         self.status["GPIO"]["gp2"] = settings[24]
         self.status["GPIO"]["gp3"] = settings[25]
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
-        self.status["dac_ref"]   = (settings[6] >> 4) & 0b00000111
+        self.status["dac_ref"]   = (settings[6] >> 5) & 0b00000111
         self.status["dac_value"] = (settings[6])      & 0b00011111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
         ## After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM

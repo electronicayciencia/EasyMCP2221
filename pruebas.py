@@ -6,7 +6,8 @@ from EasyMCP2221.Constants import *
 
 mcp = EasyMCP2221.Device(trace_packets = False)
 
-mcp.I2C_cancel()
+print(mcp)
+
 
 exit()
 
