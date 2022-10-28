@@ -1532,7 +1532,7 @@ class Device:
         Returns:
             Dictionary with I2C internal details.
 
-            .. code-block:: raw
+            .. code-block:: text
 
                 {
                   'rlen' : 65,  <- Value of the requested I2C transfer length
