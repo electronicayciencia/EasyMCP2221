@@ -42,8 +42,8 @@ Sometimes, yo need to manually copy ``libusb-1.0.dll`` to ``C:\Windows\System32`
 If the library loads but it does not find your device, try using any of the Microchip's official tools to verify that everything is working fine.
 
 
-Editable for testing
---------------------
+Local installation and testing
+------------------------------
 
 You may want to install this library from a cloned GitHub repository, usually for testing or development purposes.
 
@@ -51,10 +51,10 @@ First create and activate a new virtual environment. Update pip if needed.
 
 .. code-block:: console
 
-	> python -m venv init easymcp_dev
-	> cd easymcp_dev
-	> Scripts\activate
-	> python -m pip install --upgrade pip
+    > python -m venv init easymcp_dev
+    > cd easymcp_dev
+    > Scripts\activate
+    > python -m pip install --upgrade pip
 
 
 Then, clone the home repository inside that virtual environment and perform the 
@@ -101,3 +101,25 @@ Compilation:
     make html
 
 Main HTML file is *EasyMCP2221/docs/build/html/index.html*.
+
+
+Testing
+~~~~~~~
+
+Use the following schematic for testing:
+
+.. figure:: img/sch_testing.svg
+
+Usual testing:
+
+.. code-block:: console
+
+    $ python -m unittest
+
+
+Specific test suite, verbose and fail-fast:
+
+.. code-block:: console
+
+    $ python -m unittest test.test_gpio -fv 
+

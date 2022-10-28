@@ -15,9 +15,13 @@ ADC/DAC:
     * In some cases MCP2221A's firmware does not restore DAC or ADC pin assignment when it boots. Software workaround.
 
 I2C:
-    * **Deprecated** *I2C_cancel* and *I2C_is_idle*. Bus is now managed automatically. You can use :any:`_i2c_release` and :any:`_i2c_status` as replacement if needed.
+    * Deprecated :func:`I2C_cancel` and :func:`I2C_is_idle`. Bus is now managed automatically. You can use :any:`_i2c_release` and :any:`_i2c_status` as replacement if needed.
     * Fixed. Low SCL and low SDA exceptions were swapped.
     * When the I2C bus detects SDA activity, the next transfer does not work fine. Prevented via software. See :any:`_i2c_status`.
+
+Documentation:
+    * Instructions and schematic for testing in the :doc:`install` section.
+    * Replaced PNG schematics by SVG versions in :doc:`examples`.
 
 Misc:
     * Added test suite.

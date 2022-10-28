@@ -54,8 +54,8 @@ Same as before, but use :func:`GPIO_write` in a loop to change its output period
 
 Schematic:
 
-.. figure:: img/sch_led_blink.png
-    :scale: 66%
+.. figure:: img/sch_led_blink.svg
+
 
 Code:
 
@@ -65,7 +65,6 @@ Code:
 Result:
 
 .. figure:: img/brd_led_blink.gif
-   :scale: 75%
 
 
 Digital input: Mirror state
@@ -159,8 +158,8 @@ Capacitor charge
 
 A GPIO output can be used to charge or discharge a capacitor through a resistor while we are sampling ADC values at regular intervals:
 
-.. figure:: img/sch_capacitor.png
-   :scale: 50%
+.. figure:: img/sch_capacitor.svg
+
 
 Program:
 
@@ -178,8 +177,7 @@ We can read the ADC values ​​while we are changing the DAC output to charact
 
 Note that the DAC output impedance is 5k (according to the datasheet), so you can't draw much current from it.
 
-.. figure:: img/sch_led_adc.png
-   :scale: 50%
+.. figure:: img/sch_led_adc.svg
 
 The breadboard connections are pretty straightforward:
 
@@ -203,7 +201,7 @@ I2C bus
 
 To make these examples work, you need to get an EEPROM (e.g. 24LC128) and connect it properly to the SCA and SCL lines, as well as power supply.
 
-.. figure:: img/sch_eeprom.png
+.. figure:: img/sch_eeprom.svg
 
 This is it in the breadboard. Don't forget to connect *WP* pin to either ``Vcc`` or ``Gnd``.
 
