@@ -19,6 +19,7 @@ I2C:
 
 Misc:
 	* Added test suite.
+	* Added IOC edge detection setting in device representation.
 
 
 V1.6.1
