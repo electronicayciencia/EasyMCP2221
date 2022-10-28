@@ -23,6 +23,7 @@ class Device:
         >>> print(mcp)
         {
             "Chip settings": {
+                "Interrupt detection edge": "both",
                 "Power management options": "enabled",
                 "USB PID": "0x00DD",
                 "USB VID": "0x04D8",
@@ -376,12 +377,22 @@ class Device:
         return str
 
     def _parse_chip_settings_struct(self, buf):
+        vid = (buf[9] << 8) +  buf[8]
+        pid = (buf[11] << 8) +  buf[10]
+        mA = buf[13] * 2
+        pmo_str = "enabled" if buf[12] & 0b00100000 else "disabled"
+        ide_bits = (buf[7] & 0b1100000) >> 5
+        ide_str = ("both"   if ide_bits == 3 else
+                  "falling" if ide_bits == 2 else
+                  "raising" if ide_bits == 1 else
+                  "none")
+
         data = {
-            "USB VID": "0x{:02X}{:02X}".format(buf[9], buf[8]),
-            "USB PID": "0x{:02X}{:02X}".format(buf[11], buf[10]) ,
-            "USB requested number of mA": buf[13] * 2,
-            "Power management options":
-                "enabled" if buf[12] & 0b00100000 else "disabled",
+            "USB VID": "0x{:04X}".format(vid),
+            "USB PID": "0x{:04X}".format(pid),
+            "USB requested number of mA": mA,
+            "Power management options": pmo_str,
+            "Interrupt detection edge": ide_str,
         }
         return data
 
@@ -1761,6 +1772,8 @@ class Device:
 
         To wake-up the computer, Power Management options must be enabled (see :func:`enable_power_management`).
         And *"Allow this device to wake the computer"* option must be set in Device Manager.
+
+        Remember to call :func:`save_config` to persist this configuration when the chip resets
 
         Parameters:
             edge (str): which edge triggers the interruption (see description).

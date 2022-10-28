@@ -34,7 +34,11 @@ FLASH_DATA_USB_PRODUCT            = 0x03
 FLASH_DATA_USB_SERIALNUM          = 0x04
 FLASH_DATA_CHIP_SERIALNUM         = 0x05
 
-# Bytes in Flash Chip Settings register (starting at 0)
+# Bytes in Flash Chip Settings register (0-based)
+# Write and read are same order but different offsets
+FLASH_OFFSET_WRITE = 2
+FLASH_OFFSET_READ  = 4
+
 FLASH_CHIP_SETTINGS_CDC_SEC =  2 - 2
 FLASH_CHIP_SETTINGS_CLOCK   =  3 - 2
 FLASH_CHIP_SETTINGS_DAC     =  4 - 2
@@ -54,13 +58,14 @@ FLASH_CHIP_SETTINGS_PWD6    = 17 - 2
 FLASH_CHIP_SETTINGS_PWD7    = 18 - 2
 FLASH_CHIP_SETTINGS_PWD8    = 19 - 2
 
-# Bytes in Flash GP Settings register (starting at 0)
+# Bytes in Flash GP Settings register (0-based)
+# Write and read are same order but different offsets
 FLASH_GP_SETTINGS_GP0       =  2 - 2
 FLASH_GP_SETTINGS_GP1       =  3 - 2
 FLASH_GP_SETTINGS_GP2       =  4 - 2
 FLASH_GP_SETTINGS_GP3       =  5 - 2
 
-# Bytes in Get SRAM Settings response (stating at 0)
+# Bytes in Get SRAM Settings response (starting at 0)
 SRAM_CHIP_SETTINGS_CDC_SEC  =  4 - 4
 SRAM_CHIP_SETTINGS_CLOCK    =  5 - 4
 SRAM_CHIP_SETTINGS_DAC      =  6 - 4
