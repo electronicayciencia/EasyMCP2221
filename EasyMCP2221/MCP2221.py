@@ -87,12 +87,22 @@ class Device:
         self.status["GPIO"]["gp1"] = settings[23]
         self.status["GPIO"]["gp2"] = settings[24]
         self.status["GPIO"]["gp3"] = settings[25]
+
         # Initialize current DAC/ADC Vref (not the same for Get SRAM and for Set SRAM)
         self.status["dac_ref"]   = (settings[6] >> 5) & 0b00000111
         self.status["dac_value"] = (settings[6])      & 0b00011111
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
-        ## After power-up, Vrm may be set but it is not working, it's like when you apply new GPIO in SRAM
-        self._reclaim_vrm()
+
+        ## After power-up, Vrm may be set-up but not working, it's like when you apply new GPIO in SRAM
+        self.SRAM_config(
+            dac_ref    = self.status["dac_ref"],
+            dac_value  = self.status["dac_value"],
+            adc_ref    = self.status["adc_ref"],
+            gp0        = self.status["GPIO"]["gp0"],
+            gp1        = self.status["GPIO"]["gp1"],
+            gp2        = self.status["GPIO"]["gp2"],
+            gp3        = self.status["GPIO"]["gp3"])
+
         # Read I2C status and try to release the bus if needed.
         # (i2c lines might not be up right now)
         try:
