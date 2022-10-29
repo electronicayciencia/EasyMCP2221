@@ -27,7 +27,7 @@ Documentation:
 Misc:
     * Added test suite.
     * Added IOC edge detection setting in device representation.
-	* Fixed. Bug when reset a device with customized VID/PID.
+    * Fixed. Bug when reset a device with customized VID/PID.
 
 
 V1.6.1
