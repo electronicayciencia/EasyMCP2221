@@ -1,5 +1,5 @@
-Install
-=======
+Install / troubleshooting
+==========================
 
 
 Regular installation via PIP
@@ -9,17 +9,36 @@ Pip command for Linux:
 
 .. code-block:: console
 
-    pip install EasyMCP2221
+    $ pip install EasyMCP2221
 
 Pip command for Windows:
 
 .. code-block:: console
 
-    py -m pip install EasyMCP2221
+    > py -m pip install EasyMCP2221
 
 
 Troubleshooting
-~~~~~~~~~~~~~~~
+---------------
+
+Device not found
+~~~~~~~~~~~~~~~~
+
+First step, try to use any of the Microchip's official tools to verify that everything is working fine.
+
+.. figure:: img/mcp_utility_win.png
+
+On Linux, use ``lsusb`` to find any device with ID ``04D8:xxxx``:
+
+.. code-block:: console
+
+    $ lsusb
+    Bus 001 Device 004: ID 04d8:00dd Microchip Technology, Inc.
+    ...
+
+
+Hidapi backend error
+~~~~~~~~~~~~~~~~~~~~
 
 EasyMCP2221 depends on ``hidapi``, which in fact needs some backend depending on OS. Sometimes this is troublesome.
 
@@ -39,7 +58,30 @@ If that doesn't work, try manually installing libhidapi from https://github.com/
 
 Sometimes, yo need to manually copy ``libusb-1.0.dll`` to ``C:\Windows\System32``. It used to be in ``C:\Users\[username]\AppData\Local\Programs\Python\Python39\Lib\site-packages\libusb\_platform\_windows\x64\libusb-1.0.dll`` or similar path.
 
-If the library loads but it does not find your device, try using any of the Microchip's official tools to verify that everything is working fine.
+
+Hidapi open failure
+~~~~~~~~~~~~~~~~~~~
+
+On **Linux**, only root can open these devices. Trying to run the software without privileges will raise the following error:
+
+.. code-block:: console
+
+    $ python3 pruebas.py
+    Traceback (most recent call last):
+      File "pruebas.py", line 7, in <module>
+        mcp = EasyMCP2221.Device(trace_packets = False)
+      File "/home/pi/EasyMCP2221/EasyMCP2221/MCP2221.py", line 82, in __init__
+        self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
+      File "hid.pyx", line 142, in hid.device.open_path
+    OSError: open failed
+
+
+To change that, you need to add a udev rule. Create a new file under ``/etc/udev/rules.d/99-mcp.rules`` with this content:
+
+.. code-block:: text
+
+    SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", MODE="0666", GROUP="plugdev"
+
 
 
 Local installation and testing
@@ -62,15 +104,9 @@ installation in *editable* (``-e``) mode.
 
 .. code-block:: console
 
-    > git clone https://github.com/electronicayciencia/EasyMCP2221
-    Cloning into 'EasyMCP2221'...
-    ...
+    $ git clone https://github.com/electronicayciencia/EasyMCP2221
 
-    > pip install -e EasyMCP2221
-    Obtaining file:///D:/tmp/easymcp_dev/EasyMCP2221
-      Installing build dependencies ... done
-    ...
-    Successfully installed EasyMCP2221-0.0+unreleased.local
+    $ pip install -e EasyMCP2221
 
 
 If you get this error: *"File "setup.py" not found. Directory cannot be installed in editable mode"*, update PIP.
