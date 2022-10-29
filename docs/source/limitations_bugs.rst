@@ -43,6 +43,7 @@ Misc
 
 * This library does not work with password protected devices. You cannot use it to set or clear MCP2221's Flash password.
 
+* Changing VID/PID not supported.
 
 
 Software Bugs

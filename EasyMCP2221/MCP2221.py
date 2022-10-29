@@ -11,7 +11,7 @@ class Device:
     Parameters:
         VID (int, optional): Vendor Id (default to ``0x04D8``)
         PID (int, optional): Product Id (default to ``0x00DD``)
-        devnum (int, optional): Device index if multiple device found with the same PID and VID.
+        devnum (int, optional): Device index if multiple device found with the same PID and VID. Default is first device (index 0).
         trace_packets (bool, optional): For debug only. See :any:`trace_packets`.
 
     Raises:
@@ -68,18 +68,30 @@ class Device:
     }
     """ Internal status """
 
+    VID = DEV_DEFAULT_VID
+    PID = DEV_DEFAULT_PID
+    devnum = 0
 
-    def __init__(self, VID = DEV_DEFAULT_VID, PID = DEV_DEFAULT_PID, devnum=0, trace_packets = None):
+    def __init__(self, VID=None, PID=None, devnum=None, trace_packets=None):
 
         if trace_packets is not None:
             self.trace_packets = trace_packets
 
-        self.hidhandler = hid.device()
-        devices = hid.enumerate(VID, PID)
-        if not devices or len(devices) < devnum:
-            raise RuntimeError("No device found with VID %04X and PID %04X." % (VID, PID))
+        if VID is not None:
+            self.VID = VID
 
-        self.hidhandler.open_path(hid.enumerate(VID, PID)[devnum]["path"])
+        if PID is not None:
+            self.PID = PID
+
+        if devnum is not None:
+            self.devnum  = devnum
+
+        self.hidhandler = hid.device()
+        devices = hid.enumerate(self.VID, self.PID)
+        if not devices or len(devices) < self.devnum:
+            raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
+
+        self.hidhandler.open_path(hid.enumerate(self.VID, self.PID)[self.devnum]["path"])
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
