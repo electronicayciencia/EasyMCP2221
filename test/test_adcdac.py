@@ -66,62 +66,6 @@ class ADC_DAC(unittest.TestCase):
             self.mcp.set_pin_function(gp1 = "DAC")
 
 
-
-    def test_adc_dac_vdd(self):
-        """Cross-check DAC with ADC both in Vdd."""
-        self.mcp.set_pin_function(
-            gp2 = "ADC",
-            gp3 = "DAC")
-
-        self.mcp.ADC_config(ref = "VDD")
-        self.mcp.DAC_config(ref = "VDD")
-        self.mcp.DAC_write(31)
-        adc = self.mcp.ADC_read()[1]
-        self.assertTrue(adc > 950)
-
-
-    def test_adc_vdd_dac_vrm(self):
-        """DAC ref is VRM and ADC ref is Vdd."""
-        self.mcp.set_pin_function(
-            gp2 = "ADC",
-            gp3 = "DAC")
-
-        self.mcp.ADC_config(ref = "VDD")
-        self.mcp.DAC_config(ref = "4.096V")
-        self.mcp.DAC_write(31)
-        sleep(0.01) # time to settle-up
-        adc = self.mcp.ADC_read()[1]
-        self.assertTrue(800 < adc < 1000)
-
-
-    def test_adc_vrm_dac_vdd(self):
-        """DAC ref is VDD and ADC ref is VRM."""
-        self.mcp.set_pin_function(
-            gp2 = "ADC",
-            gp3 = "DAC")
-
-        self.mcp.ADC_config(ref = "2.048V")
-        self.mcp.DAC_config(ref = "VDD")
-        self.mcp.DAC_write(13)
-        sleep(0.05) # time to settle-up
-        adc = self.mcp.ADC_read()[1]
-        self.assertTrue(990 < adc < 1023)
-
-
-    def test_adc_vrm_dac_vrm(self):
-        """DAC ref is VRM and ADC ref is VRM."""
-        self.mcp.set_pin_function(
-            gp2 = "ADC",
-            gp3 = "DAC")
-
-        self.mcp.ADC_config(ref = "2.048V")
-        self.mcp.DAC_config(ref = "2.048V")
-        self.mcp.DAC_write(15)
-        sleep(0.01) # time to settle-up
-        adc = self.mcp.ADC_read()[1]
-        self.assertTrue(400 < adc < 600)
-
-
     def test_adc_vrm_dac_vrm_gpio(self):
         """DAC ref is VRM and ADC ref is VRM and GPIO reconfig."""
         self.mcp.set_pin_function(

@@ -1845,8 +1845,8 @@ class Device:
         This operation do not reset any I2C slave devices.
 
         Note:
-            This function also waits 1 second after the reset command.
-            This time should be enough for the host to re-enumerate the device.
+            The host needs to re-enumerate the device after a reset command. 
+            There is a 5 seconds timeout to do that.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP

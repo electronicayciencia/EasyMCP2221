@@ -166,6 +166,45 @@ class Persistence(unittest.TestCase):
         self.assertTrue(800 < adc1 < 850)
 
 
+    def test_adc_dac_all_presistence(self):
+        """Test all possible Vref combinations for DAC and ADC after a reset."""
+        self.mcp.set_pin_function(
+            gp2 = "ADC",
+            gp3 = "DAC")
+
+        Vdd = 5
+        Vrm = {
+        #    "OFF"   : 0,
+            "1.024V": 1.024,
+            "2.048V": 2.048,
+            "4.096V": 4.096,
+            "VDD"   : Vdd
+        }
+        margin = 30
+        dac = 15
+
+        for adc_ref in Vrm.keys():
+            for dac_ref in Vrm.keys():
+
+                self.mcp.ADC_config(adc_ref)
+                self.mcp.DAC_config(dac_ref)
+                self.mcp.DAC_write(dac)
+
+                self.mcp.save_config()
+                self.mcp.reset()
+
+                adc = self.mcp.ADC_read()[1]
+
+                expected = (Vrm[dac_ref] * dac / 32) * 1024 / Vrm[adc_ref]
+                expected = round(expected)
+
+                if expected > 1023:
+                    expected = 1023
+
+                self.assertTrue((expected - margin) < adc < (expected + margin),
+                    msg = "ADC_ref: %s, DAC_ref: %s, Expected: %d, Got: %d" % (adc_ref, dac_ref, expected, adc))
+
+
 
 #    def test_user(self):
 #        import pdb;
