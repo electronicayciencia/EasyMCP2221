@@ -28,6 +28,7 @@ Misc:
     * Added test suite.
     * Added IOC edge detection setting in device representation.
     * Fixed. Bug when reset a device with customized VID/PID.
+    * Multiple tries to find the device after a :func:`reset` (until timeout).
 
 
 V1.6.1

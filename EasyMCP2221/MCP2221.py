@@ -71,6 +71,8 @@ class Device:
     VID = DEV_DEFAULT_VID
     PID = DEV_DEFAULT_PID
     devnum = 0
+    device_open_timeout = 5
+
 
     def __init__(self, VID=None, PID=None, devnum=None, trace_packets=None):
 
@@ -87,11 +89,22 @@ class Device:
             self.devnum  = devnum
 
         self.hidhandler = hid.device()
-        devices = hid.enumerate(self.VID, self.PID)
-        if not devices or len(devices) < self.devnum:
-            raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
 
-        self.hidhandler.open_path(hid.enumerate(self.VID, self.PID)[self.devnum]["path"])
+        timeout = time.perf_counter() + self.device_open_timeout
+        while True:
+            try:
+                devices = hid.enumerate(self.VID, self.PID)
+                if not devices or len(devices) < self.devnum:
+                    raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
+
+                self.hidhandler.open_path(hid.enumerate(self.VID, self.PID)[self.devnum]["path"])
+                break
+
+            except:
+                if time.perf_counter() > timeout:
+                    raise
+                else:
+                    continue
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
@@ -1841,7 +1854,7 @@ class Device:
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
         self.send_cmd(buf)
-        time.sleep(1)
+        time.sleep(0.1)
 
         self.__init__()
 
