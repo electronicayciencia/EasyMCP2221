@@ -23,6 +23,7 @@ Documentation:
     * Instructions and schematic for testing in the :doc:`install` section.
     * Replaced PNG schematics by SVG versions in :doc:`examples`.
     * Troubleshooting section to run as an unprivileged user in Linux (udev rule).
+    * Added developers section with details about I2C transfers. See :doc:`internals`.
 
 Misc:
     * Added test suite.

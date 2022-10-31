@@ -45,6 +45,8 @@ Misc
 
 * Changing VID/PID not supported.
 
+* Maximum length for single I2C read or write operations is 65535 bytes.
+
 
 Software Bugs
 -------------

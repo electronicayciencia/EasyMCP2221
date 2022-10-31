@@ -67,5 +67,6 @@ SOFTWARE.
    api_reference
    i2c_slave
    limitations_bugs
+   internals
    history
    links
