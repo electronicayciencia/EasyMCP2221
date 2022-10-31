@@ -727,7 +727,7 @@ class Device:
 
             >>> mcp.set_pin_function(
             ...     gp0 = "GPIO_IN",
-            ...     gp1 = "GPIO_OUT",
+            ...     gp1 = "GPIO_OUT", out1 = True,
             ...     gp2 = "ADC",
             ...     gp3 = "LED_I2C")
             >>>
@@ -1552,8 +1552,6 @@ class Device:
 
         This is a private method, the **API can change** without previous notice.
 
-        It uses *last transfer length* to guess if the I2C bus has been used previously in order to tell if *Cancel* command might cause a crash.
-
         Returns:
             Dictionary with I2C internal details.
 
@@ -1578,9 +1576,16 @@ class Device:
         Note:
             About **confused** status.
 
-            Due to a firmware bug or a library bug (I don't know), ticking SDA line while I2C bus is initialized but idle will cause the next transfer to be bogus. To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
+                Due to a firmware bug or a library bug (I don't know), ticking SDA line while I2C bus is initialized but idle will cause the next transfer to be bogus. To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
 
-            Unfortunately, there is no official way to determine that we are in this situation. The only byte that changes when it happens seems to be bit 18, which is *not documented*.
+                Unfortunately, there is no official way to determine that we are in this situation. The only byte that changes when it happens seems to be bit 18, which is *not documented*.
+
+            About **initialized** status:
+
+                Due to a firmware bug, calling cancel when the I2C engine has not been used yet will cause it to crash in a 62 status until reset.
+
+                Unfortunately, there is no official way to determine when it is appropriate to call Cancel and when it's not. Moreover, MCP2221's I2C status after a reset is different from MCP2221A's (the last one clears the *last transfer length* and the former does not). I found than Cancel fails when bit 21 is ``0x00`` and works when it is ``0x60``. This is again *not documented*.
+
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
         i2c_status = {
@@ -1600,12 +1605,12 @@ class Device:
             #   0x08 -> sda activity detected ? (also is normal after nonstop write)
             #   0x10 -> ok
             "confused" : (
-                rbuf[I2C_POLL_RESP_UNDOCUMENTED_1] == 8 and
-                rbuf[I2C_POLL_RESP_STATUS]         != I2C_ST_WRITEDATA_END_NOSTOP )
-        }
+                rbuf[I2C_POLL_RESP_UNDOCUMENTED_18] == 8 and
+                rbuf[I2C_POLL_RESP_STATUS]         != I2C_ST_WRITEDATA_END_NOSTOP ),
 
-        # Determine if you can call cancel or not.
-        i2c_status["initialized"] = (i2c_status["rlen"] > 0)
+            # Determine if you can call cancel or not.
+            "initialized" : rbuf[I2C_POLL_RESP_UNDOCUMENTED_21] != 0
+        }
 
         return i2c_status
 
@@ -1845,7 +1850,7 @@ class Device:
         This operation do not reset any I2C slave devices.
 
         Note:
-            The host needs to re-enumerate the device after a reset command. 
+            The host needs to re-enumerate the device after a reset command.
             There is a 5 seconds timeout to do that.
         """
         buf = [0] * 4
@@ -1856,5 +1861,6 @@ class Device:
         self.send_cmd(buf)
         time.sleep(0.1)
 
+        self.status["i2c_dirty"] = False
         self.__init__()
 

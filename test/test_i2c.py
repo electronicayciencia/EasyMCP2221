@@ -331,6 +331,50 @@ class I2C(unittest.TestCase):
             self.mcp.I2C_read(self.NO_i2caddr, 1)
 
 
+    def test_i2c_sartup_low_sda(self):
+        """Recover from startup while SDA line was down."""
+
+        self.mcp.GPIO_write(gp0 = True, gp1 = False)
+        self.mcp.save_config()
+        self.mcp.reset()
+
+        with self.assertRaises(LowSDAError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp1 = True)
+
+        self.mcp.I2C_read(self.i2caddr, 1)
+
+
+    def test_i2c_sartup_low_scl(self):
+        """Recover from startup while SCL line was down."""
+
+        self.mcp.GPIO_write(gp0 = False, gp1 = True)
+        self.mcp.save_config()
+        self.mcp.reset()
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp0 = True)
+
+        self.mcp.I2C_read(self.i2caddr, 1)
+
+
+    def test_i2c_sartup_low_sdascl(self):
+        """Recover from startup while SDA and SCL lines were down."""
+
+        self.mcp.GPIO_write(gp0 = False, gp1 = False)
+        self.mcp.save_config()
+        self.mcp.reset()
+
+        with self.assertRaises(LowSCLError):
+            self.mcp.I2C_write(self.i2caddr, b'A' * 65)
+
+        self.mcp.GPIO_write(gp0 = True, gp1 = True)
+
+        self.mcp.I2C_read(self.i2caddr, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
