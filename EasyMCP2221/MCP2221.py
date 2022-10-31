@@ -1859,7 +1859,7 @@ class Device:
         buf[2] = RESET_CHIP_VERY_SURE
         buf[3] = RESET_CHIP_VERY_VERY_SURE
         self.send_cmd(buf)
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         self.status["i2c_dirty"] = False
         self.__init__()
