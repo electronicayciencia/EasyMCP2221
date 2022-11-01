@@ -13,7 +13,8 @@ USB speed limits
 - GPIO read rate for :func:`GPIO_read`: 500Hz
 - ADC sample rate for :func:`ADC_read`: 500Hz.
 - DAC update rate for :func:`DAC_write`: 500Hz.
-- GPIO update rate using :func:`set_pin_function`: 250Hz.
+
+See :doc:`internals` for details.
 
 
 Internal reference reset

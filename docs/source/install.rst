@@ -142,18 +142,22 @@ Main HTML file is *EasyMCP2221/docs/build/html/index.html*.
 Testing
 ~~~~~~~
 
-Use the following schematic for testing:
+There is a test suite to check ADC, DAC, I2C, and some other features like start-up and persistence after a reset.
+
+In order to pass the tests, you need a working MCP2221 or MCP2221A and a serial EEPROM 24LC128 or bigger. Use the following schematic:
 
 .. figure:: img/sch_testing.svg
 
-Usual testing:
+**GP0** and **GP1** are used to test I2C in several scenarios. **GP3** is used as a DAC. **GP2**, connected to a simple RC low pass filter, is used as an ADC to test different voltaje references.
+
+Run all tests:
 
 .. code-block:: console
 
     $ python -m unittest
 
 
-Specific test suite, verbose and fail-fast:
+Run specific test suite, verbose and fail-fast:
 
 .. code-block:: console
 

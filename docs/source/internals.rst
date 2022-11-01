@@ -1,12 +1,23 @@
 Internal details
 =================
 
+
+USB transactions are always initiated by the Host. MCP2221 supports Full-Speed USB at 1000Hz polling rate. That is, a transaction every one millisecond.
+
+Each USB transaction can be:
+
+Output: 
+    the host will send data to the peripheral. Used for commands.
+Input: 
+    the host wants the peripheral to send data. Used for replies.
+
+We need 2 USB transactions (2ms) for each command/reply. Thus, the highest DAC update rate for or ADC sampling rate is 500Hz.
+
+The maximum length of a data payload is 64 bytes.
+
+
 I2C transfers
 -------------
-
-In USB, every transaction is initialized by the host. At the beginning of any transaction, it sends a frame indicating if it is an **output** (the host sending data to the slave), or an **input** (the host expects for slave to send data).
-
-In *full speed* mode, the maximum length of a data payload is 64 bytes.
 
 Write transfer
 ~~~~~~~~~~~~~~
@@ -15,7 +26,7 @@ Write transfer
 
     Timeline of a 100 bytes I2C **write**. Open the image in a new tab to see it full size.
 
-While the I2C engine is sending ``data1``, subsequent write commands fail and are ignored. Only when ``data1`` has already been sent, the device does respond with OK and proceed to send ``data2``.
+While the I2C engine is sending ``data1``, subsequent write commands will fail and will be ignored. Only when ``data1`` has already been sent, the device responds with OK and proceed to send the next data chunk ``data2``.
 
 
 Read transfer
