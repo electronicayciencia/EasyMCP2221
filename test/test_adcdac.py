@@ -104,34 +104,38 @@ class ADC_DAC(unittest.TestCase):
 
         Vdd = 5
         Vrm = {
-        #    "OFF"   : 0,
+            #"OFF"   : 0,
             "1.024V": 1.024,
             "2.048V": 2.048,
             "4.096V": 4.096,
             "VDD"   : Vdd
         }
-        margin = 30
-        dac = 15
+        max_error = 0.05 # relative error
+        dac = 10
 
         for adc_ref in Vrm.keys():
             for dac_ref in Vrm.keys():
 
-                self.mcp.ADC_config(adc_ref)
-                self.mcp.DAC_config(dac_ref)
-                self.mcp.DAC_write(dac)
+                with self.subTest(ADC_Vref = adc_ref, DAC_Vref = dac_ref):
+                    self.mcp.ADC_config(adc_ref)
+                    self.mcp.DAC_config(dac_ref)
+                    self.mcp.DAC_write(dac)
 
-                sleep(0.1) # time to settle-up
+                    sleep(0.01) # time to settle-up
 
-                adc = self.mcp.ADC_read()[1]
+                    adc = self.mcp.ADC_read()[1]
 
-                expected = (Vrm[dac_ref] * dac / 32) * 1024 / Vrm[adc_ref]
-                expected = round(expected)
+                    expected = (Vrm[dac_ref] * dac / 32) * 1024 / Vrm[adc_ref]
+                    expected = round(expected)
 
-                if expected > 1023:
-                    expected = 1023
+                    if expected > 1023:
+                        expected = 1023
 
-                self.assertTrue((expected - margin) < adc < (expected + margin),
-                    msg = "ADC_ref: %s, DAC_ref: %s, Expected: %d, Got: %d" % (adc_ref, dac_ref, expected, adc))
+                    error = (adc-expected)/expected
+
+                    self.assertLess(abs(error), max_error,
+                        msg = "ADC_ref: %s, DAC_ref: %s, Expected: %d, Got: %d (%+.2f)%%" % 
+                            (adc_ref, dac_ref, expected, adc, error*100))
 
 
 if __name__ == '__main__':
