@@ -1084,18 +1084,21 @@ class Device:
     def I2C_speed(self, speed=100000):
         """ Set I2C bus speed.
 
-        Acceptable values for speed are between 50kHz and 400kHz.
+        Acceptable values for speed are between 47kHz and 400kHz.
 
         Parameters:
             speed (int): Bus clock frequency in Hz. Default bus speed is 100kHz.
 
         Raises:
             ValueError: if speed parameter is out of range.
-            RuntimeError: if command failed (I2C engine is busy)."
+            RuntimeError: if command failed (I2C engine is busy).
 
         Example:
             >>> mcp.I2C_speed(100000)
             >>>
+
+        Note:
+            Between 47kHz and 400kHz is the recommended value. The minimum value is actually 46693, which corresponds to a clock of approximately 46.5kHz. And the maximum is 6000000, that generates about 522kHz clock.
         """
         bus_speed = round(12_000_000 / speed) - 2
 
