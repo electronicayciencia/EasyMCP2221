@@ -1553,7 +1553,7 @@ class Device:
     def _i2c_status(self):
         """ Return I2C status based on POLL_STATUS_SET_PARAMETERS command.
 
-        This is a private method, the **API can change** without previous notice.
+        This is a private method, the **API could change** without previous notice.
 
         Returns:
             Dictionary with I2C internal details.
@@ -1565,11 +1565,11 @@ class Device:
                   'txlen': 0,   <- Value of the already transferred (through I2C) number of bytes
                   'div'  : 118, <- Current I2C communication speed divider value
                   'ack'  : 0,   <- If ACK was received from client value is 0, else 1.
-                  'st'   : 98,  <- I2C Communication state
+                  'st'   : 98,  <- Internal state of I2C status machine
                   'scl'  : 1,   <- SCL line value as read from the pin
                   'sda'  : 0,   <- SDA line value as read from the pin
-                  'confused': False,
-                  'initialized': True
+                  'confused': False,   <- see note
+                  'initialized': True  <- see note
                 }
 
 
@@ -1579,15 +1579,15 @@ class Device:
         Note:
             About **confused** status.
 
-                Due to a firmware bug or a library bug (I don't know), ticking SDA line while I2C bus is initialized but idle will cause the next transfer to be bogus. To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
+                For some reason, ticking SDA line while I2C bus is initialized but idle will cause the next transfer to be bogus. To prevent this, you need to issue a Cancel command before the next *read* or *write* command.
 
-                Unfortunately, there is no official way to determine that we are in this situation. The only byte that changes when it happens seems to be bit 18, which is *not documented*.
+                Unfortunately, there is no official way to determine that we are in this situation. The only byte that changes when it happens seems to be byte 18, which is *not documented*.
 
             About **initialized** status:
 
-                Due to a firmware bug, calling cancel when the I2C engine has not been used yet will cause it to crash in a 62 status until reset.
+                Same way, calling cancel when the I2C engine has not been used yet will make it to stall and stay in status ``0x62`` until next reset.
 
-                Unfortunately, there is no official way to determine when it is appropriate to call Cancel and when it's not. Moreover, MCP2221's I2C status after a reset is different from MCP2221A's (the last one clears the *last transfer length* and the former does not). I found than Cancel fails when bit 21 is ``0x00`` and works when it is ``0x60``. This is again *not documented*.
+                Unfortunately, there is no official way to determine when it is appropriate to call *Cancel* and when it's not. Moreover, MCP2221's I2C status after a reset is different from MCP2221A's (the last one clears the *last transfer length* and the former does not). I found that Cancel fails when byte 21 is ``0x00`` and works when it is ``0x60``. This is, again, *not documented*.
 
         """
         rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
