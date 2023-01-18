@@ -16,9 +16,9 @@ mcp.DAC_config(ref="VDD")
 while True:
     for v in range(0,32):
         mcp.DAC_write(v)
-        sleep(0.01)
+        #sleep(0.01)
 
-    for v in range(31,0,-1):
+    for v in range(30,0,-1):
         mcp.DAC_write(v)
-        sleep(0.01)
+        #sleep(0.01)
 
