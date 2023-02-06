@@ -3,6 +3,8 @@ import EasyMCP2221
 from time import sleep
 
 import matplotlib.pyplot as plt
+from numpy import mean
+from scipy.stats import sem  # standard error of the mean
 
 # Configure device pins ADC and DAC reference.
 mcp = EasyMCP2221.Device()
@@ -22,40 +24,51 @@ Vrefs = {
 DAC_ref = "4.096V"
 ADC_ref = "4.096V"
 
-Vexpected = 32 * [0]
-Vmeasured = 32 * [0]
-Verrorrel = 32 * [0]
+measures = {}
+
+oversampling = 10 # to calculate average
+
+waittime = 0.01
 
 mcp.ADC_config(ref = ADC_ref)
 mcp.DAC_config(ref = DAC_ref)
-sleep(0.1)
 
 for step in range(0,32):
+
+    Vexpected = Vrefs[DAC_ref] * step / 32
+
     mcp.DAC_write(step)
-    
-    
-    V3 = mcp.ADC_read()[2]
-    
-    Vexpected[step] = Vrefs[DAC_ref] * step / 32
-    Vmeasured[step] = Vrefs[ADC_ref] / 1024 * V3
-    
-    if (step == 0):
-        Verrorrel[step] = 0
-    else:
-        Verrorrel[step] = (Vmeasured[step] - Vexpected[step]) / Vexpected[step]
-    
+    sleep(waittime)
+
+    samples = []
+    for i in range(oversampling):
+        samples.append(mcp.ADC_read()[2] / 1024 * Vrefs[ADC_ref])
+
+    measures[Vexpected] = {
+        "V":     mean(samples),
+        "Error": sem(samples)
+    }
+
     print("Step:", step+1, "/ 32")
-    
-    sleep(0.01)
+
+    sleep(waittime)
 
 
 mcp.DAC_write(0)
 
-plt.plot(Vexpected, Verrorrel, 'o-')
-plt.axis([0,Vrefs[DAC_ref],-0.25,0.25])
-plt.xlabel("Expected Voltage (V)")
-plt.ylabel("Relative error")
-plt.title("Voltage error diagram")
-plt.grid()
+print(measures)
+
+Vdac  = sorted(measures)
+Vreal = [measures[i]["V"] for i in Vdac]
+Error = [measures[i]["Error"] for i in Vdac]
+plt.errorbar(x = Vdac, y = Vreal, fmt = 'o-', yerr = Error)
 plt.show()
+
+#plt.errorbar(x = Vdac, y = Vreal, fmt = 'o-', yerr = Error)
+#plt.axis([0,Vrefs[DAC_ref],-0.25,0.25])
+#plt.xlabel("Expected Voltage (V)")
+#plt.ylabel("Relative error")
+#plt.title("Voltage error diagram")
+#plt.grid()
+#plt.show()
 
