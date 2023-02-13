@@ -3,6 +3,13 @@ Changelog
 
 .. currentmodule:: EasyMCP2221.Device
 
+Latest (unreleased)
+-------------------
+
+Documentation:
+    * Conflict with kernel module ``hid_mcp2221``. See *Delay at the end of script (Linux)* in :doc:`install`.
+
+
 V1.6
 --------
 

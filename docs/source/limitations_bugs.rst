@@ -72,7 +72,5 @@ Misc
 Software Bugs
 -------------
 
-None reported.
-
 Bug tracking system: https://github.com/electronicayciencia/EasyMCP2221/issues
 
