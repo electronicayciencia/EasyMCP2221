@@ -11,6 +11,8 @@ Pip command for Linux:
 
     $ pip install EasyMCP2221
 
+On Linux, additional steps may be required. See *Troubleshooting* section below.
+
 Pip command for Windows:
 
 .. code-block:: console
@@ -59,8 +61,8 @@ If that doesn't work, try manually installing libhidapi from https://github.com/
 Sometimes, yo need to manually copy ``libusb-1.0.dll`` to ``C:\Windows\System32``. It used to be in ``C:\Users\[username]\AppData\Local\Programs\Python\Python39\Lib\site-packages\libusb\_platform\_windows\x64\libusb-1.0.dll`` or similar path.
 
 
-Hidapi open failure
-~~~~~~~~~~~~~~~~~~~
+Open failed for non-root users (Linux)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 On **Linux**, only root can open these devices. Trying to run the software without privileges will raise the following error:
 
@@ -83,6 +85,30 @@ To change that, you need to add a udev rule. Create a new file under ``/etc/udev
     SUBSYSTEM=="usb", ATTRS{idVendor}=="04d8", MODE="0666", GROUP="plugdev"
 
 
+Delay at the end of script (Linux)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you experience delays on script startup or exit, use ``lsmod`` to check for conflicting drivers.
+
+.. code-block:: console
+
+    # lsmod | grep hid
+    hid_mcp2221            20480  1
+    hid_generic            16384  0
+    usbhid                 57344  0
+    hid                   139264  3 usbhid,hid_generic,hid_mcp2221
+
+This library may conflict with ``hid_mcp2221`` kernel module.
+
+To blacklist this module, create a file named ``/etc/modprobe.d/blacklist-mcp2221.conf`` with this content:
+
+.. code-block:: text
+
+    blacklist hid_mcp2221
+
+Run ``rmmod hid_mcp2221`` to unload the module.
+
+
 
 Local installation and testing
 ------------------------------
@@ -99,7 +125,7 @@ First create and activate a new virtual environment. Update pip if needed.
     > python -m pip install --upgrade pip
 
 
-Then, clone the home repository inside that virtual environment and perform the 
+Then, clone the home repository inside that virtual environment and perform the
 installation in *editable* (``-e``) mode.
 
 .. code-block:: console
@@ -161,5 +187,5 @@ Run specific test suite, verbose and fail-fast:
 
 .. code-block:: console
 
-    $ python -m unittest test.test_gpio -fv 
+    $ python -m unittest test.test_gpio -fv
 
