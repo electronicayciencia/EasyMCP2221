@@ -8,6 +8,7 @@ Latest (unreleased)
 
 Documentation:
     * Conflict with kernel module ``hid_mcp2221``. See *Delay at the end of script (Linux)* in :doc:`install`.
+    * Explain I2C speed limit for very short transfers.
 
 
 V1.6
