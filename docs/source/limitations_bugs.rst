@@ -9,12 +9,32 @@ Chip or software limitations
 USB speed limits
 ~~~~~~~~~~~~~~~~
 
+MCP2221's command rate is limited by USB polling rate. Each command requires two USB slots. One to send the command to the device, and the other to get the response. See :doc:`internals` for details.
+
+On xHCI controllers (USB 3.0), polling rate is 1000Hz. So you can issue one command every 2ms. That command could be a DAC update, ADC read, GPIO, I2C operation, etc.
+
 - GPIO update rate :func:`GPIO_write`: 500Hz
 - GPIO read rate for :func:`GPIO_read`: 500Hz
 - ADC sample rate for :func:`ADC_read`: 500Hz.
 - DAC update rate for :func:`DAC_write`: 500Hz.
 
-See :doc:`internals` for details.
+On eHCI (USB 2.0), the maximum update rate I measured is 333 commands per second.
+
+These ratios depend on multiple parameters. Like your USB hardware (including cable and hub), operating system, or the number of devices connected to the same bus.
+
+
+I2C speed limit
+~~~~~~~~~~~~~~~
+
+Each I2C interaction requires multiple USB commands. See :doc:`internals` for details.
+
+Sending one byte will require: setup, send data, and get the result.
+Reading one byte will require: setup, finish test, and read data.
+
+Depending on your USB polling rate, each of these commands can take 2ms or more.
+
+I2C speed (100kHz / 400kHz) only matters when you are transmitting a lot of bytes in a row. For a few bytes interaction, speed is limited by the USB polling rate.
+
 
 
 Internal reference reset
@@ -51,8 +71,6 @@ Misc
 
 Software Bugs
 -------------
-
-None reported.
 
 Bug tracking system: https://github.com/electronicayciencia/EasyMCP2221/issues
 
