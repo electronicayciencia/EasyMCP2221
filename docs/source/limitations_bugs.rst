@@ -68,6 +68,8 @@ Misc
 
 * Maximum length for single I2C read or write operations is 65535 bytes.
 
+* Regardless of the output frequency, MCP2221(A)'s clock output has glitch every 1ms.
+
 
 Software Bugs
 -------------
