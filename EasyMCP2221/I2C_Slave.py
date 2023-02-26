@@ -1,3 +1,5 @@
+from EasyMCP2221.exceptions import *
+
 class I2C_Slave:
     """ EasyMCP2221's I2C slave device.
 
@@ -62,7 +64,7 @@ class I2C_Slave:
         try:
             self.mcp.I2C_read(self.addr)
             return True
-        except RuntimeError:
+        except NotAckError:
             return False
 
 
