@@ -93,7 +93,7 @@ class I2C_Slave:
             reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default 'big'.
 
         Return:
-            list of bytes
+            bytes string
 
         Examples:
             Read from a regular i2c device, register 0x0D:
@@ -128,7 +128,7 @@ class I2C_Slave:
             length (int): How many bytes to read. Default 1 byte.
 
         Return:
-            list of bytes
+            bytes string
 
         Raises:
             RuntimeError: if the I2C slave didn't acknowledge or the I2C engine was busy.
