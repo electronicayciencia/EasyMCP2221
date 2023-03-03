@@ -3,19 +3,23 @@ Changelog
 
 .. currentmodule:: EasyMCP2221.Device
 
-Latest (unreleased)
--------------------
+
+
+V1.6
+--------
+
+1.6.3
+~~~~~~
 
 I2C:
+    * New :doc:`smbus`. Useful to use other Python I2C modules with MCP2221 interface. 
     * Fixed. I2C slave class exception when device is not present.
 
 Documentation:
     * Conflict with kernel module ``hid_mcp2221``. See *Delay at the end of script (Linux)* in :doc:`install`.
     * Explain I2C speed limit for very short transfers.
+    * Document :doc:`smbus`. Include example code for BME280 (Temperature, Pressure, Humidity sensor).
 
-
-V1.6
---------
 
 V1.6.2
 ~~~~~~
