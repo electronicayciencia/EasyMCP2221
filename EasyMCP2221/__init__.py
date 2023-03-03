@@ -32,5 +32,5 @@ SOFTWARE.
 """
 
 from .MCP2221 import Device
-from .SMBus import SMBus
+from .smbus import SMBus
 from .exceptions import NotAckError, TimeoutError
