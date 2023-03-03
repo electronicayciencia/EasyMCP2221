@@ -5,18 +5,21 @@ I2C_SMBUS_BLOCK_MAX = 255  # len is one byte only
 
 class SMBus(object):
 
-    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, devnum=0):
-        """
-        Initialize and (optionally) open an i2c bus connection.
+    """
+    Initialize and open an i2c bus connection.
 
-        :param bus: i2c bus number (e.g. 0 or 1)
-            or an absolute file path (e.g. `/dev/i2c-42`).
-            If not given, a subsequent  call to ``open()`` is required.
-        :type bus: int or str
-        :param force: force using the slave address even when driver is
-            already using it.
-        :type force: boolean
-        """
+    :param bus: (for compatibility only, not used) i2c bus number (e.g. 0 or 1)
+        or an absolute file path (e.g. `/dev/i2c-42`).
+        If not given, a subsequent  call to ``open()`` is required.
+    :type bus: int or str
+    :param force: (for compatibility only, not used) force using the slave address even when driver is already using it.
+    :type force: boolean
+    :param VID: Vendor Id (default to ``0x04D8``)
+    :param PID: Product Id (default to ``0x00DD``)
+    """
+
+    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, devnum=0):
+
         self.mcp = EasyMCP2221.Device(VID, PID, devnum)
 
 
@@ -67,7 +70,8 @@ class SMBus(object):
 
     def open(self, bus):
         """
-        (compatibility) Open a given i2c bus.
+        (For compatibility only, no effects)
+        Open a given i2c bus.
 
         :param bus: i2c bus number (e.g. 0 or 1)
             or an absolute file path (e.g. '/dev/i2c-42').
@@ -79,7 +83,8 @@ class SMBus(object):
 
     def close(self):
         """
-        (compatibility) Close the i2c connection.
+        (For compatibility only, no effects)
+        Close the i2c connection.
         """
         pass
 
