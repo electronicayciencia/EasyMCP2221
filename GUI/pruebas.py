@@ -2,45 +2,43 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror, showwarning
 
+
 root = tk.Tk()
 root.title('Grid Demo')
 root.geometry("600x600")
 
 gridding = {
-    'sticky': tk.NSEW,
+    'sticky': "nsew", 
+    'padx': 10, 
+    'pady': 10, 
 }
 
 
-top_frame = tk.Frame(root)
-top_frame.pack(fill=tk.X)
+root.rowconfigure(0, weight=1, uniform="row")
+root.rowconfigure(1, weight=3, uniform="row")
 
-frame1 = ttk.Labelframe(top_frame, text=" Box 1 ")
-label2 = tk.Label(top_frame, text='Box 2', bg="green", fg="white")
+root.columnconfigure(0, weight=1, uniform="gpio")
+root.columnconfigure(1, weight=1, uniform="gpio")
+root.columnconfigure(2, weight=1, uniform="gpio")
+root.columnconfigure(3, weight=1, uniform="gpio")
 
-frame1.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
-label2.pack(expand=True, fill=tk.BOTH, side=tk.LEFT)
+topframe=tk.Frame(root, bg="white")
+topframe.grid(row=0, column=0, columnspan=4, **gridding)
 
+label1 = tk.Label(topframe, text="Box 11111111111111", bg="red", fg="white")
+label2 = tk.Label(topframe, text='Box 222222222222222222', bg="green", fg="white")
+label3 = tk.Label(root, text='Box 333333333333', bg="blue", fg="white")
+label4 = tk.Label(root, text='Box 4', bg="cyan", fg="black")
+label5 = tk.Label(root, text='Box 5', bg="magenta", fg="black")
+label6 = tk.Label(root, text='Box 6', bg="yellow", fg="black")
 
-bot_frame = tk.Frame(root)
-bot_frame.pack(expand=True, fill=tk.BOTH)
+label1.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+label2.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+label3.grid(row=1, column=0, **gridding)
+label4.grid(row=1, column=1, **gridding)
+label5.grid(row=1, column=2, **gridding)
+label6.grid(row=1, column=3, **gridding)
 
-bot_frame.columnconfigure(0, weight=1, uniform="gpio")
-bot_frame.columnconfigure(1, weight=1, uniform="gpio")
-bot_frame.columnconfigure(2, weight=1, uniform="gpio")
-bot_frame.columnconfigure(3, weight=1, uniform="gpio")
-
-label3 = tk.Label(bot_frame, text='Box 3', bg="blue", fg="white")
-label4 = tk.Label(bot_frame, text='Box 4', bg="cyan", fg="black")
-label5 = tk.Label(bot_frame, text='Box 5', bg="magenta", fg="black")
-label6 = tk.Label(bot_frame, text='Box 6', bg="yellow", fg="black")
-
-label3.grid(row=0, column=0, sticky=tk.NS)
-label4.grid(row=0, column=1, **gridding)
-label5.grid(row=0, column=2, **gridding)
-label6.grid(row=0, column=3, **gridding)
-
-label7 = tk.Label(frame1, text='Box 7444444444444444444444444444444', bg="green", fg="white")
-label7.pack()
 
 
 try:
