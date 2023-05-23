@@ -11,12 +11,6 @@ root.geometry("800x600")
 #-------------------------------
 # Callbacks
 
-def gp0_func_updated(f): gp_func_updated(0, f)
-def gp1_func_updated(f): gp_func_updated(1, f)
-def gp2_func_updated(f): gp_func_updated(2, f)
-def gp3_func_updated(f): gp_func_updated(3, f)
-
-
 def gp_func_updated(gp, func):
     print("New GP%s function is %s." % (gp, func))
     gp_func[1].set("GPIO_IN")
@@ -107,10 +101,10 @@ gp_func.append(tk.StringVar())
 gp_func.append(tk.StringVar())
 gp_func.append(tk.StringVar())
 
-ttk.OptionMenu(gp_frame[0], gp_func[0], "GP0 func", *pin_funcs[0], command=gp0_func_updated).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[1], gp_func[1], "GP1 func", *pin_funcs[1], command=gp1_func_updated).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[2], gp_func[2], "GP2 func", *pin_funcs[2], command=gp2_func_updated).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[3], gp_func[3], "GP3 func", *pin_funcs[3], command=gp3_func_updated).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[0], gp_func[0], "GP0 func", *pin_funcs[0], command=lambda f: gp_func_updated(0, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[1], gp_func[1], "GP1 func", *pin_funcs[1], command=lambda f: gp_func_updated(1, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[2], gp_func[2], "GP2 func", *pin_funcs[2], command=lambda f: gp_func_updated(2, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[3], gp_func[3], "GP3 func", *pin_funcs[3], command=lambda f: gp_func_updated(3, f)).pack(fill=tk.X, pady=10, padx=2)
 
 #-------------------------------
 # Populate device data frame
@@ -176,19 +170,36 @@ options = {
     "fill": tk.X,
 }
 
-tk.Button(buttons_frame, text="Quit", command=quit_click).pack(**options)
-tk.Button(buttons_frame, text="Reset", command=reset_click).pack(**options)
+tk.Button(buttons_frame, text="Quit",     command=quit_click).pack(**options)
+tk.Button(buttons_frame, text="Reset",    command=reset_click).pack(**options)
 tk.Button(buttons_frame, text="I2C Scan", command=i2cscan_click).pack(**options)
 
 
 #-------------------------------
 # Create auxiliary frames for any GPIO
 
+
+
 def click(gp):
     print("Click on GP", gp)
 
+def slider_changed(a,b):  
+    print(a,b)
+
 def create_gpio_in(root, gp):
-    tk.Button(root, text="Click me", command=lambda x: click(gp)).pack() 
+    tk.Button(root, text="Click me", command=lambda: click(gp)).pack() 
+    
+    current_value=tk.StringVar()
+    
+    slider = ttk.Scale(
+        root,
+        from_=0,
+        to=100,
+        orient='vertical',
+        variable=current_value,
+        command=lambda x: slider_changed(gp, x),
+    ).pack()
+
     
 
 create_gpio_in(gp_frame[0], 0)
