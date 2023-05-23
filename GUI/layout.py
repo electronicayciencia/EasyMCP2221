@@ -181,6 +181,20 @@ tk.Button(buttons_frame, text="Reset", command=reset_click).pack(**options)
 tk.Button(buttons_frame, text="I2C Scan", command=i2cscan_click).pack(**options)
 
 
+#-------------------------------
+# Create auxiliary frames for any GPIO
+
+def click(gp):
+    print("Click on GP", gp)
+
+def create_gpio_in(root, gp):
+    tk.Button(root, text="Click me", command=lambda x: click(gp)).pack() 
+    
+
+create_gpio_in(gp_frame[0], 0)
+create_gpio_in(gp_frame[1], 1)
+create_gpio_in(gp_frame[2], 2)
+create_gpio_in(gp_frame[3], 3)
 
 
 
