@@ -13,7 +13,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.title('EasyMCP2221 utility')
-        #root.geometry("800x600")
+        #self.geometry("680x600")
 
         # Create 2x4 layout and frames
         self.columnconfigure(0, weight=1, uniform="gpio")
@@ -44,7 +44,7 @@ class App(tk.Tk):
         options = {
             "padx": 5,
             "pady": 5,
-            "ipadx": 5,
+            "ipadx": 20,
             "ipady": 5,
             "expand": True,
             "fill": tk.X,

@@ -23,11 +23,24 @@ class GP_frame(ttk.Labelframe):
 
         # Create and place function selector menus
         self.func = tk.StringVar()
-        ttk.OptionMenu(self, self.func, None, *self.pin_funcs, command=self.gp_func_updated).pack(fill=tk.X, pady=10, padx=2)
+        ttk.OptionMenu(self, self.func, None, *self.pin_funcs, command=self.gp_func_updated).pack(fill=tk.X, pady=5, padx=2)
 
-        f = Func_GPIO_IN_frame(self)
-        f.pack(expand=True, fill=tk.X)
-        f.low()
+        ttk.Separator(self, orient='horizontal').pack(fill=tk.X,  pady=10, padx=20, anchor=tk.N)
+
+        if pin == 0:
+            f = Func_GPIO_IN_frame(self)
+        elif pin == 1:
+            f = Func_ADC_frame(self) 
+            f.ref = "1.024V"
+            f.update(512)
+        elif pin == 2:
+            f = Func_DAC_frame(self)
+            f.ref = "1.024V"
+        else:
+            f = Func_GPIO_OUT_frame(self, pin)
+
+        f.pack(expand=True, fill=tk.X, anchor=tk.N)
+
 
 
     def gp_func_updated(self, func):
