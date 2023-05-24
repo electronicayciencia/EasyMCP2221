@@ -105,6 +105,9 @@ class GP_frame(ttk.Labelframe):
         self.func = tk.StringVar()
         ttk.OptionMenu(self, self.func, None, *self.pin_funcs, command=self.gp_func_updated).pack(fill=tk.X, pady=10, padx=2)
 
+        f = GPIO_IN_frame(self)
+        f.pack()
+
 
     def gp_func_updated(self, func):
         print("New GP%s function is %s." % (self.pin, func))
@@ -193,6 +196,17 @@ class App(tk.Tk):
     
     def i2cscan_click(self):
         print("I2C Scan")
+
+
+
+class GPIO_IN_frame(tk.Frame):
+
+    def __init__(self, root):
+        super().__init__(root)
+        
+        self.status = tk.Label(self, text="Unknown", bg="yellow")
+        
+        self.status.pack()
 
 
 
