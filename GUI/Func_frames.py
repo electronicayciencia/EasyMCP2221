@@ -31,10 +31,10 @@ class Func_GPIO_OUT_frame(tk.Frame):
 
     def change(self):
         self.status ^= 1
-        
+
         if self.status == 1:
             self.button.configure(relief="sunken", text="HIGH", bg="red", fg="white", activebackground="red")
-        
+
         else:
             self.button.configure(relief="raised", text="low", bg="green", fg="white", activebackground="green")
 
@@ -57,23 +57,23 @@ class Func_ADC_frame(tk.Frame):
         )
         self.pb.pack(pady=10)
 
-        self.label = tk.Label(self, 
-            relief="flat", 
-            text="-V", 
-            fg="red", 
-            bg="black", 
+        self.label = tk.Label(self,
+            relief="flat",
+            text="-V",
+            fg="red",
+            bg="black",
             anchor="center",
             font=('Lucida Console', 16),
         )
-        
+
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
 
     def update(self, d):
-        """Update ADC reading. 
-        
+        """Update ADC reading.
+
         d: reading from 0 to 1023
         """
-        
+
         if self.ref == "1.024V":
             v = d * 1.024 / 1024
             self.pb["value"] = d / 1024 * 100
@@ -88,7 +88,7 @@ class Func_ADC_frame(tk.Frame):
             v = d * 4.096 / 1024
             self.pb["value"] = d / 1024 * 100
             self.label["text"] = f'{v:1.2f}V'
-        
+
         elif self.ref == "VDD":
             v = d * 100 / 1024
             self.pb["value"] = v
@@ -120,15 +120,15 @@ class Func_DAC_frame(tk.Frame):
         )
         self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
-        self.label = tk.Label(self, 
-            relief="flat", 
-            text="-V", 
-            fg="black", 
-            bg="yellow", 
+        self.label = tk.Label(self,
+            relief="flat",
+            text="-V",
+            fg="black",
+            bg="yellow",
             anchor="center",
             font=('Lucida Console', 16),
         )
-        
+
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
 
 
@@ -142,13 +142,13 @@ class Func_DAC_frame(tk.Frame):
 
 
     def update(self):
-        """Update DAC settings. 
-        
+        """Update DAC settings.
+
         Take DAC value from Slider StringVar.
         """
-        
+
         d = int(float(self.dac.get()))
-        
+
         if self.ref == "1.024V":
             v = d * 1.024 / 32
             self.label["text"] = f'{v:1.3f}V'
@@ -172,5 +172,86 @@ class Func_DAC_frame(tk.Frame):
         else:
             self.label["text"] = "OFF"
             print("Set DAC to OFF")
+
+
+
+class Func_CLK_OUT_frame(tk.Frame):
+
+    def __init__(self, root):
+        super().__init__(root)
+
+        self.freq = "0"
+        self.duty = "0"
+
+        freq_frame = tk.Frame(self)
+        duty_frame = tk.Frame(self)
+
+        freq_frame.pack(pady=10)
+        duty_frame.pack(pady=10)
+
+
+        freqs = ("375kHz", "750kHz", "1.5MHz", "3MHz", "6MHz", "12MHz", "24MHz")
+        duties = (0, 25, 50, 75)
+
+        self.freq_buttons = []
+        self.duty_buttons = []
+
+        for f in freqs:
+            button = tk.Button(freq_frame,
+                        text=f,
+                        command=lambda arg=f: self.update_freq(arg),
+                        anchor=tk.E,
+                        bg = "lightblue",
+                        activebackground="lightblue",
+                    )
+
+            button.pack(pady=1, fill=tk.X)
+            self.freq_buttons.append(button)
+
+
+        for d in duties:
+            button = tk.Button(duty_frame,
+                        text=f'{d}%',
+                        command=lambda arg=d: self.update_duty(arg),
+                        anchor=tk.E,
+                        bg = "lightblue",
+                        activebackground="lightblue",
+                    )
+
+            self.duty_buttons.append(button)
+
+            button.pack(pady=1, fill=tk.X)
+
+
+
+    def update_freq(self, f):
+            self.freq = f
+            print("Set Clock to:", self.freq, self.duty)
+
+            # Click the matching button and unclick the others
+            for btn in self.freq_buttons:
+                if btn['text'] == f:
+                    btn['relief'] = "sunken"
+                    btn['bg'] = "red"
+                    btn['activebackground'] = "red"
+                else:
+                    btn['relief'] = "raised"
+                    btn['bg'] = "lightblue"
+                    btn['activebackground'] = "lightblue"
+
+
+    def update_duty(self, d):
+            self.duty = d
+            print("Set Clock to:", self.freq, self.duty)
+
+            for btn in self.duty_buttons:
+                if btn['text'] == f'{d}%':
+                    btn['relief'] = "sunken"
+                    btn['bg'] = "red"
+                    btn['activebackground'] = "red"
+                else:
+                    btn['relief'] = "raised"
+                    btn['bg'] = "lightblue"
+                    btn['activebackground'] = "lightblue"
 
 

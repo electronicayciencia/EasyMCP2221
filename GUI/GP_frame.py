@@ -30,14 +30,15 @@ class GP_frame(ttk.Labelframe):
         if pin == 0:
             f = Func_GPIO_IN_frame(self)
         elif pin == 1:
-            f = Func_ADC_frame(self) 
+            f = Func_ADC_frame(self)
             f.ref = "1.024V"
             f.update(512)
         elif pin == 2:
             f = Func_DAC_frame(self)
             f.ref = "1.024V"
         else:
-            f = Func_GPIO_OUT_frame(self, pin)
+            f = Func_CLK_OUT_frame(self)
+            #f = Func_GPIO_OUT_frame(self, pin)
 
         f.pack(expand=True, fill=tk.X, anchor=tk.N)
 
