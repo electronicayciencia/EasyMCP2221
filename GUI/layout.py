@@ -4,7 +4,7 @@ from tkinter.messagebox import showinfo, showerror, showwarning
 
 root = tk.Tk()
 root.title('EasyMCP2221 utility')
-root.geometry("800x600")
+#root.geometry("800x600")
 
 
 
@@ -101,10 +101,10 @@ gp_func.append(tk.StringVar())
 gp_func.append(tk.StringVar())
 gp_func.append(tk.StringVar())
 
-ttk.OptionMenu(gp_frame[0], gp_func[0], "GP0 func", *pin_funcs[0], command=lambda f: gp_func_updated(0, f)).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[1], gp_func[1], "GP1 func", *pin_funcs[1], command=lambda f: gp_func_updated(1, f)).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[2], gp_func[2], "GP2 func", *pin_funcs[2], command=lambda f: gp_func_updated(2, f)).pack(fill=tk.X, pady=10, padx=2)
-ttk.OptionMenu(gp_frame[3], gp_func[3], "GP3 func", *pin_funcs[3], command=lambda f: gp_func_updated(3, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[0], gp_func[0], *pin_funcs[0], command=lambda f: gp_func_updated(0, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[1], gp_func[1], *pin_funcs[1], command=lambda f: gp_func_updated(1, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[2], gp_func[2], *pin_funcs[2], command=lambda f: gp_func_updated(2, f)).pack(fill=tk.X, pady=10, padx=2)
+ttk.OptionMenu(gp_frame[3], gp_func[3], *pin_funcs[3], command=lambda f: gp_func_updated(3, f)).pack(fill=tk.X, pady=10, padx=2)
 
 #-------------------------------
 # Populate device data frame
@@ -136,13 +136,11 @@ ttk.Label(control_frame,
 
 ttk.OptionMenu(control_frame, 
                adc_vref, 
-               "adc vref", 
                *vref_values, 
                command=adc_vref_updated).grid(row=0, column=1, sticky=tk.E)
 
 ttk.OptionMenu(control_frame, 
-               dac_vref, 
-               "dac vref", 
+               dac_vref,  
                *vref_values,
                command=dac_vref_updated).grid(row=1, column=1, sticky=tk.E)
 
