@@ -6,7 +6,7 @@ class Func_GPIO_IN_frame(tk.Frame):
     def __init__(self, root):
         super().__init__(root)
 
-        self.status = tk.Label(self, relief="groove", text="Unknown", bg="yellow", anchor="center")
+        self.status = tk.Label(self, relief="ridge", text="Unknown", bg="yellow", anchor="center")
         self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
 
     def high(self):
@@ -58,7 +58,7 @@ class Func_ADC_frame(tk.Frame):
         self.pb.pack(pady=10)
 
         self.label = tk.Label(self,
-            relief="flat",
+            relief="ridge",
             text="-V",
             fg="red",
             bg="black",
@@ -121,7 +121,7 @@ class Func_DAC_frame(tk.Frame):
         self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
         self.label = tk.Label(self,
-            relief="flat",
+            relief="ridge",
             text="-V",
             fg="black",
             bg="yellow",
@@ -203,6 +203,7 @@ class Func_CLK_OUT_frame(tk.Frame):
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
+                        padx=5,
                     )
 
             button.pack(pady=1, fill=tk.X)
@@ -216,6 +217,7 @@ class Func_CLK_OUT_frame(tk.Frame):
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
+                        padx=5,
                     )
 
             self.duty_buttons.append(button)
@@ -254,4 +256,46 @@ class Func_CLK_OUT_frame(tk.Frame):
                     btn['bg'] = "lightblue"
                     btn['activebackground'] = "lightblue"
 
+
+
+class Func_IOC_frame(tk.Frame):
+
+    def __init__(self, root):
+        super().__init__(root)
+
+        self.edge = tk.StringVar()
+
+        tk.Label(self, text="Edge detection:").pack(padx=10, pady=10)
+        
+        r1 = ttk.Radiobutton(self, text='None',    value='none',    variable=self.edge)
+        r2 = ttk.Radiobutton(self, text='Rising',  value='rising',  variable=self.edge)
+        r3 = ttk.Radiobutton(self, text='Falling', value='falling', variable=self.edge)
+        r4 = ttk.Radiobutton(self, text='Both',    value='both',    variable=self.edge)
+
+        package = {
+            "padx": 40,
+            "pady": 10,
+            "anchor": tk.W,
+        }
+        
+        r1.pack(**package)
+        r2.pack(**package)
+        r3.pack(**package)
+        r4.pack(**package)
+
+
+class Func_GENERIC_frame(tk.Frame):
+
+    def __init__(self, root, kind):
+        super().__init__(root)
+
+        description = {
+            "SSPND"   : "Signals when the host has entered in Suspend mode.",
+            "LED_URX" : "UART Rx LED activity output.",
+            "LED_UTX" : "UART Tx LED activity output.",
+            "USBCFG"  : "USB device-configured status.",
+            "LED_I2C" : "USB/I2C traffic indicator.",
+        }
+        
+        tk.Label(self, text=description[kind], wraplength=100).pack(padx=10, pady=10)
 

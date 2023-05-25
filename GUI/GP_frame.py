@@ -37,7 +37,9 @@ class GP_frame(ttk.Labelframe):
             f = Func_DAC_frame(self)
             f.ref = "1.024V"
         else:
-            f = Func_CLK_OUT_frame(self)
+            f = Func_GENERIC_frame(self, "SSPND")
+            #f = Func_IOC_frame(self)
+            #f = Func_CLK_OUT_frame(self)
             #f = Func_GPIO_OUT_frame(self, pin)
 
         f.pack(expand=True, fill=tk.X, anchor=tk.N)
