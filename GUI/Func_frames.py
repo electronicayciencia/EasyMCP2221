@@ -3,7 +3,7 @@ from tkinter import ttk
 
 class Func_GPIO_IN_frame(tk.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, sts):
         super().__init__(root)
 
         self.status = tk.Label(self, relief="ridge", text="Unknown", bg="yellow", anchor="center")
@@ -19,7 +19,7 @@ class Func_GPIO_IN_frame(tk.Frame):
 
 class Func_GPIO_OUT_frame(tk.Frame):
 
-    def __init__(self, root, pin):
+    def __init__(self, root, pin, sts):
         super().__init__(root)
 
         self.pin = pin
@@ -44,7 +44,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
 
 class Func_ADC_frame(tk.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, sts):
         super().__init__(root)
 
         self.ref = "OFF"
@@ -102,19 +102,23 @@ class Func_ADC_frame(tk.Frame):
 
 
 class Func_DAC_frame(tk.Frame):
-
-    def __init__(self, root):
+    """DAC value frame.
+    
+    Two pins can output DAC. But the DAC is common to both.
+    """
+    
+    def __init__(self, root, sts):
         super().__init__(root)
 
-        self.ref = "OFF"
-        self.dac = tk.StringVar()
+        self.ref = sts["dac_ref"]
+        self.dac = sts["dac"]
         self.last_dac = 0
+        self.last_ref = 0
 
         self.slider = tk.Scale(
             self,
             from_=31,
             to=0,
-            command=self.update_slide,
             length=290,
             variable=self.dac,
             orient='vertical',
@@ -132,59 +136,59 @@ class Func_DAC_frame(tk.Frame):
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
         self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
+        self.dac.trace('w', self.update)
+        self.ref.trace('w', self.update)
+
 
     def update_slide(self, v):
         """Proxy function to force discrete steps on the slide."""
         v = round(float(v))
         self.dac.set(v)
-        if v != self.last_dac:
-            self.last_dac = v
-            self.update()
 
 
-    def update(self):
+    def update(self, *args):
         """Update DAC settings.
 
         Take DAC value from Slider StringVar.
         """
 
-        if self.ref == "OFF":
+        if self.ref.get() == "OFF":
             self.slider["state"] = "disabled"
         else:
-            self.slider["state"] = "enabled"
+            self.slider["state"] = "active"
 
+        # Skip updates unless something actually changes
+        if self.dac.get() == self.last_dac and self.ref.get() == self.last_ref:
+            return
+        
+        self.last_dac = self.dac.get()
 
         d = int(float(self.dac.get()))
 
-        if self.ref == "1.024V":
+        if self.ref.get() == "1.024V":
             v = d * 1.024 / 32
             self.label["text"] = f'{v:1.3f}V'
-            print("Set DAC to", d)
 
-        elif self.ref == "2.048V":
+        elif self.ref.get() == "2.048V":
             v = d * 2.048 / 32
             self.label["text"] = f'{v:1.3f}V'
-            print("Set DAC to", d)
 
-        elif self.ref == "4.096V":
+        elif self.ref.get() == "4.096V":
             v = d * 4.096 / 32
             self.label["text"] = f'{v:1.2f}V'
-            print("Set DAC to", d)
 
-        elif self.ref == "VDD":
+        elif self.ref.get() == "VDD":
             v = d * 100 / 32
-            self.label["text"] = f'{v:3.2f}%'
-            print("Set DAC to", d)
+            self.label["text"] = f'{v:3.1f}%'
 
         else:
             self.label["text"] = "OFF"
-            print("Set DAC to OFF")
 
 
 
 class Func_CLK_OUT_frame(tk.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, sts):
         super().__init__(root)
 
         self.freq = "0"
@@ -267,7 +271,7 @@ class Func_CLK_OUT_frame(tk.Frame):
 
 class Func_IOC_frame(tk.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, sts):
         super().__init__(root)
 
         self.edge = tk.StringVar()

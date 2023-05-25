@@ -4,13 +4,13 @@ from tkinter import ttk
 class Control_frame(ttk.Labelframe):
     """Populate control frame."""
 
-    def __init__(self, root):
+    def __init__(self, root, sts):
         super().__init__(root)
 
         self["text"] = " Options "
 
-        self.adc_vref = tk.StringVar()
-        self.dac_vref = tk.StringVar()
+        self.adc_vref = sts["adc_ref"]
+        self.dac_vref = sts["dac_ref"]
         self.power_mgmnt = tk.StringVar()
 
         vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD")

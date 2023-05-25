@@ -9,8 +9,30 @@ from Control_frame import Control_frame
 
 class App(tk.Tk):
 
+ 
     def __init__(self):
         super().__init__()
+
+        # Global status
+        self.sts = {
+            "strings" : {
+                "description":  tk.StringVar(),
+                "serial":       tk.StringVar(),
+                "manufacturer": tk.StringVar(),
+            },
+            "dac_ref": tk.StringVar(),
+            "adc_ref": tk.StringVar(),
+            "dac": tk.StringVar(),
+            "pwr": tk.StringVar(),
+            "func": [
+                tk.StringVar(),
+                tk.StringVar(),
+                tk.StringVar(),
+                tk.StringVar(),
+            ],
+            
+        }
+    
 
         self.title('EasyMCP2221 utility')
         #self.geometry("680x600")
@@ -31,10 +53,10 @@ class App(tk.Tk):
         topframe=tk.Frame(self)
         topframe.grid(row=0, column=0, columnspan=4, **gridding)
 
-        self.device_frame = Device_frame(topframe)
+        self.device_frame = Device_frame(topframe, self.sts)
         self.device_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        self.control_frame = Control_frame(topframe)
+        self.control_frame = Control_frame(topframe, self.sts)
         self.control_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=5, pady=5)
 
         buttons_frame = ttk.Frame(topframe)
@@ -56,28 +78,32 @@ class App(tk.Tk):
 
         # Bottom frames
         self.gp_frame = []
+        
+        # link both DAC frames
+        self.global_DAC = tk.StringVar()
 
-        for i in (0,1,2,3):
-            frame = GP_frame(self, i)
-            frame.grid(row=1, column=i, **gridding)
+        for pin in (0,1,2,3):
+            frame = GP_frame(self, pin, self.sts)
+            frame.grid(row=1, column=pin, **gridding)
             self.gp_frame.append(frame)
+
 
 
     def initialize_gui_data(self):
 
-        self.device_frame.data["description"].set("MCP2221 USB-I2C/UART Combo")
-        self.device_frame.data["serial"].set("Serial: 01234567")
-        self.device_frame.data["manufacturer"].set("Microchip Technology Inc.")
+        self.sts["strings"]["description"].set("MCP2221 USB-I2C/UART Combo")
+        self.sts["strings"]["serial"].set("Serial: 01234567")
+        self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
 
-        self.gp_frame[0].func.set("GPIO_IN")
-        self.gp_frame[1].func.set("GPIO_IN")
-        self.gp_frame[2].func.set("GPIO_IN")
-        self.gp_frame[3].func.set("GPIO_IN")
+        self.sts["func"][0].set("GPIO_IN")
+        self.sts["func"][1].set("GPIO_IN")
+        self.sts["func"][2].set("GPIO_IN")
+        self.sts["func"][3].set("GPIO_IN")
 
-        self.control_frame.adc_vref.set("1.024V")
-        self.control_frame.dac_vref.set("OFF")
+        self.sts["adc_ref"].set("1.024V")
+        self.sts["dac_ref"].set("OFF")
 
-        self.control_frame.power_mgmnt.set("enabled")
+        self.sts["pwr"].set("enabled")
 
 
     def quit_click(self):
