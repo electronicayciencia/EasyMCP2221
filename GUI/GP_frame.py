@@ -27,25 +27,35 @@ class GP_frame(ttk.Labelframe):
 
         ttk.Separator(self, orient='horizontal').pack(fill=tk.X,  pady=10, padx=20, anchor=tk.N)
 
-        if pin == 0:
-            f = Func_GPIO_IN_frame(self)
-        elif pin == 1:
-            f = Func_ADC_frame(self)
-            f.ref = "1.024V"
-            f.update(512)
-        elif pin == 2:
-            f = Func_DAC_frame(self)
-            f.ref = "1.024V"
-        else:
-            f = Func_GENERIC_frame(self, "SSPND")
-            #f = Func_IOC_frame(self)
-            #f = Func_CLK_OUT_frame(self)
-            #f = Func_GPIO_OUT_frame(self, pin)
+        # Inner frame to place all function frames overlapping
+        cont = ttk.Frame(self)
+        cont.columnconfigure(0, weight=1)
+        cont.rowconfigure(0, weight=1)
+        cont.pack(expand=True, fill=tk.X, anchor=tk.N)
 
-        f.pack(expand=True, fill=tk.X, anchor=tk.N)
+        self.subframes = {}
+        
+        # Create all needed frames
+        for func in self.pin_funcs:
+            if func == "GPIO_IN":  f = Func_GPIO_IN_frame(cont)
+            if func == "GPIO_OUT": f = Func_GPIO_OUT_frame(cont, pin)
+            if func == "ADC":      f = Func_ADC_frame(cont)
+            if func == "DAC":      f = Func_DAC_frame(cont)
+            if func == "CLK_OUT":  f = Func_CLK_OUT_frame(cont)
+            if func == "IOC":      f = Func_IOC_frame(cont)
+            if func == "LED_URX":  f = Func_GENERIC_frame(cont, "LED_URX")
+            if func == "LED_UTX":  f = Func_GENERIC_frame(cont, "LED_UTX")
+            if func == "SSPND":    f = Func_GENERIC_frame(cont, "SSPND")
+            if func == "USBCFG":   f = Func_GENERIC_frame(cont, "USBCFG")
+            if func == "LED_I2C":  f = Func_GENERIC_frame(cont, "LED_I2C")
+                
+            self.subframes[func] = f
+        
+            #f.pack(expand=True, fill=tk.X, anchor=tk.N)
+            f.grid(row=0, column=0, sticky=tk.NSEW)
 
 
 
     def gp_func_updated(self, func):
         print("New GP%s function is %s." % (self.pin, func))
-
+        self.subframes[func].tkraise()

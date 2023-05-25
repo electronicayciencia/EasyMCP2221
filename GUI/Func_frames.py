@@ -50,12 +50,11 @@ class Func_ADC_frame(tk.Frame):
         self.ref = "OFF"
 
         self.pb = ttk.Progressbar(
-            root,
+            self,
             orient = 'vertical',
             mode = 'determinate',
             length = 300,
         )
-        self.pb.pack(pady=10)
 
         self.label = tk.Label(self,
             relief="ridge",
@@ -67,6 +66,8 @@ class Func_ADC_frame(tk.Frame):
         )
 
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
+        self.pb.pack(pady=10)
+
 
     def update(self, d):
         """Update ADC reading.
@@ -110,7 +111,7 @@ class Func_DAC_frame(tk.Frame):
         self.last_dac = 0
 
         self.slider = tk.Scale(
-            root,
+            self,
             from_=31,
             to=0,
             command=self.update_slide,
@@ -118,7 +119,6 @@ class Func_DAC_frame(tk.Frame):
             variable=self.dac,
             orient='vertical',
         )
-        self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
         self.label = tk.Label(self,
             relief="ridge",
@@ -130,6 +130,7 @@ class Func_DAC_frame(tk.Frame):
         )
 
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
+        self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
 
     def update_slide(self, v):
@@ -146,6 +147,12 @@ class Func_DAC_frame(tk.Frame):
 
         Take DAC value from Slider StringVar.
         """
+
+        if self.ref == "OFF":
+            self.slider["state"] = "disabled"
+        else:
+            self.slider["state"] = "enabled"
+
 
         d = int(float(self.dac.get()))
 
@@ -293,9 +300,10 @@ class Func_GENERIC_frame(tk.Frame):
             "SSPND"   : "Signals when the host has entered in Suspend mode.",
             "LED_URX" : "UART Rx LED activity output.",
             "LED_UTX" : "UART Tx LED activity output.",
-            "USBCFG"  : "USB device-configured status.",
+            "USBCFG"  : "USB device configured status.",
             "LED_I2C" : "USB/I2C traffic indicator.",
         }
         
-        tk.Label(self, text=description[kind], wraplength=100).pack(padx=10, pady=10)
+        l = tk.Label(self, text=description[kind], wraplength=100)
+        l.pack(padx=10, pady=10, expand=True, anchor=tk.N, fill=tk.X)
 
