@@ -22,11 +22,19 @@ class GP_frame(ttk.Labelframe):
         self.pin_funcs = all_pin_funcs[pin]
 
         # Create and place function selector menus
-        self.func = tk.StringVar()
-        ttk.OptionMenu(self, self.func, None, *self.pin_funcs, command=self.gp_func_updated).pack(fill=tk.X, pady=5, padx=2)
+        self.func = sts["func"][pin]
+        
+        # Trace var is broken on ttk.OptionMenu
+        # See: https://stackoverflow.com/questions/53171384/tkinter-function-repeats-itself-twice-when-ttk-widgets-are-engaged
+        tk.OptionMenu(self,
+            self.func, 
+            *self.pin_funcs,
+            #command=self.gp_func_updated,
+            ).pack(fill=tk.X, pady=5, padx=10)
 
-        ttk.Separator(self, orient='horizontal').pack(fill=tk.X,  pady=10, padx=20, anchor=tk.N)
-
+        #ttk.Separator(self, orient='horizontal').pack(fill=tk.X,  pady=10, padx=20, anchor=tk.N)
+        self.func.trace("w", self.gp_func_updated)
+        
         # Inner frame to place all function frames overlapping
         cont = ttk.Frame(self)
         cont.columnconfigure(0, weight=1)
@@ -36,27 +44,26 @@ class GP_frame(ttk.Labelframe):
         self.subframes = {}
         
         # Create all needed frames
-        for func in self.pin_funcs:
-            if func == "GPIO_IN":  f = Func_GPIO_IN_frame(cont, sts)
-            if func == "GPIO_OUT": f = Func_GPIO_OUT_frame(cont, pin, sts)
-            if func == "ADC":      f = Func_ADC_frame(cont, sts)
-            if func == "DAC":      f = Func_DAC_frame(cont, sts)
-            if func == "CLK_OUT":  f = Func_CLK_OUT_frame(cont, sts)
-            if func == "IOC":      f = Func_IOC_frame(cont, sts)
-            if func == "LED_URX":  f = Func_GENERIC_frame(cont, "LED_URX")
-            if func == "LED_UTX":  f = Func_GENERIC_frame(cont, "LED_UTX")
-            if func == "SSPND":    f = Func_GENERIC_frame(cont, "SSPND")
-            if func == "USBCFG":   f = Func_GENERIC_frame(cont, "USBCFG")
-            if func == "LED_I2C":  f = Func_GENERIC_frame(cont, "LED_I2C")
+        for f in self.pin_funcs:
+            if f == "GPIO_IN":  fr = Func_GPIO_IN_frame(cont, pin, sts)
+            if f == "GPIO_OUT": fr = Func_GPIO_OUT_frame(cont, pin, sts)
+            if f == "ADC":      fr = Func_ADC_frame(cont, pin, sts)
+            if f == "DAC":      fr = Func_DAC_frame(cont, sts)
+            if f == "CLK_OUT":  fr = Func_CLK_OUT_frame(cont, sts)
+            if f == "IOC":      fr = Func_IOC_frame(cont, sts)
+            if f == "LED_URX":  fr = Func_GENERIC_frame(cont, "LED_URX")
+            if f == "LED_UTX":  fr = Func_GENERIC_frame(cont, "LED_UTX")
+            if f == "SSPND":    fr = Func_GENERIC_frame(cont, "SSPND")
+            if f == "USBCFG":   fr = Func_GENERIC_frame(cont, "USBCFG")
+            if f == "LED_I2C":  fr = Func_GENERIC_frame(cont, "LED_I2C")
                 
-            self.subframes[func] = f
+            self.subframes[f] = fr
         
-            #f.pack(expand=True, fill=tk.X, anchor=tk.N)
-            f.grid(row=0, column=0, sticky=tk.NSEW)
+            fr.grid(row=0, column=0, sticky=tk.NSEW)
 
 
-    def gp_func_updated(self, func):
-        print("New GP%s function is %s." % (self.pin, func))
-        self.subframes[func].tkraise()
+    def gp_func_updated(self, *args):
+        print("New GP%s function is %s." % (self.pin, self.func.get()))
+        self.subframes[self.func.get()].tkraise()
 
 

@@ -24,6 +24,8 @@ class App(tk.Tk):
             "adc_ref": tk.StringVar(),
             "dac": tk.StringVar(),
             "pwr": tk.StringVar(),
+            
+            #Function of each pin
             "func": [
                 tk.StringVar(),
                 tk.StringVar(),
@@ -31,6 +33,20 @@ class App(tk.Tk):
                 tk.StringVar(),
             ],
             
+            #ADC input of each pin
+            "adc": [
+                tk.StringVar(),
+                tk.StringVar(),
+                tk.StringVar(),
+            ],
+            
+            #Logic input of each pin
+            "in": [
+                tk.StringVar(),
+                tk.StringVar(),
+                tk.StringVar(),
+                tk.StringVar(),
+            ],
         }
     
 
@@ -104,6 +120,17 @@ class App(tk.Tk):
         self.sts["dac_ref"].set("OFF")
 
         self.sts["pwr"].set("enabled")
+        
+        self.sts["in"][0].set("1")
+        self.sts["in"][1].set("0")
+        self.sts["in"][2].set("1")
+        self.sts["in"][3].set("0")
+
+        self.sts["adc"][0].set("256")
+        self.sts["adc"][1].set("512")
+        self.sts["adc"][2].set("1023")
+
+
 
 
     def quit_click(self):

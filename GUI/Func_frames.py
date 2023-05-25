@@ -3,17 +3,22 @@ from tkinter import ttk
 
 class Func_GPIO_IN_frame(tk.Frame):
 
-    def __init__(self, root, sts):
+    def __init__(self, root, pin, sts):
         super().__init__(root)
+
+        self.value = sts["in"][pin]
 
         self.status = tk.Label(self, relief="ridge", text="Unknown", bg="yellow", anchor="center")
         self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
 
-    def high(self):
-        self.status.config(text="HIGH", bg="red", fg="white")
+        self.value.trace("w", self.update_label)
 
-    def low(self):
-        self.status.config(text="low", bg="green", fg="white")
+
+    def update_label(self, *args):
+        if self.value.get() == "1":
+            self.status.config(text="HIGH", bg="red", fg="white")
+        else:
+            self.status.config(text="low", bg="green", fg="white")
 
 
 
@@ -44,7 +49,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
 
 class Func_ADC_frame(tk.Frame):
 
-    def __init__(self, root, sts):
+    def __init__(self, root, pin, sts):
         super().__init__(root)
 
         self.ref = "OFF"
@@ -69,7 +74,7 @@ class Func_ADC_frame(tk.Frame):
         self.pb.pack(pady=10)
 
 
-    def update(self, d):
+    def update_label(self, d):
         """Update ADC reading.
 
         d: reading from 0 to 1023
@@ -136,8 +141,8 @@ class Func_DAC_frame(tk.Frame):
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
         self.slider.pack(pady=10, expand=True, fill=tk.Y)
 
-        self.dac.trace('w', self.update)
-        self.ref.trace('w', self.update)
+        self.dac.trace('w', self.update_label)
+        self.ref.trace('w', self.update_label)
 
 
     def update_slide(self, v):
@@ -146,7 +151,7 @@ class Func_DAC_frame(tk.Frame):
         self.dac.set(v)
 
 
-    def update(self, *args):
+    def update_label(self, *args):
         """Update DAC settings.
 
         Take DAC value from Slider StringVar.
