@@ -9,6 +9,21 @@ class Device_frame(ttk.Labelframe):
 
         self["text"] = " Device "
 
-        ttk.Label(self, textvariable=sts["strings"]["description"], font="Helvetica, 14").pack(anchor=tk.W, pady=2, padx=5)
-        ttk.Label(self, textvariable=sts["strings"]["serial"]).pack(anchor=tk.W, pady=2, padx=5)
-        ttk.Label(self, textvariable=sts["strings"]["manufacturer"]).pack(anchor=tk.W, pady=2, padx=5)
+        package = {
+            "anchor": tk.W, 
+            "pady": 5,
+            "padx": 10
+        }
+
+        ttk.Label(self, 
+            font="Helvetica, 14",
+            wraplength=350,
+            textvariable=sts["strings"]["description"]).pack(**package)
+        
+        ttk.Label(self, 
+            font="Helvetica, 12",
+            textvariable=sts["strings"]["serial"]).pack(**package)
+        
+        ttk.Label(self, 
+            font="Helvetica, 12",
+            textvariable=sts["strings"]["manufacturer"]).pack(**package)

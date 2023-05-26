@@ -52,7 +52,8 @@ class Func_ADC_frame(tk.Frame):
     def __init__(self, root, pin, sts):
         super().__init__(root)
 
-        self.ref = "OFF"
+        self.ref = sts["adc_ref"]
+        self.val = sts["adc"][pin-1] # ADC0 in GP1
 
         self.pb = ttk.Progressbar(
             self,
@@ -72,37 +73,39 @@ class Func_ADC_frame(tk.Frame):
 
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
         self.pb.pack(pady=10)
+        
+        self.val.trace("w", self.update_view)
+        self.ref.trace("w", self.update_view)
+        
 
-
-    def update_label(self, d):
-        """Update ADC reading.
-
-        d: reading from 0 to 1023
-        """
-
-        if self.ref == "1.024V":
-            v = d * 1.024 / 1024
-            self.pb["value"] = d / 1024 * 100
-            self.label["text"] = f'{v:1.3f}V'
-
-        elif self.ref == "2.048V":
-            v = d * 2.048 / 1024
-            self.pb["value"] = d / 1024 * 100
-            self.label["text"] = f'{v:1.3f}V'
-
-        elif self.ref == "4.096V":
-            v = d * 4.096 / 1024
-            self.pb["value"] = d / 1024 * 100
-            self.label["text"] = f'{v:1.2f}V'
-
-        elif self.ref == "VDD":
-            v = d * 100 / 1024
-            self.pb["value"] = v
-            self.label["text"] = f'{v:3.2f}%'
-
-        else:
+    def update_view(self, *args):
+        """Update ADC label and bar."""
+        val = int(self.val.get())
+        ref = self.ref.get()
+        
+        if ref == "OFF":
             self.label["text"] = "OFF"
             self.pb["value"] = 0
+            return
+
+        self.pb["value"] = val / 1024 * 100
+
+        if ref == "1.024V":
+            v = val * 1.024 / 1024
+            self.label["text"] = f'{v:1.3f}V'
+
+        elif ref == "2.048V":
+            v = val * 2.048 / 1024
+            self.label["text"] = f'{v:1.3f}V'
+
+        elif ref == "4.096V":
+            v = val * 4.096 / 1024
+            self.label["text"] = f'{v:1.3f}V'
+
+        else:
+            v = val / 1024 * 100
+            self.label["text"] = f'{v:2.1f}%'
+
 
 
 
@@ -196,8 +199,8 @@ class Func_CLK_OUT_frame(tk.Frame):
     def __init__(self, root, sts):
         super().__init__(root)
 
-        self.freq = "0"
-        self.duty = "0"
+        self.freq = sts["clk"]["freq"]
+        self.duty = sts["clk"]["duty"]
 
         freq_frame = tk.Frame(self)
         duty_frame = tk.Frame(self)
@@ -215,7 +218,7 @@ class Func_CLK_OUT_frame(tk.Frame):
         for f in freqs:
             button = tk.Button(freq_frame,
                         text=f,
-                        command=lambda arg=f: self.update_freq(arg),
+                        command=lambda arg=f: self.freq.set(arg),
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
@@ -229,7 +232,7 @@ class Func_CLK_OUT_frame(tk.Frame):
         for d in duties:
             button = tk.Button(duty_frame,
                         text=f'{d}%',
-                        command=lambda arg=d: self.update_duty(arg),
+                        command=lambda arg=d: self.duty.set(arg),
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
@@ -237,40 +240,40 @@ class Func_CLK_OUT_frame(tk.Frame):
                     )
 
             self.duty_buttons.append(button)
-
             button.pack(pady=1, fill=tk.X)
 
+        # Update buttons when some parameter changes
+        self.freq.trace("w", self.update_freq_buttons)
+        self.duty.trace("w", self.update_duty_buttons)
 
 
-    def update_freq(self, f):
-            self.freq = f
-            print("Set Clock to:", self.freq, self.duty)
+    def update_freq_buttons(self, *args):
+        # Click the matching button and unclick the others
+        f = self.freq.get()
+        
+        for btn in self.freq_buttons:
+            if btn['text'] == f:
+                btn['relief'] = "sunken"
+                btn['bg'] = "red"
+                btn['activebackground'] = "red"
+            else:
+                btn['relief'] = "raised"
+                btn['bg'] = "lightblue"
+                btn['activebackground'] = "lightblue"
 
-            # Click the matching button and unclick the others
-            for btn in self.freq_buttons:
-                if btn['text'] == f:
-                    btn['relief'] = "sunken"
-                    btn['bg'] = "red"
-                    btn['activebackground'] = "red"
-                else:
-                    btn['relief'] = "raised"
-                    btn['bg'] = "lightblue"
-                    btn['activebackground'] = "lightblue"
 
-
-    def update_duty(self, d):
-            self.duty = d
-            print("Set Clock to:", self.freq, self.duty)
-
-            for btn in self.duty_buttons:
-                if btn['text'] == f'{d}%':
-                    btn['relief'] = "sunken"
-                    btn['bg'] = "red"
-                    btn['activebackground'] = "red"
-                else:
-                    btn['relief'] = "raised"
-                    btn['bg'] = "lightblue"
-                    btn['activebackground'] = "lightblue"
+    def update_duty_buttons(self, *args):
+        d = self.duty.get()
+        
+        for btn in self.duty_buttons:
+            if btn['text'] == f'{d}%':
+                btn['relief'] = "sunken"
+                btn['bg'] = "red"
+                btn['activebackground'] = "red"
+            else:
+                btn['relief'] = "raised"
+                btn['bg'] = "lightblue"
+                btn['activebackground'] = "lightblue"
 
 
 

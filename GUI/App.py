@@ -16,36 +16,40 @@ class App(tk.Tk):
         # Global status
         self.sts = {
             "strings" : {
-                "description":  tk.StringVar(),
-                "serial":       tk.StringVar(),
-                "manufacturer": tk.StringVar(),
+                "description":  tk.StringVar(self, "Not connected"),
+                "serial":       tk.StringVar(self, "-"),
+                "manufacturer": tk.StringVar(self, "-"),
             },
-            "dac_ref": tk.StringVar(),
-            "adc_ref": tk.StringVar(),
-            "dac": tk.StringVar(),
+            "dac_ref": tk.StringVar(self, "OFF"),
+            "dac": tk.StringVar(self, 0),
             "pwr": tk.StringVar(),
+            "clk": {
+                "freq": tk.StringVar(self, "12MHz"),
+                "duty": tk.StringVar(self, 0),
+            },
             
             #Function of each pin
             "func": [
-                tk.StringVar(),
-                tk.StringVar(),
-                tk.StringVar(),
-                tk.StringVar(),
+                tk.StringVar(self, "-"),
+                tk.StringVar(self, "-"),
+                tk.StringVar(self, "-"),
+                tk.StringVar(self, "-"),
             ],
             
             #ADC input of each pin
+            "adc_ref": tk.StringVar(self, "OFF"),
             "adc": [
-                tk.StringVar(),
-                tk.StringVar(),
-                tk.StringVar(),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
             ],
             
             #Logic input of each pin
             "in": [
-                tk.StringVar(),
-                tk.StringVar(),
-                tk.StringVar(),
-                tk.StringVar(),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
             ],
         }
     
@@ -107,17 +111,17 @@ class App(tk.Tk):
 
     def initialize_gui_data(self):
 
-        self.sts["strings"]["description"].set("MCP2221 USB-I2C/UART Combo")
-        self.sts["strings"]["serial"].set("Serial: 01234567")
-        self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
+        #self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
+        #self.sts["strings"]["serial"].set("Serial: 01234567")
+        #self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
 
-        self.sts["func"][0].set("GPIO_IN")
-        self.sts["func"][1].set("GPIO_IN")
-        self.sts["func"][2].set("GPIO_IN")
-        self.sts["func"][3].set("GPIO_IN")
+        self.sts["func"][0].set("LED_URX")
+        self.sts["func"][1].set("LED_UTX")
+        self.sts["func"][2].set("USBCFG")
+        self.sts["func"][3].set("LED_I2C")
 
-        self.sts["adc_ref"].set("1.024V")
         self.sts["dac_ref"].set("OFF")
+        self.sts["dac"].set("16")
 
         self.sts["pwr"].set("enabled")
         
@@ -126,10 +130,13 @@ class App(tk.Tk):
         self.sts["in"][2].set("1")
         self.sts["in"][3].set("0")
 
+        self.sts["adc_ref"].set("OFF")
         self.sts["adc"][0].set("256")
         self.sts["adc"][1].set("512")
         self.sts["adc"][2].set("1023")
 
+        self.sts["clk"]["freq"].set("24MHz")
+        self.sts["clk"]["duty"].set("25")
 
 
 
