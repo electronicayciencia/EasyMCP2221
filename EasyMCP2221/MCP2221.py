@@ -138,7 +138,7 @@ class Device:
 
     def __repr__(self):
         import json
-        data = self._read_flash_info(raw = False)
+        data = self.read_flash_info(human=True)
         return json.dumps(data, indent=4, sort_keys=True)
 
 
@@ -349,8 +349,10 @@ class Device:
         return rbuf[0:64]
 
 
-    def _read_flash_info(self, raw = False):
+    def read_flash_info(self, raw=False, human=False):
         """ Read flash data.
+
+        TODO: Document human, extended info, give examples. Include in documentation.
 
         Return USB enumeration strings, power-up GPIO settings and internal chip configuration.
 
@@ -358,40 +360,81 @@ class Device:
             raw (bool, optional):
                 If ``False``, return only parsed data (this is the default).
                 If ``True``, return all data unparsed.
+            human (bool, optional):
+                If ``True``, return variable names in readable text. (this is the default).
+                If ``False``, return variable names untranslated, for API.
 
         Return:
             dict: Flash data (parsed or raw)
 
+            {
+            "CHIP_SETTINGS": {
+                "adc_ref": "VDD",
+                "clk_duty": 50,
+                "clk_freq": "12MHz",
+                "dac_ref": "VDD",
+                "dac_val": 0,
+                "ioc": "both",
+                "ma": 100,
+                "pid": "0x00DD",
+                "pwr": "disabled",
+                "vid": "0x04D8"
+            },
+            "GP_SETTINGS": {
+                "GP0": {
+                    "func": "GPIO_IN",
+                    "outval": 0
+                },
+                "GP1": {
+                    "func": "GPIO_IN",
+                    "outval": 0
+                },
+                "GP2": {
+                    "func": "GPIO_IN",
+                    "outval": 0
+                },
+                "GP3": {
+                    "func": "GPIO_IN",
+                    "outval": 0
+                }
+            },
+            "USB_FACT_SERIAL": "01234567",
+            "USB_PRODUCT": "MCP2221 USB-I2C/UART Combo",
+            "USB_SERIAL": "0000033333",
+            "USB_VENDOR": "Microchip Technology Inc."
+        }
+
+
         Hint:
-            This is the function used to stringfy the object.
+            When called with `human = true` parameter, this is the function used to
+            stringfy the object.
         """
-        CHIP_SETTINGS_STR   = "Chip settings"
-        GP_SETTINGS_STR     = "GP settings"
-        USB_VENDOR_STR      = "USB Manufacturer"
-        USB_PRODUCT_STR     = "USB Product"
-        USB_SERIAL_STR      = "USB Serial"
-        USB_FACT_SERIAL_STR = "Factory Serial"
+
 
         data = {
-            CHIP_SETTINGS_STR:    self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SETTINGS]),
-            GP_SETTINGS_STR:      self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_GP_SETTINGS]),
-            USB_VENDOR_STR:       self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_MANUFACTURER]),
-            USB_PRODUCT_STR:      self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_PRODUCT]),
-            USB_SERIAL_STR:       self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_SERIALNUM]),
-            USB_FACT_SERIAL_STR:  self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SERIALNUM]),
+            "CHIP_SETTINGS"   : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SETTINGS]),
+            "GP_SETTINGS"     : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_GP_SETTINGS]),
+            "USB_VENDOR"      : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_MANUFACTURER]),
+            "USB_PRODUCT"     : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_PRODUCT]),
+            "USB_SERIAL"      : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_USB_SERIALNUM]),
+            "USB_FACT_SERIAL" : self.send_cmd([CMD_READ_FLASH_DATA, FLASH_DATA_CHIP_SERIALNUM]),
         }
 
         if raw:
             return data
 
-        data[USB_VENDOR_STR]      = self._parse_wchar_structure(data[USB_VENDOR_STR])
-        data[USB_PRODUCT_STR]     = self._parse_wchar_structure(data[USB_PRODUCT_STR])
-        data[USB_SERIAL_STR]      = self._parse_wchar_structure(data[USB_SERIAL_STR])
-        data[USB_FACT_SERIAL_STR] = self._parse_factory_serial(data[USB_FACT_SERIAL_STR])
-        data[CHIP_SETTINGS_STR]   = self._parse_chip_settings_struct(data[CHIP_SETTINGS_STR])
-        data[GP_SETTINGS_STR]     = self._parse_gp_settings_struct(data[GP_SETTINGS_STR])
+        data["USB_VENDOR"]      = self._parse_wchar_structure(data["USB_VENDOR"])
+        data["USB_PRODUCT"]     = self._parse_wchar_structure(data["USB_PRODUCT"])
+        data["USB_SERIAL"]      = self._parse_wchar_structure(data["USB_SERIAL"])
+        data["USB_FACT_SERIAL"] = self._parse_factory_serial(data["USB_FACT_SERIAL"])
+        data["CHIP_SETTINGS"]   = self._parse_chip_settings_struct(data["CHIP_SETTINGS"])
+        data["GP_SETTINGS"]     = self._parse_gp_settings_struct(data["GP_SETTINGS"])
 
-        return data
+        if not human:
+            return data
+
+        return self._humanify(data)
+
 
     def _parse_wchar_structure(self, buf):
         cmd_echo  = buf[RESPONSE_ECHO_BYTE]
@@ -412,28 +455,168 @@ class Device:
         return str
 
     def _parse_chip_settings_struct(self, buf):
-        vid = (buf[9] << 8) +  buf[8]
-        pid = (buf[11] << 8) +  buf[10]
-        mA = buf[13] * 2
-        pmo_str = "enabled" if buf[12] & 0b00100000 else "disabled"
-        ide_bits = (buf[7] & 0b1100000) >> 5
-        ide_str = ("both"   if ide_bits == 3 else
-                  "falling" if ide_bits == 2 else
-                  "raising" if ide_bits == 1 else
-                  "none")
+        vid = (buf[FLASH_CHIP_SETTINGS_HVID + FLASH_OFFSET_READ] << 8) \
+            +  buf[FLASH_CHIP_SETTINGS_LVID + FLASH_OFFSET_READ]
+
+        pid = (buf[FLASH_CHIP_SETTINGS_HPID + FLASH_OFFSET_READ] << 8) \
+            +  buf[FLASH_CHIP_SETTINGS_LPID + FLASH_OFFSET_READ]
+
+        mA = buf[FLASH_CHIP_SETTINGS_USBMA + FLASH_OFFSET_READ] * 2
+
+        if buf[FLASH_CHIP_SETTINGS_USBPWR + FLASH_OFFSET_READ] & 0b00100000:
+            pmo_str = "enabled"
+        else:
+            pmo_str = "disabled"
+
+        ide_bits = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b01100000) >> 5
+        ide_str = ("both"    if ide_bits == 3 else
+                   "falling" if ide_bits == 2 else
+                   "raising" if ide_bits == 1 else
+                   "none")
+
+        ADCREF = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b00000100) >> 2
+        ADCVRM = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b00011000) >> 3
+        adc_ref_str = ("VDD"    if ADCREF == 0 else
+                       "1.024V" if ADCVRM == 0b01 else
+                       "2.048V" if ADCVRM == 0b10 else
+                       "4.096V" if ADCVRM == 0b11 else
+                       "OFF")
+
+        CLKDC  = (buf[FLASH_CHIP_SETTINGS_CLOCK + FLASH_OFFSET_READ] & 0b00011000) >> 3
+        clk_dc_str = (75 if CLKDC == 0b11 else
+                      50 if CLKDC == 0b10 else
+                      25 if CLKDC == 0b01 else
+                      0)
+
+        CLKDIV = (buf[FLASH_CHIP_SETTINGS_CLOCK + FLASH_OFFSET_READ] & 0b00000111) >> 0
+        clk_freq_str = ("375kHz" if CLKDIV == 0b111 else
+                        "750kHz" if CLKDIV == 0b110 else
+                        "1.5MHz" if CLKDIV == 0b101 else
+                        "3MHz"   if CLKDIV == 0b100 else
+                        "6MHz"   if CLKDIV == 0b011 else
+                        "12MHz"  if CLKDIV == 0b010 else
+                        "24MHz"  if CLKDIV == 0b001 else
+                        "reserved")
+
+        DACREF = (buf[FLASH_CHIP_SETTINGS_DAC + FLASH_OFFSET_READ] & 0b00100000) >> 5
+        DACVRM = (buf[FLASH_CHIP_SETTINGS_DAC + FLASH_OFFSET_READ] & 0b11000000) >> 6
+        dac_ref_str = ("VDD"    if DACREF == 0 else
+                       "1.024V" if DACVRM == 0b01 else
+                       "2.048V" if DACVRM == 0b10 else
+                       "4.096V" if DACVRM == 0b11 else
+                       "OFF")
+
+        DACVAL = (buf[FLASH_CHIP_SETTINGS_DAC + FLASH_OFFSET_READ] & 0b00011111) >> 0
 
         data = {
-            "USB VID": "0x{:04X}".format(vid),
-            "USB PID": "0x{:04X}".format(pid),
-            "USB requested number of mA": mA,
-            "Power management options": pmo_str,
-            "Interrupt detection edge": ide_str,
+            "vid": "0x{:04X}".format(vid),
+            "pid": "0x{:04X}".format(pid),
+            "ma": mA,
+            "pwr": pmo_str,
+            "ioc": ide_str,
+            "clk_duty": clk_dc_str,
+            "clk_freq": clk_freq_str,
+            "adc_ref": adc_ref_str,
+            "dac_ref": dac_ref_str,
+            "dac_val": DACVAL,
         }
+
         return data
 
     def _parse_gp_settings_struct(self, buf):
-        data = { }
+        GPSETTING0 = buf[FLASH_GP_SETTINGS_GP0 + FLASH_OFFSET_READ]
+        GPSETTING1 = buf[FLASH_GP_SETTINGS_GP1 + FLASH_OFFSET_READ]
+        GPSETTING2 = buf[FLASH_GP_SETTINGS_GP2 + FLASH_OFFSET_READ]
+        GPSETTING3 = buf[FLASH_GP_SETTINGS_GP3 + FLASH_OFFSET_READ]
+
+        data = {}
+        data["GP0"] = self._parse_gp_settings_register(GPSETTING0, 0)
+        data["GP1"] = self._parse_gp_settings_register(GPSETTING1, 1)
+        data["GP2"] = self._parse_gp_settings_register(GPSETTING2, 2)
+        data["GP3"] = self._parse_gp_settings_register(GPSETTING3, 3)
+
         return data
+
+    def _parse_gp_settings_register(self, GPSETTING, pin):
+        GPIOOUTVAL = (GPSETTING & 0b00010000) >> 4
+        GPIODIR    = (GPSETTING & 0b00001000) >> 3
+        GPDES      = (GPSETTING & 0b00000111)
+
+        data = {}
+        data["outval"] = GPIOOUTVAL
+
+        # GPIO operation
+        if GPDES == 0:
+            if GPIODIR == 0: data["func"] = "GPIO_OUT"
+            else: data["func"] = "GPIO_IN"
+
+        #  Dedicated function operation
+        elif GPDES == 1:
+            if pin == 0: data["func"] = "SSPND"
+            if pin == 1: data["func"] = "CLK_OUT"
+            if pin == 2: data["func"] = "USBCFG"
+            if pin == 3: data["func"] = "LED_I2C"
+
+        #  Alternate function 0
+        elif GPDES == 2:
+            if pin == 0: data["func"] = "LED_URX"
+            if pin == 1: data["func"] = "ADC"
+            if pin == 2: data["func"] = "ADC"
+            if pin == 3: data["func"] = "ADC"
+
+        #  Alternate function 1
+        elif GPDES == 3:
+            if pin == 0: data["func"] = "reserved"
+            if pin == 1: data["func"] = "LED_UTX"
+            if pin == 2: data["func"] = "DAC"
+            if pin == 3: data["func"] = "DAC"
+
+        #  Alternate function 2
+        elif GPDES == 4:
+            if pin == 0: data["func"] = "reserved"
+            if pin == 1: data["func"] = "IOC"
+            if pin == 2: data["func"] = "reserved"
+            if pin == 3: data["func"] = "reserved"
+
+        else:
+            data["func"] == "reserved"
+
+        return data
+
+    def _humanify(self, data):
+        """Convert variable names into human strings recursively."""
+        h = {}
+        for k,v in data.items():
+            if isinstance(v, dict):
+                h[self._var2str(k)] = self._humanify(v)
+            else:
+                h[self._var2str(k)] = v
+        return h
+
+    def _var2str(self, varname):
+        """Convert variable names into human strings."""
+        strings = {
+            "vid"             : "USB VID",
+            "pid"             : "USB PID",
+            "ma"              : "USB requested number of mA",
+            "pwr"             : "Power management options",
+            "ioc"             : "Interrupt detection edge",
+            "adc_ref"         : "ADC reference value",
+            "clk_duty"        : "Clock output duty cycle",
+            "clk_freq"        : "Clock output frequency",
+            "dac_ref"         : "DAC reference value",
+            "dac_val"         : "DAC output value",
+            "CHIP_SETTINGS"   : "Chip settings",
+            "GP_SETTINGS"     : "General Purpose IO settings",
+            "USB_VENDOR"      : "USB Manufacturer",
+            "USB_PRODUCT"     : "USB Product",
+            "USB_SERIAL"      : "USB Serial Number",
+            "USB_FACT_SERIAL" : "Factory Serial Number",
+            "func"            : "Pin designated operation",
+            "outval"          : "Default output value",
+        }
+
+        return strings.get(varname, varname)
 
 
     #######################################################################
