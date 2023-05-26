@@ -21,9 +21,9 @@ class Device_frame(ttk.Labelframe):
             textvariable=sts["strings"]["description"]).pack(**package)
 
         ttk.Label(self,
-            font="Helvetica, 12",
+            font="Helvetica, 11",
             textvariable=sts["strings"]["serial"]).pack(**package)
 
         ttk.Label(self,
-            font="Helvetica, 12",
-            textvariable=sts["strings"]["manufacturer"]).pack(**package)
+            font="Helvetica, 11",
+            textvariable=sts["strings"]["vendor"]).pack(**package)

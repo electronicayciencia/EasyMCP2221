@@ -1,17 +1,19 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter.messagebox import askyesno
 
 class Control_frame(ttk.Labelframe):
     """Populate control frame."""
 
-    def __init__(self, root, sts):
+    def __init__(self, root, sts, mcp):
         super().__init__(root)
 
         self["text"] = " Options "
+        self.mcp = mcp
 
         self.adc_vref = sts["adc_ref"]
         self.dac_vref = sts["dac_ref"]
-        self.power_mgmnt = tk.StringVar()
+        self.power_mgmnt = sts["pwr"]
 
         vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD")
 
@@ -48,12 +50,27 @@ class Control_frame(ttk.Labelframe):
 
     def adc_vref_updated(self, value):
         print("New ADC vref is", value)
+        self.mcp.ADC_config(ref = value)
 
     def dac_vref_updated(self, value):
         print("New DAC vref is", value)
+        self.mcp.DAC_config(ref = value)
 
     def power_mgmnt_updated(self):
-        print("New power management is:", self.power_mgmnt.get())
+        pwr = self.power_mgmnt.get()
+        if pwr == "enabled":
+            print("Enable power management")
+            self.mcp.enable_power_management(True)
+        else:
+            print("Disable power management")
+            self.mcp.enable_power_management(False)
+
 
     def save_click(self):
-        print("Save")
+        ans = askyesno(
+            title="Save",
+            message="Do you want to save this configuration as default?\nYou can modify it at any time.")
+
+        if ans:
+            print("Save")
+            self.mcp.save_config()

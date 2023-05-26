@@ -6,23 +6,28 @@ from GP_frame import GP_frame
 from Device_frame import Device_frame
 from Control_frame import Control_frame
 
+import EasyMCP2221
 
 class App(tk.Tk):
-
 
     def __init__(self):
         super().__init__()
 
+        self.reading_period = 100
+
+        self.connect()
+
         # Global status
         self.sts = {
             "strings" : {
-                "description":  tk.StringVar(self, "Not connected"),
-                "serial":       tk.StringVar(self, "-"),
-                "manufacturer": tk.StringVar(self, "-"),
+                "description": tk.StringVar(self, "Not connected"),
+                "serial":      tk.StringVar(self, "-"),
+                "vendor":      tk.StringVar(self, "-"),
             },
             "dac_ref": tk.StringVar(self, "OFF"),
             "dac": tk.StringVar(self, 0),
             "pwr": tk.StringVar(),
+            "ioc": tk.StringVar(),
             "clk": {
                 "freq": tk.StringVar(self, "12MHz"),
                 "duty": tk.StringVar(self, 0),
@@ -59,10 +64,15 @@ class App(tk.Tk):
                 tk.StringVar(self, 0),
                 tk.StringVar(self, 0),
             ],
-
         }
 
+        self.main_window()
 
+        self.reset_click()
+        self.read_io_and_adc_loop()
+
+
+    def main_window(self):
         self.title('EasyMCP2221 utility')
         #self.geometry("680x600")
 
@@ -85,7 +95,7 @@ class App(tk.Tk):
         self.device_frame = Device_frame(topframe, self.sts)
         self.device_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        self.control_frame = Control_frame(topframe, self.sts)
+        self.control_frame = Control_frame(topframe, self.sts, self.mcp)
         self.control_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=False, padx=5, pady=5)
 
         buttons_frame = ttk.Frame(topframe)
@@ -105,61 +115,106 @@ class App(tk.Tk):
         tk.Button(buttons_frame, text="Reset",    command=self.reset_click).pack(**options)
         tk.Button(buttons_frame, text="I2C Scan", command=self.i2cscan_click).pack(**options)
 
-        # Bottom frames
+        # GPIO frames
         self.gp_frame = []
 
-        # link both DAC frames
-        self.global_DAC = tk.StringVar()
-
         for pin in (0,1,2,3):
-            frame = GP_frame(self, pin, self.sts)
+            frame = GP_frame(self, pin, self.sts, self.mcp)
             frame.grid(row=1, column=pin, **gridding)
             self.gp_frame.append(frame)
 
 
+    def connect(self):
+        try:
+            self.mcp = EasyMCP2221.Device()
+        except Exception as e:
+            showerror('Device not found', str(e))
+            self.destroy()
 
-    def initialize_gui_data(self):
-        pass
+
+    def read_io_and_adc_loop(self, *args):
+        io_read = self.mcp.GPIO_read()
+        self.sts["in"][0].set(io_read[0])
+        self.sts["in"][1].set(io_read[1])
+        self.sts["in"][2].set(io_read[2])
+        self.sts["in"][3].set(io_read[3])
+
+        adc_read = self.mcp.ADC_read()
+        self.sts["adc"][0].set(adc_read[0])
+        self.sts["adc"][1].set(adc_read[1])
+        self.sts["adc"][2].set(adc_read[2])
+
+        self.after(self.reading_period, self.read_io_and_adc_loop)
 
 
     def quit_click(self):
         self.destroy()
 
+
     def reset_click(self):
-        self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
-        self.sts["strings"]["serial"].set("Serial: 01234567")
-        self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
+        # For testing purposes:
+        #self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
+        #self.sts["strings"]["serial"].set("Serial: 01234567")
+        #self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
+        #
+        #self.sts["func"][0].set("LED_URX")
+        #self.sts["func"][1].set("LED_UTX")
+        #self.sts["func"][2].set("USBCFG")
+        #self.sts["func"][3].set("LED_I2C")
+        #
+        #self.sts["dac_ref"].set("OFF")
+        #self.sts["dac"].set("16")
+        #
+        #self.sts["pwr"].set("enabled")
+        #
+        #self.sts["in"][0].set("0")
+        #self.sts["in"][1].set("1")
+        #self.sts["in"][2].set("0")
+        #self.sts["in"][3].set("1")
+        #
+        #self.sts["out"][0].set("1")
+        #self.sts["out"][1].set("0")
+        #self.sts["out"][2].set("1")
+        #self.sts["out"][3].set("0")
+        #
+        #self.sts["adc_ref"].set("OFF")
+        #self.sts["adc"][0].set("256")
+        #self.sts["adc"][1].set("512")
+        #self.sts["adc"][2].set("1023")
+        #
+        #self.sts["clk"]["freq"].set("24MHz")
+        #self.sts["clk"]["duty"].set("25")
 
-        self.sts["func"][0].set("LED_URX")
-        self.sts["func"][1].set("LED_UTX")
-        self.sts["func"][2].set("USBCFG")
-        self.sts["func"][3].set("LED_I2C")
+        self.mcp.reset()
 
-        self.sts["dac_ref"].set("OFF")
-        self.sts["dac"].set("16")
+        device_flash = self.mcp.read_flash_info()
 
-        self.sts["pwr"].set("enabled")
+        self.sts["strings"]["description"].set(device_flash["USB_PRODUCT"])
+        self.sts["strings"]["serial"].set("Serial: %s" % device_flash["USB_SERIAL"])
+        self.sts["strings"]["vendor"].set(device_flash["USB_VENDOR"])
 
-        self.sts["in"][0].set("0")
-        self.sts["in"][1].set("1")
-        self.sts["in"][2].set("0")
-        self.sts["in"][3].set("1")
+        self.sts["func"][0].set(device_flash["GP_SETTINGS"]["GP0"]["func"])
+        self.sts["func"][1].set(device_flash["GP_SETTINGS"]["GP1"]["func"])
+        self.sts["func"][2].set(device_flash["GP_SETTINGS"]["GP2"]["func"])
+        self.sts["func"][3].set(device_flash["GP_SETTINGS"]["GP3"]["func"])
 
-        self.sts["out"][0].set("1")
-        self.sts["out"][1].set("0")
-        self.sts["out"][2].set("1")
-        self.sts["out"][3].set("0")
+        self.sts["adc_ref"].set(device_flash["CHIP_SETTINGS"]["adc_ref"])
+        self.sts["dac_ref"].set(device_flash["CHIP_SETTINGS"]["dac_ref"])
+        self.sts["dac"].set(device_flash["CHIP_SETTINGS"]["dac_val"])
 
-        self.sts["adc_ref"].set("OFF")
-        self.sts["adc"][0].set("256")
-        self.sts["adc"][1].set("512")
-        self.sts["adc"][2].set("1023")
+        self.sts["pwr"].set(device_flash["CHIP_SETTINGS"]["pwr"])
+        self.sts["ioc"].set(device_flash["CHIP_SETTINGS"]["ioc"])
 
-        self.sts["clk"]["freq"].set("24MHz")
-        self.sts["clk"]["duty"].set("25")
+        self.sts["out"][0].set(device_flash["GP_SETTINGS"]["GP0"]["outval"])
+        self.sts["out"][1].set(device_flash["GP_SETTINGS"]["GP1"]["outval"])
+        self.sts["out"][2].set(device_flash["GP_SETTINGS"]["GP2"]["outval"])
+        self.sts["out"][3].set(device_flash["GP_SETTINGS"]["GP3"]["outval"])
 
+        self.sts["clk"]["freq"].set(device_flash["CHIP_SETTINGS"]["clk_freq"])
+        self.sts["clk"]["duty"].set(device_flash["CHIP_SETTINGS"]["clk_duty"])
 
-        print("Reset")
+        #self.read_io_and_adc()
+
 
     def i2cscan_click(self):
         print("I2C Scan")
@@ -169,7 +224,7 @@ class App(tk.Tk):
 if __name__ == "__main__":
 
     app = App()
-    app.initialize_gui_data()
+
 
     try:
         from ctypes import windll

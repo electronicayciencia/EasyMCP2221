@@ -24,10 +24,11 @@ class Func_GPIO_IN_frame(tk.Frame):
 
 class Func_GPIO_OUT_frame(tk.Frame):
 
-    def __init__(self, root, pin, sts):
+    def __init__(self, root, pin, sts, mcp):
         super().__init__(root)
 
         self.pin = pin
+        self.mcp = mcp
         self.status = sts["out"][pin]
 
         self.button = tk.Button(self, text="Change", command=self.toogle)
@@ -39,6 +40,12 @@ class Func_GPIO_OUT_frame(tk.Frame):
         l = int(self.status.get())
         l ^= 1
         self.status.set(l)
+
+        if self.pin == 0: self.mcp.GPIO_write(gp0 = l)
+        if self.pin == 1: self.mcp.GPIO_write(gp1 = l)
+        if self.pin == 2: self.mcp.GPIO_write(gp2 = l)
+        if self.pin == 3: self.mcp.GPIO_write(gp3 = l)
+        print(f'Set pin {self.pin} to {l}')
 
     def update_button(self, *args):
         if self.status.get() == "1":
@@ -116,8 +123,10 @@ class Func_DAC_frame(tk.Frame):
     Two pins can output DAC. But the DAC is common to both.
     """
 
-    def __init__(self, root, sts):
+    def __init__(self, root, sts, mcp):
         super().__init__(root)
+
+        self.mcp = mcp
 
         self.ref = sts["dac_ref"]
         self.dac = sts["dac"]
@@ -130,6 +139,7 @@ class Func_DAC_frame(tk.Frame):
             to=0,
             length=290,
             variable=self.dac,
+            command=self.updated_slide,
             orient='vertical',
         )
 
@@ -149,10 +159,20 @@ class Func_DAC_frame(tk.Frame):
         self.ref.trace('w', self.update_label)
 
 
-    def update_slide(self, v):
+    def updated_slide(self, v):
         """Proxy function to force discrete steps on the slide."""
+
         v = round(float(v))
         self.dac.set(v)
+
+        # Skip updates unless something actually changes
+        if self.dac.get() == self.last_dac and self.ref.get() == self.last_ref:
+            return
+
+        self.last_dac = self.dac.get()
+
+        print("Set dac to", v)
+        self.mcp.DAC_write(v)
 
 
     def update_label(self, *args):
@@ -166,11 +186,6 @@ class Func_DAC_frame(tk.Frame):
         else:
             self.slider["state"] = "active"
 
-        # Skip updates unless something actually changes
-        if self.dac.get() == self.last_dac and self.ref.get() == self.last_ref:
-            return
-
-        self.last_dac = self.dac.get()
 
         d = int(float(self.dac.get()))
 
@@ -197,8 +212,10 @@ class Func_DAC_frame(tk.Frame):
 
 class Func_CLK_OUT_frame(tk.Frame):
 
-    def __init__(self, root, sts):
+    def __init__(self, root, sts, mcp):
         super().__init__(root)
+
+        self.mcp = mcp
 
         self.freq = sts["clk"]["freq"]
         self.duty = sts["clk"]["duty"]
@@ -219,7 +236,7 @@ class Func_CLK_OUT_frame(tk.Frame):
         for f in freqs:
             button = tk.Button(freq_frame,
                         text=f,
-                        command=lambda arg=f: self.freq.set(arg),
+                        command=lambda arg=f: self.set_freq(arg),
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
@@ -233,7 +250,7 @@ class Func_CLK_OUT_frame(tk.Frame):
         for d in duties:
             button = tk.Button(duty_frame,
                         text=f'{d}%',
-                        command=lambda arg=d: self.duty.set(arg),
+                        command=lambda arg=d: self.set_duty(arg),
                         anchor=tk.E,
                         bg = "lightblue",
                         activebackground="lightblue",
@@ -247,6 +264,20 @@ class Func_CLK_OUT_frame(tk.Frame):
         self.freq.trace("w", self.update_freq_buttons)
         self.duty.trace("w", self.update_duty_buttons)
 
+
+    def set_freq(self, freq):
+        self.freq.set(freq)
+        self.reconfig_clk()
+
+    def set_duty(self, duty):
+        self.duty.set(duty)
+        self.reconfig_clk()
+
+    def reconfig_clk(self):
+        duty = int(self.duty.get())
+        freq = self.freq.get()
+        self.mcp.clock_config(duty, freq)
+        print(f'Reconfigure clock: Duty {duty}, frequency {freq}.')
 
     def update_freq_buttons(self, *args):
         # Click the matching button and unclick the others
@@ -280,17 +311,18 @@ class Func_CLK_OUT_frame(tk.Frame):
 
 class Func_IOC_frame(tk.Frame):
 
-    def __init__(self, root, sts):
+    def __init__(self, root, sts, mcp):
         super().__init__(root)
 
-        self.edge = tk.StringVar()
+        self.mcp = mcp
+        self.edge = sts["ioc"]
 
         tk.Label(self, text="Edge detection:").pack(padx=10, pady=10)
 
-        r1 = ttk.Radiobutton(self, text='None',    value='none',    variable=self.edge)
-        r2 = ttk.Radiobutton(self, text='Rising',  value='rising',  variable=self.edge)
-        r3 = ttk.Radiobutton(self, text='Falling', value='falling', variable=self.edge)
-        r4 = ttk.Radiobutton(self, text='Both',    value='both',    variable=self.edge)
+        r1 = ttk.Radiobutton(self, text='None',    value='none',    variable=self.edge, command=self.configIOC)
+        r2 = ttk.Radiobutton(self, text='Raising', value='raising', variable=self.edge, command=self.configIOC)
+        r3 = ttk.Radiobutton(self, text='Falling', value='falling', variable=self.edge, command=self.configIOC)
+        r4 = ttk.Radiobutton(self, text='Both',    value='both',    variable=self.edge, command=self.configIOC)
 
         package = {
             "padx": 40,
@@ -302,6 +334,11 @@ class Func_IOC_frame(tk.Frame):
         r2.pack(**package)
         r3.pack(**package)
         r4.pack(**package)
+
+    def configIOC(self):
+        edge = self.edge.get()
+        self.mcp.wake_up_config(edge)
+        print("Set IOC to", edge)
 
 
 class Func_GENERIC_frame(tk.Frame):
