@@ -28,22 +28,23 @@ class Func_GPIO_OUT_frame(tk.Frame):
         super().__init__(root)
 
         self.pin = pin
-        self.status = 0
+        self.status = sts["out"][pin]
 
-        self.button = tk.Button(self, text="Change", command=self.change)
+        self.button = tk.Button(self, text="Change", command=self.toogle)
         self.button.pack(fill=tk.X, ipady=10, pady=10, padx=20)
 
+        self.status.trace("w", self.update_button)
 
-    def change(self):
-        self.status ^= 1
+    def toogle(self):
+        l = int(self.status.get())
+        l ^= 1
+        self.status.set(l)
 
-        if self.status == 1:
+    def update_button(self, *args):
+        if self.status.get() == "1":
             self.button.configure(relief="sunken", text="HIGH", bg="red", fg="white", activebackground="red")
-
         else:
             self.button.configure(relief="raised", text="low", bg="green", fg="white", activebackground="green")
-
-        print(f'set gpio {self.pin} to {self.status}')
 
 
 
@@ -73,16 +74,16 @@ class Func_ADC_frame(tk.Frame):
 
         self.label.pack(fill=tk.X, ipady=5, pady=10, padx=10)
         self.pb.pack(pady=10)
-        
+
         self.val.trace("w", self.update_view)
         self.ref.trace("w", self.update_view)
-        
+
 
     def update_view(self, *args):
         """Update ADC label and bar."""
         val = int(self.val.get())
         ref = self.ref.get()
-        
+
         if ref == "OFF":
             self.label["text"] = "OFF"
             self.pb["value"] = 0
@@ -111,10 +112,10 @@ class Func_ADC_frame(tk.Frame):
 
 class Func_DAC_frame(tk.Frame):
     """DAC value frame.
-    
+
     Two pins can output DAC. But the DAC is common to both.
     """
-    
+
     def __init__(self, root, sts):
         super().__init__(root)
 
@@ -168,7 +169,7 @@ class Func_DAC_frame(tk.Frame):
         # Skip updates unless something actually changes
         if self.dac.get() == self.last_dac and self.ref.get() == self.last_ref:
             return
-        
+
         self.last_dac = self.dac.get()
 
         d = int(float(self.dac.get()))
@@ -250,7 +251,7 @@ class Func_CLK_OUT_frame(tk.Frame):
     def update_freq_buttons(self, *args):
         # Click the matching button and unclick the others
         f = self.freq.get()
-        
+
         for btn in self.freq_buttons:
             if btn['text'] == f:
                 btn['relief'] = "sunken"
@@ -264,7 +265,7 @@ class Func_CLK_OUT_frame(tk.Frame):
 
     def update_duty_buttons(self, *args):
         d = self.duty.get()
-        
+
         for btn in self.duty_buttons:
             if btn['text'] == f'{d}%':
                 btn['relief'] = "sunken"
@@ -285,7 +286,7 @@ class Func_IOC_frame(tk.Frame):
         self.edge = tk.StringVar()
 
         tk.Label(self, text="Edge detection:").pack(padx=10, pady=10)
-        
+
         r1 = ttk.Radiobutton(self, text='None',    value='none',    variable=self.edge)
         r2 = ttk.Radiobutton(self, text='Rising',  value='rising',  variable=self.edge)
         r3 = ttk.Radiobutton(self, text='Falling', value='falling', variable=self.edge)
@@ -296,7 +297,7 @@ class Func_IOC_frame(tk.Frame):
             "pady": 10,
             "anchor": tk.W,
         }
-        
+
         r1.pack(**package)
         r2.pack(**package)
         r3.pack(**package)
@@ -315,7 +316,7 @@ class Func_GENERIC_frame(tk.Frame):
             "USBCFG"  : "USB device configured status.",
             "LED_I2C" : "USB/I2C traffic indicator.",
         }
-        
+
         l = tk.Label(self, text=description[kind], wraplength=100)
         l.pack(padx=10, pady=10, expand=True, anchor=tk.N, fill=tk.X)
 

@@ -9,7 +9,7 @@ from Control_frame import Control_frame
 
 class App(tk.Tk):
 
- 
+
     def __init__(self):
         super().__init__()
 
@@ -27,7 +27,7 @@ class App(tk.Tk):
                 "freq": tk.StringVar(self, "12MHz"),
                 "duty": tk.StringVar(self, 0),
             },
-            
+
             #Function of each pin
             "func": [
                 tk.StringVar(self, "-"),
@@ -35,7 +35,7 @@ class App(tk.Tk):
                 tk.StringVar(self, "-"),
                 tk.StringVar(self, "-"),
             ],
-            
+
             #ADC input of each pin
             "adc_ref": tk.StringVar(self, "OFF"),
             "adc": [
@@ -43,7 +43,7 @@ class App(tk.Tk):
                 tk.StringVar(self, 0),
                 tk.StringVar(self, 0),
             ],
-            
+
             #Logic input of each pin
             "in": [
                 tk.StringVar(self, 0),
@@ -51,8 +51,17 @@ class App(tk.Tk):
                 tk.StringVar(self, 0),
                 tk.StringVar(self, 0),
             ],
+
+            #Logic output of each pin
+            "out": [
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+                tk.StringVar(self, 0),
+            ],
+
         }
-    
+
 
         self.title('EasyMCP2221 utility')
         #self.geometry("680x600")
@@ -98,7 +107,7 @@ class App(tk.Tk):
 
         # Bottom frames
         self.gp_frame = []
-        
+
         # link both DAC frames
         self.global_DAC = tk.StringVar()
 
@@ -110,10 +119,16 @@ class App(tk.Tk):
 
 
     def initialize_gui_data(self):
+        pass
 
-        #self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
-        #self.sts["strings"]["serial"].set("Serial: 01234567")
-        #self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
+
+    def quit_click(self):
+        self.destroy()
+
+    def reset_click(self):
+        self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
+        self.sts["strings"]["serial"].set("Serial: 01234567")
+        self.sts["strings"]["manufacturer"].set("Microchip Technology Inc.")
 
         self.sts["func"][0].set("LED_URX")
         self.sts["func"][1].set("LED_UTX")
@@ -124,11 +139,16 @@ class App(tk.Tk):
         self.sts["dac"].set("16")
 
         self.sts["pwr"].set("enabled")
-        
-        self.sts["in"][0].set("1")
-        self.sts["in"][1].set("0")
-        self.sts["in"][2].set("1")
-        self.sts["in"][3].set("0")
+
+        self.sts["in"][0].set("0")
+        self.sts["in"][1].set("1")
+        self.sts["in"][2].set("0")
+        self.sts["in"][3].set("1")
+
+        self.sts["out"][0].set("1")
+        self.sts["out"][1].set("0")
+        self.sts["out"][2].set("1")
+        self.sts["out"][3].set("0")
 
         self.sts["adc_ref"].set("OFF")
         self.sts["adc"][0].set("256")
@@ -139,11 +159,6 @@ class App(tk.Tk):
         self.sts["clk"]["duty"].set("25")
 
 
-
-    def quit_click(self):
-        self.destroy()
-
-    def reset_click(self):
         print("Reset")
 
     def i2cscan_click(self):

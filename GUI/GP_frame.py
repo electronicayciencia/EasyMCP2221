@@ -23,18 +23,18 @@ class GP_frame(ttk.Labelframe):
 
         # Create and place function selector menus
         self.func = sts["func"][pin]
-        
+
         # Trace var is broken on ttk.OptionMenu
         # See: https://stackoverflow.com/questions/53171384/tkinter-function-repeats-itself-twice-when-ttk-widgets-are-engaged
         tk.OptionMenu(self,
-            self.func, 
+            self.func,
             *self.pin_funcs,
             #command=self.gp_func_updated,
             ).pack(fill=tk.X, pady=5, padx=10)
 
         #ttk.Separator(self, orient='horizontal').pack(fill=tk.X,  pady=10, padx=20, anchor=tk.N)
         self.func.trace("w", self.gp_func_updated)
-        
+
         # Inner frame to place all function frames overlapping
         cont = ttk.Frame(self)
         cont.columnconfigure(0, weight=1)
@@ -42,7 +42,7 @@ class GP_frame(ttk.Labelframe):
         cont.pack(expand=True, fill=tk.X, anchor=tk.N)
 
         self.subframes = {}
-        
+
         # Create all needed frames
         for f in self.pin_funcs:
             if f == "GPIO_IN":  fr = Func_GPIO_IN_frame(cont, pin, sts)
@@ -56,9 +56,9 @@ class GP_frame(ttk.Labelframe):
             if f == "SSPND":    fr = Func_GENERIC_frame(cont, "SSPND")
             if f == "USBCFG":   fr = Func_GENERIC_frame(cont, "USBCFG")
             if f == "LED_I2C":  fr = Func_GENERIC_frame(cont, "LED_I2C")
-                
+
             self.subframes[f] = fr
-        
+
             fr.grid(row=0, column=0, sticky=tk.NSEW)
 
 

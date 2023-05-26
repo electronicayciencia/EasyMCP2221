@@ -10,20 +10,20 @@ class Device_frame(ttk.Labelframe):
         self["text"] = " Device "
 
         package = {
-            "anchor": tk.W, 
+            "anchor": tk.W,
             "pady": 5,
             "padx": 10
         }
 
-        ttk.Label(self, 
+        ttk.Label(self,
             font="Helvetica, 14",
             wraplength=350,
             textvariable=sts["strings"]["description"]).pack(**package)
-        
-        ttk.Label(self, 
+
+        ttk.Label(self,
             font="Helvetica, 12",
             textvariable=sts["strings"]["serial"]).pack(**package)
-        
-        ttk.Label(self, 
+
+        ttk.Label(self,
             font="Helvetica, 12",
             textvariable=sts["strings"]["manufacturer"]).pack(**package)
