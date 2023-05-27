@@ -70,6 +70,8 @@ Misc
 
 * Regardless of the output frequency, MCP2221(A)'s clock output has glitch every 1ms.
 
+* Cannot clear the Interrupt flag when ADC reference value is 4.096V and GP1 is low.
+
 
 Software Bugs
 -------------
