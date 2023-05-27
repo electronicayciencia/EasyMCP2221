@@ -28,6 +28,7 @@ Misc:
     * New behavior for :func:`enable_power_management`. Changes are not saved immediately to Flash. Call to :func:`save_config` is needed instead.
     * New function :func:`read_flash_info`.
     * Device information now returns GPIO designation and default status.
+    * Document as limitation a weird MCP2221's bug related to interrupt flag and ADC reference.
 
 
 V1.6
