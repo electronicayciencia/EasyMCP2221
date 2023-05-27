@@ -71,6 +71,8 @@ Device reset
 Low level and debug
 -------------------
 
+.. autofunction:: EasyMCP2221.Device.read_flash_info
+
 .. autofunction:: EasyMCP2221.Device.SRAM_config
 .. autofunction:: EasyMCP2221.Device.send_cmd
 

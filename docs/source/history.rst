@@ -4,6 +4,21 @@ Changelog
 .. currentmodule:: EasyMCP2221.Device
 
 
+V1.7
+--------
+
+V1.7.0
+~~~~~~
+
+ADC/DAC:
+    * Fixed bug. When GP1, 2 and 3 are all in ADC mode and ADC reference is VDD. If just after reset VRM reference is selected, ADC stops working.
+
+Misc:
+    * Solved bug: USB remote Wake-up is not saved with :func:`save_config`.
+    * New behavior for :func:`enable_power_management`. Changes are not saved immediately to Flash. Call to :func:`save_config` is needed instead.
+    * New function :func:`read_flash_info`.
+    * Device information now returns GPIO designation and default status.
+
 
 V1.6
 --------

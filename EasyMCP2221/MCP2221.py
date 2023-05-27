@@ -46,6 +46,12 @@ class Device:
     debug_messages = False
     """bool: Print debugging messages."""
 
+    unsaved_SRAM = {}
+    """Some options, like USB power attributes, are read from Flash into SRAM at start-up
+    and cannot be changed in SRAM at run time. So we must store them somewhere to save
+    then in save_config.
+    """
+
     status = {
         # 4   -> output value
         # 3   -> direction
@@ -119,14 +125,7 @@ class Device:
         self.status["adc_ref"]   = (settings[7] >> 2) & 0b00000111
 
         ## After power-up, Vrm may be set-up but not working, it's like when you apply new GPIO in SRAM
-        self.SRAM_config(
-            dac_ref    = self.status["dac_ref"],
-            dac_value  = self.status["dac_value"],
-            adc_ref    = self.status["adc_ref"],
-            gp0        = self.status["GPIO"]["gp0"],
-            gp1        = self.status["GPIO"]["gp1"],
-            gp2        = self.status["GPIO"]["gp2"],
-            gp3        = self.status["GPIO"]["gp3"])
+        self._reinforce_SRAM()
 
         # Read I2C status and try to release the bus if needed.
         # (i2c lines might not be up right now)
@@ -309,10 +308,14 @@ class Device:
             print("NEW CHIP:", " ".join("%02x" % i for i in chip))
             print("OLD GP:", " ".join("%02x" % i for i in gp))
 
+        # Take status instead of SRAM variables because GPIO_write command won't alter SRAM
         gp[FLASH_GP_SETTINGS_GP0]         = self.status["GPIO"]["gp0"]
         gp[FLASH_GP_SETTINGS_GP1]         = self.status["GPIO"]["gp1"]
         gp[FLASH_GP_SETTINGS_GP2]         = self.status["GPIO"]["gp2"]
         gp[FLASH_GP_SETTINGS_GP3]         = self.status["GPIO"]["gp3"]
+
+        for k in self.unsaved_SRAM:
+            chip[k] = self.unsaved_SRAM[k]
 
         if self.debug_messages:
             print("NEW GP:", " ".join("%02x" % i for i in gp))
@@ -352,8 +355,6 @@ class Device:
     def read_flash_info(self, raw=False, human=False):
         """ Read flash data.
 
-        TODO: Document human, extended info, give examples. Include in documentation.
-
         Return USB enumeration strings, power-up GPIO settings and internal chip configuration.
 
         Parameters:
@@ -367,42 +368,44 @@ class Device:
         Return:
             dict: Flash data (parsed or raw)
 
+        Example:
+            >>> mcp.read_flash_info()
             {
-            "CHIP_SETTINGS": {
-                "adc_ref": "VDD",
-                "clk_duty": 50,
-                "clk_freq": "12MHz",
-                "dac_ref": "VDD",
-                "dac_val": 0,
-                "ioc": "both",
-                "ma": 100,
-                "pid": "0x00DD",
-                "pwr": "disabled",
-                "vid": "0x04D8"
-            },
-            "GP_SETTINGS": {
-                "GP0": {
-                    "func": "GPIO_IN",
-                    "outval": 0
+                "CHIP_SETTINGS": {
+                    "adc_ref": "VDD",
+                    "clk_duty": 50,
+                    "clk_freq": "12MHz",
+                    "dac_ref": "VDD",
+                    "dac_val": 0,
+                    "ioc": "both",
+                    "ma": 100,
+                    "pid": "0x00DD",
+                    "pwr": "disabled",
+                    "vid": "0x04D8"
                 },
-                "GP1": {
-                    "func": "GPIO_IN",
-                    "outval": 0
+                "GP_SETTINGS": {
+                    "GP0": {
+                        "func": "GPIO_IN",
+                        "outval": 0
+                    },
+                    "GP1": {
+                        "func": "GPIO_IN",
+                        "outval": 0
+                    },
+                    "GP2": {
+                        "func": "GPIO_IN",
+                        "outval": 0
+                    },
+                    "GP3": {
+                        "func": "GPIO_IN",
+                        "outval": 0
+                    }
                 },
-                "GP2": {
-                    "func": "GPIO_IN",
-                    "outval": 0
-                },
-                "GP3": {
-                    "func": "GPIO_IN",
-                    "outval": 0
-                }
-            },
-            "USB_FACT_SERIAL": "01234567",
-            "USB_PRODUCT": "MCP2221 USB-I2C/UART Combo",
-            "USB_SERIAL": "0000033333",
-            "USB_VENDOR": "Microchip Technology Inc."
-        }
+                "USB_FACT_SERIAL": "01234567",
+                "USB_PRODUCT": "MCP2221 USB-I2C/UART Combo",
+                "USB_SERIAL": "0000033333",
+                "USB_VENDOR": "Microchip Technology Inc."
+            }
 
 
         Hint:
@@ -758,6 +761,19 @@ class Device:
         r = self.send_cmd(cmd)
         if r[RESPONSE_STATUS_BYTE] != RESPONSE_RESULT_OK:
             raise RuntimeError("SRAM write error.")
+
+
+    def _reinforce_SRAM(self):
+        """ The only purpose of this function is to solve some weird bugs on MCP2221. """
+        self.SRAM_config(
+            dac_ref    = self.status["dac_ref"],
+            dac_value  = self.status["dac_value"],
+            adc_ref    = self.status["adc_ref"],
+            gp0        = self.status["GPIO"]["gp0"],
+            gp1        = self.status["GPIO"]["gp1"],
+            gp2        = self.status["GPIO"]["gp2"],
+            gp3        = self.status["GPIO"]["gp3"])
+
 
 
     #######################################################################
@@ -1127,6 +1143,9 @@ class Device:
             raise ValueError("Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.")
 
         self.SRAM_config(adc_ref = ref | vrm)
+
+        # When GP1, 2 and 3 are ADC and ADC_REF is Vdd. If Vrm ref is selected, ADC stop working.
+        self._reinforce_SRAM()
 
 
     def ADC_read(self):
@@ -1946,43 +1965,46 @@ class Device:
     #######################################################################
     # Wake-up
     #######################################################################
-    def enable_power_management(self, enable = False):
+    def enable_power_management(self, enable=True):
         """ Enable or disable USB Power Management options for this device.
 
-        Set or clear Remote Wake-up Capability bit in flash configuration.
+        Set or clear Remote Wake-up Capability bit.
 
         If enabled, Power Management Tab is available for this device in the Device Manager (Windows).
         So you can mark *"Allow this device to wake the computer"* option.
 
-        A device :func:`reset` (or power supply cycle) is needed in order for changes to take effect.
+        Call to :func:`save_config` after this function to store the new settings.
+
+        USB power attributes are read while USB device enumeration. So :func:`reset`
+        (or power supply cycle) is needed in order for changes to take effect.
+
+        Only Interrupt On Change in GP1 triggers remote wake-up.
 
         Parameters:
             enable (bool): Enable or disable Power Management.
 
         Raises:
-            RuntimeError: If write to flash command failed.
-            AssertionError: In rare cases, when some bug might have inadvertently activated Flash protection or permanent chip lock.
+            RuntimeError: If flash read command failed.
 
         Example:
             >>> mcp.enable_power_management(True)
+            >>> mcp.save_config()
             >>> print(mcp)
             ...
                 "Chip settings": {
                     "Power management options": "enabled",
             ...
             >>> mcp.reset()
-            >>>
         """
         chip_settings = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
-        USBPWRATTR = chip_settings[12]
+        USBPWRATTR = chip_settings[FLASH_CHIP_SETTINGS_USBPWR + FLASH_OFFSET_READ]
 
         if enable:
             USBPWRATTR |= 0b00100000
         else:
             USBPWRATTR &= 0b11011111
 
-        chip_settings[12] = USBPWRATTR
-        self._write_flash_raw(FLASH_DATA_CHIP_SETTINGS, chip_settings[4:64])
+        self.unsaved_SRAM[FLASH_CHIP_SETTINGS_USBPWR] = USBPWRATTR
 
 
     def wake_up_config(self, edge = "none"):
