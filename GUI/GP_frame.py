@@ -24,7 +24,8 @@ class GP_frame(ttk.Labelframe):
 
         # Create and place function selector menus
         self.func = sts["func"][pin]
-
+        self.out = sts["out"][pin]
+        
         # Trace var is broken on ttk.OptionMenu
         # See: https://stackoverflow.com/questions/53171384/tkinter-function-repeats-itself-twice-when-ttk-widgets-are-engaged
         tk.OptionMenu(self,
@@ -63,11 +64,13 @@ class GP_frame(ttk.Labelframe):
         self.func.trace("w", self.update_view)
 
     def select_func(self, *args):
-        print("New GP%s function is %s." % (self.pin, self.func.get()))
-        if self.pin == 0: self.mcp.set_pin_function(gp0 = self.func.get())
-        if self.pin == 1: self.mcp.set_pin_function(gp1 = self.func.get())
-        if self.pin == 2: self.mcp.set_pin_function(gp2 = self.func.get())
-        if self.pin == 3: self.mcp.set_pin_function(gp3 = self.func.get())
+        func = self.func.get()
+        out = int(self.out.get())
+        print("New GP%s function is %s (gpio out %d)." % (self.pin, func, out))
+        if self.pin == 0: self.mcp.set_pin_function(gp0 = func, out0 = out)
+        if self.pin == 1: self.mcp.set_pin_function(gp1 = func, out1 = out)
+        if self.pin == 2: self.mcp.set_pin_function(gp2 = func, out2 = out)
+        if self.pin == 3: self.mcp.set_pin_function(gp3 = func, out3 = out)
 
     def update_view(self, *args):
         self.subframes[self.func.get()].tkraise()
