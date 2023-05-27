@@ -316,29 +316,107 @@ class Func_IOC_frame(tk.Frame):
 
         self.mcp = mcp
         self.edge = sts["ioc"]
+        self.int  = sts["int"]
 
-        tk.Label(self, text="Edge detection:").pack(padx=10, pady=10)
+        edge_frame = tk.Frame(self)
+        int_frame  = tk.Frame(self)
 
-        r1 = ttk.Radiobutton(self, text='None',    value='none',    variable=self.edge, command=self.configIOC)
-        r2 = ttk.Radiobutton(self, text='Raising', value='raising', variable=self.edge, command=self.configIOC)
-        r3 = ttk.Radiobutton(self, text='Falling', value='falling', variable=self.edge, command=self.configIOC)
-        r4 = ttk.Radiobutton(self, text='Both',    value='both',    variable=self.edge, command=self.configIOC)
+        edge_frame.pack(padx=10, pady=10, fill=tk.X)
+        int_frame.pack(padx=10, pady=10, fill=tk.X)
 
-        package = {
-            "padx": 40,
-            "pady": 10,
-            "anchor": tk.W,
-        }
+        # Edge select frame
+        self.pos_button = tk.Button(edge_frame,
+                    text="Rising edge",
+                    command=self.toogle_pos_edge,
+                    bg = "lightblue",
+                    activebackground="lightblue",
+                    padx=5,
+                )
+        
+        self.neg_button = tk.Button(edge_frame,
+                    text="Falling edge",
+                    command=self.toogle_neg_edge,
+                    bg = "lightblue",
+                    activebackground="lightblue",
+                    padx=5,
+                )
 
-        r1.pack(**package)
-        r2.pack(**package)
-        r3.pack(**package)
-        r4.pack(**package)
+        self.pos_button.pack(fill=tk.X, padx=10, pady=2)
+        self.neg_button.pack(fill=tk.X, padx=10, pady=2)
 
-    def configIOC(self):
+        self.edge.trace("w", self.update_edge_buttons)
+
+        # Interrupt detector frame
+        self.status = tk.Label(int_frame, relief="ridge", text="Unknown", bg="yellow", anchor="center")
+        self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
+
+        tk.Button(int_frame,
+                    text="Clear",
+                    command=self.IOC_clear,
+                    padx=5).pack(fill=tk.X, padx=10, pady=2)
+
+        self.int.trace("w", self.update_label)
+
+
+    def update_label(self, *args):
+        if self.int.get() == "1":
+            self.status.config(text="FIRED!", bg="red", fg="white")
+        else:
+            self.status.config(text="waiting...", bg="lightgrey", fg="black")
+
+
+    def toogle_neg_edge(self):
         edge = self.edge.get()
-        self.mcp.wake_up_config(edge)
+        if   edge == "none"   : edge = "falling"
+        elif edge == "rising" : edge = "both" 
+        elif edge == "falling": edge = "none" 
+        elif edge == "both"   : edge = "rising" 
+        self.edge.set(edge)
+        self.IOC_config()
+
+    def toogle_pos_edge(self):
+        edge = self.edge.get()
+        if   edge == "none"   : edge = "rising"
+        elif edge == "rising" : edge = "none" 
+        elif edge == "falling": edge = "both" 
+        elif edge == "both"   : edge = "falling" 
+        self.edge.set(edge)
+        self.IOC_config()
+
+
+    def update_edge_buttons(self, *args):
+        edge = self.edge.get()
+
+        if edge in ("rising", "both"):
+            self.pos_button['relief'] = "sunken"
+            self.pos_button['bg'] = "cyan"
+            self.pos_button['activebackground'] = "cyan"
+        else:
+            self.pos_button['relief'] = "raised"
+            self.pos_button['bg'] = "lightblue"
+            self.pos_button['activebackground'] = "lightblue"
+        
+        if edge in ("falling", "both"):
+            self.neg_button['relief'] = "sunken"
+            self.neg_button['bg'] = "cyan"
+            self.neg_button['activebackground'] = "cyan"
+        else:    
+            self.neg_button['relief'] = "raised"
+            self.neg_button['bg'] = "lightblue"
+            self.neg_button['activebackground'] = "lightblue"
+
+
+    def IOC_config(self):
+        edge = self.edge.get()
+        self.mcp.IOC_config(edge)
         print("Set IOC to", edge)
+
+
+    def IOC_clear(self):
+        edge = self.edge.get()
+        self.mcp.IOC_clear()
+        print("Clear IOC flag")
+
 
 
 class Func_GENERIC_frame(tk.Frame):

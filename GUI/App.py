@@ -28,7 +28,9 @@ class App(tk.Tk):
             "dac_ref": tk.StringVar(self, "OFF"),
             "dac": tk.StringVar(self, 0),
             "pwr": tk.StringVar(),
+            # Interrupt on change
             "ioc": tk.StringVar(),
+            "int": tk.StringVar(),
             "clk": {
                 "freq": tk.StringVar(self, "12MHz"),
                 "duty": tk.StringVar(self, 0),
@@ -72,7 +74,7 @@ class App(tk.Tk):
         self.mcp.reset()
 
         # Read/update main loop
-        self.read_io_and_adc_loop()
+        self.read_mcp_loop()
 
 
     def main_window(self):
@@ -127,10 +129,11 @@ class App(tk.Tk):
             self.gp_frame.append(frame)
 
 
-    def read_io_and_adc_loop(self, *args):
+    def read_mcp_loop(self, *args):
         try:
-            io_read = self.mcp.GPIO_read()
+            io_read  = self.mcp.GPIO_read()
             adc_read = self.mcp.ADC_read()
+            int_read = self.mcp.IOC_read()
         except Exception as e:
             print("Read error:", str(e))
             showerror("Error", "Error reading MCP2221.")
@@ -146,7 +149,9 @@ class App(tk.Tk):
         self.sts["adc"][1].set(adc_read[1])
         self.sts["adc"][2].set(adc_read[2])
 
-        self.after(self.reading_period, self.read_io_and_adc_loop)
+        self.sts["int"].set(int_read)
+
+        self.after(self.reading_period, self.read_mcp_loop)
 
 
     def connect(self):
