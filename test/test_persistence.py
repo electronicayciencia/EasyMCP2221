@@ -30,6 +30,7 @@ class Persistence(unittest.TestCase):
     def test_power_management(self):
         """ Change power management setting. """
         self.mcp.enable_power_management(True)
+        self.mcp.save_config()
 
         data = json.loads(str(self.mcp))
         self.assertEqual(
@@ -37,6 +38,7 @@ class Persistence(unittest.TestCase):
             "enabled")
 
         self.mcp.enable_power_management(False)
+        self.mcp.save_config()
 
         data = json.loads(str(self.mcp))
         self.assertEqual(
