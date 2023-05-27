@@ -1180,9 +1180,9 @@ class Device:
             (1023, 0, 198)
         """
         buf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
-        adc1 = buf[50] + 256*buf[51]
-        adc2 = buf[52] + 256*buf[53]
-        adc3 = buf[54] + 256*buf[55]
+        adc1 = buf[I2C_POLL_RESP_ADC_CH0_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH0_MSB]
+        adc2 = buf[I2C_POLL_RESP_ADC_CH1_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH1_MSB]
+        adc3 = buf[I2C_POLL_RESP_ADC_CH2_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH2_MSB]
         return (adc1, adc2, adc3)
 
 
@@ -1278,6 +1278,81 @@ class Device:
             raise ValueError("Accepted values for out are from 0 to 31.")
 
         self.SRAM_config(dac_value = out)
+
+
+    #######################################################################
+    # Interrupt On Change
+    #######################################################################
+
+    def IOC_read(self):
+        """ Read Interruption On Change flag.
+
+        To enable Interruption Detection mechanism, pin designation must be *IOC*. See :func:`set_pin_function`.
+
+        Return:
+            int: Value of interrupt flag.
+
+        Example:
+            >>> mcp.IOC_read()
+            1
+
+        """
+        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+        intflag = rbuf[I2C_POLL_RESP_INT_FLAG]
+        return intflag
+
+
+    def IOC_clear(self):
+        """ Clear Interruption On Change flag.
+
+        Example:
+            >>> mcp.IOC_read()
+            1
+            >>> mcp.IOC_clear()
+            >>> mcp.IOC_read()
+            0
+            >>>
+        """
+        self.SRAM_config(int_conf = INT_FLAG_CLEAR)
+
+
+    def IOC_config(self, edge = "none"):
+        """ Configure Interruption On Change edge.
+
+        Valid values for ``edge``:
+            - **none**: disable interrupt detection
+            - **raising**: fire interruption on raising edge (i.e. when GP1 goes from Low to High).
+            - **falling**: fire interruption on falling edge (i.e. when GP1 goes from High to Low).
+            - **both**: fire interruption on both (i.e. when GP1 state changes).
+
+        Remember to call :func:`save_config` to persist this configuration when reset the chip.
+
+        Parameters:
+            edge (str): which edge triggers the interruption (see description).
+
+        Raises:
+            ValueError: if edge detection value is not valid.
+
+        Example:
+            >>> mcp.IOC_config("both")
+            >>>
+
+        See also:
+            :func:`set_pin_function`, :func:`IOC_clear`, :func:`IOC_read`.
+        """
+        if edge == "none":
+            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_DISABLE
+        elif edge == "raising":
+            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_DISABLE
+        elif edge == "falling":
+            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_ENABLE
+        elif edge == "both":
+            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_ENABLE
+        else:
+            raise ValueError("Invalid edge detection. Allowed: 'raising', 'falling', 'both' or 'none'.")
+
+        self.SRAM_config(int_conf = edge | INT_FLAG_CLEAR)
+
 
 
     #######################################################################
@@ -1829,7 +1904,8 @@ class Device:
         Set or clear Remote Wake-up Capability bit.
         Remember to call :func:`save_config` after this function to save the new settings.
 
-        Remote wake-up is triggered by Interrupt detection on GP1 (see :func:`set_pin_function`).
+        Remote wake-up is triggered by Interrupt detection on GP1
+        (see :func:`set_pin_function` and :func:`IOC_config`).
 
         When enabled, Power Management Tab is available for this device in the Device Manager (Windows).
         To wake-up the computer *"Allow this device to wake the computer"* option must be set in Device Manager.
@@ -1862,42 +1938,6 @@ class Device:
             USBPWRATTR &= 0b11011111
 
         self.unsaved_SRAM[FLASH_CHIP_SETTINGS_USBPWR] = USBPWRATTR
-
-
-    def wake_up_config(self, edge = "none"):
-        """ Configure interruption edge.
-
-        Valid values for ``edge``:
-            - **none**: disable interrupt detection
-            - **raising**: fire interruption in raising edge (i.e. when GP1 goes from Low to High).
-            - **falling**: fire interruption in falling edge (i.e. when GP1 goes from High to Low).
-            - **both**: fire interruption in both (i.e. when GP1 state changes).
-
-
-        Remember to call :func:`save_config` to persist this configuration when the chip resets
-
-        Parameters:
-            edge (str): which edge triggers the interruption (see description).
-
-        Raises:
-            ValueError: if edge detection given.
-
-        Example:
-            >>> mcp.wake_up_config("both")
-            >>>
-        """
-        if edge == "none":
-            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_DISABLE
-        elif edge == "raising":
-            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_DISABLE
-        elif edge == "falling":
-            edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_ENABLE
-        elif edge == "both":
-            edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_ENABLE
-        else:
-            raise ValueError("Invalid edge detection. Allowed: 'raising', 'falling', 'both' or 'none'.")
-
-        self.SRAM_config(int_conf = edge | INT_FLAG_CLEAR)
 
 
     #######################################################################

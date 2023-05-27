@@ -3,7 +3,7 @@ Easy MCP2221
 =====================================================
 
 
-EasyMCP2221 is a **Python** module to interface with Microchip MCP2221 and MCP2221A focused on ease of use.
+EasyMCP2221 is the most complete **Python** module to interface with Microchip MCP2221 and MCP2221A.
 
 The MCP2221 is a fully integrated USB-to-UART/I2C serial converter with four GP pins providing miscellaneous functionalities.
 
@@ -14,7 +14,8 @@ MCP2221's peripherals:
     - I2C
     - UART
     - Clock Output with PWM
-    - USB Wake-up via Interrupt Detection.
+    - One interrupt detection flag
+    - USB remote Wake-up
 
 
 With this chip and this library you can practice the basics of digital electronics, microcontrollers, and robotics with a regular computer and regular Python. See :doc:`examples`.
@@ -40,7 +41,7 @@ Many thanks to Microchip for providing free samples of MCP2221A, and for openly 
 MIT License
 -----------
 
-Copyright (c) 2022 Reinoso Guzman
+Copyright (c) 2023 Reinoso Guzman
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

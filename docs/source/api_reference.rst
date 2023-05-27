@@ -23,30 +23,26 @@ GPIO
 .. autofunction:: EasyMCP2221.Device.GPIO_write
 
 
-ADC
----
+ADC - Analog input
+------------------
 
 .. autofunction:: EasyMCP2221.Device.ADC_read
 .. autofunction:: EasyMCP2221.Device.ADC_config
 
 
-DAC
----
+DAC - Analog output
+-------------------
 
 .. autofunction:: EasyMCP2221.Device.DAC_write
 .. autofunction:: EasyMCP2221.Device.DAC_config
 
 
-I2C
----
+Interrupt On Change
+-------------------
 
-.. autofunction:: EasyMCP2221.Device.I2C_Slave
-.. autofunction:: EasyMCP2221.Device.I2C_write
-.. autofunction:: EasyMCP2221.Device.I2C_read
-.. autofunction:: EasyMCP2221.Device.I2C_speed
-
-.. autofunction:: EasyMCP2221.Device.I2C_cancel
-.. autofunction:: EasyMCP2221.Device.I2C_is_idle
+.. autofunction:: EasyMCP2221.Device.IOC_config()
+.. autofunction:: EasyMCP2221.Device.IOC_read()
+.. autofunction:: EasyMCP2221.Device.IOC_clear()
 
 
 Clock output
@@ -55,11 +51,19 @@ Clock output
 .. autofunction:: EasyMCP2221.Device.clock_config
 
 
+I2C bus
+-------
+
+.. autofunction:: EasyMCP2221.Device.I2C_Slave
+.. autofunction:: EasyMCP2221.Device.I2C_write
+.. autofunction:: EasyMCP2221.Device.I2C_read
+.. autofunction:: EasyMCP2221.Device.I2C_speed
+
+
 USB wake-up
 -----------
 
 .. autofunction:: EasyMCP2221.Device.enable_power_management
-.. autofunction:: EasyMCP2221.Device.wake_up_config
 
 
 Device reset
