@@ -1821,164 +1821,21 @@ class Device:
 
 
     #######################################################################
-    # I2C deprecated
-    #######################################################################
-
-    def I2C_is_idle(self):
-        """ Check if the I2C engine is idle.
-
-        Warning:
-            **Deprecated.**
-
-            There is no need for this method anymore. The bus is managed automatically.
-            You can use :func:`_i2c_status` function to know the I2C internal status details.
-
-        Returns:
-            bool: True if idle, False if engine is in the middle of a transfer or busy.
-
-        Raises:
-            LowSDAError: if **SCL** line is down (read exception description).
-            LowSCLError: if **SDA** line is down (read exception description).
-
-        Example:
-            >>> mcp.I2C_is_idle()
-            True
-            >>>
-        """
-        import warnings
-        warnings.warn("This method is deprecated and will be removed in the next release.",
-            DeprecationWarning,
-            stacklevel=2)
-
-        rbuf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
-
-        if rbuf[I2C_POLL_RESP_SCL] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
-
-        if rbuf[I2C_POLL_RESP_SDA] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
-
-        if rbuf[I2C_POLL_RESP_STATUS]:
-            self.status["i2c_dirty"] = True
-            return False
-        else:
-            self.status["i2c_dirty"] = False
-            return True
-
-
-    def I2C_cancel(self):
-        """ Try to cancel an active I2C read or write command.
-
-        Warning:
-            **Deprecated.**
-
-            There is no need for this method anymore. The bus is managed automatically.
-            You can use :func:`_i2c_release` function to manually cancel a transfer.
-
-        Return:
-            bool: True if device is now ready to go. False if the engine is not idle.
-
-        Raises:
-            LowSDAError: if I2C engine detects the **SCL** line does not go up (read exception description).
-            LowSCLError: if I2C engine detects the **SDA** line does not go up (read exception description).
-
-        Examples:
-
-            Last transfer was cancel, and engine is ready for the next operation:
-
-            >>> mcp.I2C_cancel()
-            True
-
-            Last transfer failed, and cancel failed too because I2C bus seems busy:
-
-            >>> mcp.I2C_cancel()
-            Traceback (most recent call last):
-            ...
-            EasyMCP2221.exceptions.LowSCLError: SCL is low. I2C bus is busy or missing pull-up resistor.
-
-        Note:
-            Do not call this function without issuing a :func:`I2C_read` or
-            :func:`I2C_write` first. It could render I2C engine inoperative until
-            the next reset.
-
-            >>> mcp.reset()
-            >>> mcp.I2C_is_idle()
-            True
-            >>> mcp.I2C_cancel()
-            False
-
-            Now the bus is busy until the next reset.
-
-            >>> mcp.I2C_speed(100000)
-            Traceback (most recent call last):
-            ...
-            RuntimeError: I2C speed is not valid or bus is busy.
-            >>> mcp.I2C_cancel()
-            False
-            >>> mcp.I2C_is_idle()
-            False
-            >>> mcp.I2C_cancel()
-            False
-
-            After a reset, it will work again.
-
-            >>> mcp.reset()
-            >>> mcp.I2C_is_idle()
-            True
-        """
-        import warnings
-        warnings.warn("This method is deprecated and will be removed in the next release.",
-            DeprecationWarning,
-            stacklevel=2)
-
-        buf = [0] * 3
-        buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
-        buf[1] = 0
-        buf[2] = I2C_CMD_CANCEL_CURRENT_TRANSFER
-
-        rbuf = self.send_cmd(buf)
-
-        # Return idle if the first cancel attempt worked
-        if rbuf[I2C_POLL_RESP_STATUS] == I2C_ST_IDLE:
-            self.status["i2c_dirty"] = False
-            return True
-
-        # Otherwise, sleep, try again and confirm.
-        time.sleep(10/1000)
-        rbuf = self.send_cmd(buf)
-
-        if rbuf[I2C_POLL_RESP_SCL] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSCLError("SCL is low. I2C bus is busy or missing pull-up resistor.")
-
-        if rbuf[I2C_POLL_RESP_SDA] == 0:
-            self.status["i2c_dirty"] = True
-            raise LowSDAError("SDA is low. Missing pull-up resistor, I2C bus is busy or slave device in the middle of sending data.")
-
-        return self.I2C_is_idle()
-
-
-
-
-    #######################################################################
     # Wake-up
     #######################################################################
     def enable_power_management(self, enable=True):
         """ Enable or disable USB Power Management options for this device.
 
         Set or clear Remote Wake-up Capability bit.
+        Remember to call :func:`save_config` after this function to save the new settings.
 
-        If enabled, Power Management Tab is available for this device in the Device Manager (Windows).
-        So you can mark *"Allow this device to wake the computer"* option.
+        Remote wake-up is triggered by Interrupt detection on GP1 (see :func:`set_pin_function`).
 
-        Call to :func:`save_config` after this function to store the new settings.
+        When enabled, Power Management Tab is available for this device in the Device Manager (Windows).
+        To wake-up the computer *"Allow this device to wake the computer"* option must be set in Device Manager.
 
-        USB power attributes are read while USB device enumeration. So :func:`reset`
+        USB power attributes are only read while USB device enumeration. So :func:`reset`
         (or power supply cycle) is needed in order for changes to take effect.
-
-        Only Interrupt On Change in GP1 triggers remote wake-up.
 
         Parameters:
             enable (bool): Enable or disable Power Management.
@@ -2016,10 +1873,6 @@ class Device:
             - **falling**: fire interruption in falling edge (i.e. when GP1 goes from High to Low).
             - **both**: fire interruption in both (i.e. when GP1 state changes).
 
-        In order to trigger, GP1 must be assigned to IOC function (see :func:`set_pin_function`).
-
-        To wake-up the computer, Power Management options must be enabled (see :func:`enable_power_management`).
-        And *"Allow this device to wake the computer"* option must be set in Device Manager.
 
         Remember to call :func:`save_config` to persist this configuration when the chip resets
 
