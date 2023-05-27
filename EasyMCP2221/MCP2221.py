@@ -474,7 +474,7 @@ class Device:
         ide_bits = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b01100000) >> 5
         ide_str = ("both"    if ide_bits == 3 else
                    "falling" if ide_bits == 2 else
-                   "raising" if ide_bits == 1 else
+                   "rising"  if ide_bits == 1 else
                    "none")
 
         ADCREF = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b00000100) >> 2
@@ -1321,7 +1321,7 @@ class Device:
 
         Valid values for ``edge``:
             - **none**: disable interrupt detection
-            - **raising**: fire interruption on raising edge (i.e. when GP1 goes from Low to High).
+            - **rising**: fire interruption on rising edge (i.e. when GP1 goes from Low to High).
             - **falling**: fire interruption on falling edge (i.e. when GP1 goes from High to Low).
             - **both**: fire interruption on both (i.e. when GP1 state changes).
 
@@ -1342,14 +1342,14 @@ class Device:
         """
         if edge == "none":
             edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_DISABLE
-        elif edge == "raising":
+        elif edge == "rising":
             edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_DISABLE
         elif edge == "falling":
             edge = INT_POS_EDGE_DISABLE | INT_NEG_EDGE_ENABLE
         elif edge == "both":
             edge = INT_POS_EDGE_ENABLE  | INT_NEG_EDGE_ENABLE
         else:
-            raise ValueError("Invalid edge detection. Allowed: 'raising', 'falling', 'both' or 'none'.")
+            raise ValueError("Invalid edge detection. Allowed: 'rising', 'falling', 'both' or 'none'.")
 
         self.SRAM_config(int_conf = edge | INT_FLAG_CLEAR)
 

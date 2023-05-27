@@ -13,17 +13,18 @@ V1.7.0
 ADC/DAC:
     * Fixed bug. When GP1, 2 and 3 are all in ADC mode and ADC reference is VDD. If just after reset VRM reference is selected, ADC stops working.
 
-IOC:
-    * Added new section about Interrupt On Change.
+Interrupt on Change:
+    * Added new section about Interrupt On Change (IOC) detection.
     * Renamed function *wake_up_config* to :func:`IOC_config`.
     * Added :func:`IOC_read` to read Interrupt On Change flag.
     * Added :func:`IOC_clear` to clear Interrupt On Change flag.
+    * Replaced *raising* edge with *rising* edge.
 
 I2C:
     * Removed deprecated functions *I2C_is_idle* and *I2C_cancel*.
 
 Misc:
-    * Solved bug: USB remote Wake-up is not saved with :func:`save_config`.
+    * Solved bug USB remote Wake-up is not saved with :func:`save_config`.
     * New behavior for :func:`enable_power_management`. Changes are not saved immediately to Flash. Call to :func:`save_config` is needed instead.
     * New function :func:`read_flash_info`.
     * Device information now returns GPIO designation and default status.
@@ -36,7 +37,7 @@ V1.6.3
 ~~~~~~
 
 I2C:
-    * New :doc:`smbus`. Useful to use other Python I2C modules with MCP2221 interface. 
+    * New :doc:`smbus`. Useful to use other Python I2C modules with MCP2221 interface.
     * Fixed. I2C slave class exception when device is not present.
 
 Documentation:
