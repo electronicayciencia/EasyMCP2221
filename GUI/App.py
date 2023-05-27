@@ -1,3 +1,4 @@
+import sys
 import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror, showwarning
@@ -67,13 +68,15 @@ class App(tk.Tk):
         }
 
         self.main_window()
+        self.load_flash()
+        self.mcp.reset()
 
-        self.reset_click()
+        # Read/update main loop
         self.read_io_and_adc_loop()
 
 
     def main_window(self):
-        self.title('EasyMCP2221 utility')
+        self.title("EasyMCP2221 utility")
         #self.geometry("680x600")
 
         # Create 2x4 layout and frames
@@ -124,22 +127,21 @@ class App(tk.Tk):
             self.gp_frame.append(frame)
 
 
-    def connect(self):
-        try:
-            self.mcp = EasyMCP2221.Device()
-        except Exception as e:
-            showerror('Device not found', str(e))
-            self.destroy()
-
-
     def read_io_and_adc_loop(self, *args):
-        io_read = self.mcp.GPIO_read()
+        try:
+            io_read = self.mcp.GPIO_read()
+            adc_read = self.mcp.ADC_read()
+        except Exception as e:
+            print("Read error:", str(e))
+            showerror("Error", "Error reading MCP2221.")
+            self.destroy()
+            return
+
         self.sts["in"][0].set(io_read[0])
         self.sts["in"][1].set(io_read[1])
         self.sts["in"][2].set(io_read[2])
         self.sts["in"][3].set(io_read[3])
 
-        adc_read = self.mcp.ADC_read()
         self.sts["adc"][0].set(adc_read[0])
         self.sts["adc"][1].set(adc_read[1])
         self.sts["adc"][2].set(adc_read[2])
@@ -147,11 +149,19 @@ class App(tk.Tk):
         self.after(self.reading_period, self.read_io_and_adc_loop)
 
 
+    def connect(self):
+        try:
+            self.mcp = EasyMCP2221.Device()
+        except Exception as e:
+            showerror('Device not found', str(e))
+            sys.exit()
+
+
     def quit_click(self):
         self.destroy()
 
 
-    def reset_click(self):
+    def load_flash(self):
         # For testing purposes:
         #self.sts["strings"]["description"].set("MCP2221A USB-I2C/UART Combo")
         #self.sts["strings"]["serial"].set("Serial: 01234567")
@@ -185,7 +195,6 @@ class App(tk.Tk):
         #self.sts["clk"]["freq"].set("24MHz")
         #self.sts["clk"]["duty"].set("25")
 
-        self.mcp.reset()
 
         device_flash = self.mcp.read_flash_info()
 
@@ -213,7 +222,16 @@ class App(tk.Tk):
         self.sts["clk"]["freq"].set(device_flash["CHIP_SETTINGS"]["clk_freq"])
         self.sts["clk"]["duty"].set(device_flash["CHIP_SETTINGS"]["clk_duty"])
 
-        #self.read_io_and_adc()
+
+    def reset_click(self):
+        try:
+            self.mcp.reset()
+        except:
+            showerror('Reset error', str(e))
+            self.destroy()
+            return
+
+        self.load_flash()
 
 
     def i2cscan_click(self):

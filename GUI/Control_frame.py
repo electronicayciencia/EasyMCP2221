@@ -8,7 +8,7 @@ class Control_frame(ttk.Labelframe):
     def __init__(self, root, sts, mcp):
         super().__init__(root)
 
-        self["text"] = " Options "
+        self["text"] = " Chip settings "
         self.mcp = mcp
 
         self.adc_vref = sts["adc_ref"]
@@ -37,11 +37,11 @@ class Control_frame(ttk.Labelframe):
                        command=self.dac_vref_updated).grid(row=1, column=1, sticky=tk.E)
 
         ttk.Checkbutton(self,
-                        text='Enable Power Management',
+                        text='USB remote wake-up',
                         command=self.power_mgmnt_updated,
                         variable=self.power_mgmnt,
                         onvalue='enabled',
-                        offvalue='disabled').grid(row=2, column=0, columnspan=2, pady=5, padx=10)
+                        offvalue='disabled').grid(row=2, column=0, sticky=tk.W, columnspan=2, pady=5, padx=10)
 
         tk.Button(self,
                   text="Save current configuration",
