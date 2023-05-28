@@ -3,11 +3,14 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror, showwarning
 
+import logging
+
 from GP_frame import GP_frame
 from Device_frame import Device_frame
 from Control_frame import Control_frame
 
 import EasyMCP2221
+
 
 class App(tk.Tk):
 
@@ -76,6 +79,8 @@ class App(tk.Tk):
         # Read/update main loop
         self.read_mcp_loop()
 
+        logger.debug("Starting APP")
+
 
     def main_window(self):
         self.title("EasyMCP2221 utility - Electronica y ciencia")
@@ -135,7 +140,7 @@ class App(tk.Tk):
             adc_read = self.mcp.ADC_read()
             int_read = self.mcp.IOC_read()
         except Exception as e:
-            print("Read error:", str(e))
+            logger.critical("Read error: " + str(e))
             showerror("Error", "Error reading MCP2221.")
             self.destroy()
             return
@@ -158,6 +163,7 @@ class App(tk.Tk):
         try:
             self.mcp = EasyMCP2221.Device()
         except Exception as e:
+            logger.critical('Device not found: ' + str(e))
             showerror('Device not found', str(e))
             sys.exit()
 
@@ -229,6 +235,7 @@ class App(tk.Tk):
 
 
     def reset_click(self):
+        logger.info("Reset")
         try:
             self.mcp.reset()
         except:
@@ -240,18 +247,20 @@ class App(tk.Tk):
 
 
     def i2cscan_click(self):
-        print("I2C Scan")
+        logger.info("I2C Scan")
 
 
 
 if __name__ == "__main__":
 
-    app = App()
+    logging.basicConfig(level=logging.WARNING)
+    logger = logging.getLogger(__name__)
 
+    app = App()
 
     try:
         from ctypes import windll
-        #root.attributes('-toolwindow', True)
+        # For high DPI
         #windll.shcore.SetProcessDpiAwareness(1)
     finally:
         app.mainloop()

@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Func_GPIO_IN_frame(tk.Frame):
 
     def __init__(self, root, pin, sts):
@@ -45,7 +48,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
         if self.pin == 1: self.mcp.GPIO_write(gp1 = l)
         if self.pin == 2: self.mcp.GPIO_write(gp2 = l)
         if self.pin == 3: self.mcp.GPIO_write(gp3 = l)
-        print(f'Set pin {self.pin} to {l}')
+        logger.info(f'Set pin {self.pin} to {l}')
 
     def update_button(self, *args):
         if self.status.get() == "1":
@@ -179,7 +182,7 @@ class Func_DAC_frame(tk.Frame):
 
         self.last_dac = self.dac.get()
 
-        print("Set dac to", v)
+        logger.info(f'Set dac to {v}')
         self.mcp.DAC_write(v)
 
 
@@ -292,7 +295,7 @@ class Func_CLK_OUT_frame(tk.Frame):
         duty = int(self.duty.get())
         freq = self.freq.get()
         self.mcp.clock_config(duty, freq)
-        print(f'Reconfigure clock: Duty {duty}, frequency {freq}.')
+        logger.info(f'Reconfigure clock: Duty {duty}, frequency {freq}.')
 
     def update_freq_buttons(self, *args):
         # Click the matching button and unclick the others
@@ -424,13 +427,12 @@ class Func_IOC_frame(tk.Frame):
     def IOC_config(self):
         edge = self.edge.get()
         self.mcp.IOC_config(edge)
-        print("Set IOC to", edge)
-
+        logger.info(f'Set IOC to {edge}')
 
     def IOC_clear(self):
         edge = self.edge.get()
         self.mcp.IOC_clear()
-        print("Clear IOC flag")
+        logger.info("Clear IOC flag")
 
 
 

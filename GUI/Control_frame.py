@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import askyesno
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Control_frame(ttk.Labelframe):
     """Populate control frame."""
 
@@ -48,14 +51,14 @@ class Control_frame(ttk.Labelframe):
 
 
     def adc_vref_updated(self, value):
-        print("New ADC vref is", value)
+        logger.info(f'New ADC vref is {value}')
         if "VDD" in value:
             self.mcp.ADC_config(ref = "VDD")
         else:
             self.mcp.ADC_config(ref = value)
 
     def dac_vref_updated(self, value):
-        print("New DAC vref is", value)
+        logger.info(f'New DAC vref is {value}')
         if "VDD" in value:
             self.mcp.DAC_config(ref = "VDD")
         else:
@@ -64,10 +67,10 @@ class Control_frame(ttk.Labelframe):
     def power_mgmnt_updated(self):
         pwr = self.power_mgmnt.get()
         if pwr == "enabled":
-            print("Enable power management")
+            logger.info("Enable power management")
             self.mcp.enable_power_management(True)
         else:
-            print("Disable power management")
+            logger.info("Disable power management")
             self.mcp.enable_power_management(False)
 
 
@@ -77,5 +80,5 @@ class Control_frame(ttk.Labelframe):
             message="Do you want to save this configuration as default?\nYou can modify it at any time.")
 
         if ans:
-            print("Save")
+            logger.info("Save")
             self.mcp.save_config()

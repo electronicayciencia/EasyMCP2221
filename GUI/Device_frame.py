@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Device_frame(ttk.Labelframe):
     """Populate device data frame."""
 

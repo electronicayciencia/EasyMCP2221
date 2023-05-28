@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import ttk
 
+import logging
+logger = logging.getLogger(__name__)
+
 from Func_frames import *
 
 class GP_frame(ttk.Labelframe):
@@ -66,7 +69,7 @@ class GP_frame(ttk.Labelframe):
     def select_func(self, *args):
         func = self.func.get()
         out = int(self.out.get())
-        print("New GP%s function is %s (gpio out %d)." % (self.pin, func, out))
+        logger.info(f'New GP{self.pin} function is {func} (gpio out {out}).')
         if self.pin == 0: self.mcp.set_pin_function(gp0 = func, out0 = out)
         if self.pin == 1: self.mcp.set_pin_function(gp1 = func, out1 = out)
         if self.pin == 2: self.mcp.set_pin_function(gp2 = func, out2 = out)
