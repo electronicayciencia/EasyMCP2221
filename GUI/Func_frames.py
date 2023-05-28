@@ -55,7 +55,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
         if self.pin == 3: self.mcp.GPIO_write(gp3 = v)
 
 
-    def toggle(self):
+    def toggle(self, *args):
         l = int(self.status.get())
         l ^= 1
         self.call_mcp(l)
