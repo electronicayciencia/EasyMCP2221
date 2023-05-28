@@ -11,7 +11,7 @@ class Func_GPIO_IN_frame(tk.Frame):
 
         self.value = sts["in"][pin]
 
-        self.status = tk.Label(self, relief="ridge", text="Unknown", bg="yellow", anchor="center")
+        self.status = tk.Label(self, relief="ridge", text="Unknown", bg="yellow2", anchor="center")
         self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
 
         self.value.trace("w", self.update_label)
@@ -19,7 +19,7 @@ class Func_GPIO_IN_frame(tk.Frame):
 
     def update_label(self, *args):
         if self.value.get() == "1":
-            self.status.config(text="HIGH", bg="red", fg="white")
+            self.status.config(text="HIGH", bg="red2", fg="white")
         else:
             self.status.config(text="low", bg="green", fg="white")
 
@@ -52,7 +52,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
 
     def update_button(self, *args):
         if self.status.get() == "1":
-            self.button.configure(relief="sunken", text="HIGH", bg="red", fg="white", activebackground="red")
+            self.button.configure(relief="sunken", text="HIGH", bg="red2", fg="white", activebackground="red2")
         else:
             self.button.configure(relief="raised", text="low", bg="green", fg="white", activebackground="green")
 
@@ -77,7 +77,7 @@ class Func_ADC_frame(tk.Frame):
             relief="ridge",
             text="-V",
             fg="red",
-            bg="black",
+            bg="gray10",
             anchor="center",
             font=('Lucida Console', 16),
         )
@@ -158,7 +158,7 @@ class Func_DAC_frame(tk.Frame):
             relief="ridge",
             text="-V",
             fg="black",
-            bg="yellow",
+            bg="yellow2",
             anchor="center",
             font=('Lucida Console', 16),
         )
@@ -304,8 +304,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.freq_buttons:
             if btn['text'] == f:
                 btn['relief'] = "sunken"
-                btn['bg'] = "red"
-                btn['activebackground'] = "red"
+                btn['bg'] = "turquoise1"
+                btn['activebackground'] = "turquoise1"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -318,8 +318,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.duty_buttons:
             if btn['text'] == f'{d}%':
                 btn['relief'] = "sunken"
-                btn['bg'] = "red"
-                btn['activebackground'] = "red"
+                btn['bg'] = "turquoise1"
+                btn['activebackground'] = "turquoise1"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -365,7 +365,7 @@ class Func_IOC_frame(tk.Frame):
         self.edge.trace("w", self.update_edge_buttons)
 
         # Interrupt detector frame
-        self.status = tk.Label(int_frame, relief="ridge", text="Unknown", bg="yellow", anchor="center")
+        self.status = tk.Label(int_frame, relief="ridge", text="Unknown", bg="yellow2", anchor="center")
         self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
 
         tk.Button(int_frame,
@@ -378,7 +378,7 @@ class Func_IOC_frame(tk.Frame):
 
     def update_label(self, *args):
         if self.int.get() == "1":
-            self.status.config(text="FIRED!", bg="red", fg="white")
+            self.status.config(text="FIRED!", bg="red2", fg="white")
         else:
             self.status.config(text="waiting...", bg="lightgrey", fg="black")
 
@@ -407,8 +407,8 @@ class Func_IOC_frame(tk.Frame):
 
         if edge in ("rising", "both"):
             self.pos_button['relief'] = "sunken"
-            self.pos_button['bg'] = "cyan"
-            self.pos_button['activebackground'] = "cyan"
+            self.pos_button['bg'] = "turquoise1"
+            self.pos_button['activebackground'] = "turquoise1"
         else:
             self.pos_button['relief'] = "raised"
             self.pos_button['bg'] = "lightblue"
@@ -416,8 +416,8 @@ class Func_IOC_frame(tk.Frame):
         
         if edge in ("falling", "both"):
             self.neg_button['relief'] = "sunken"
-            self.neg_button['bg'] = "cyan"
-            self.neg_button['activebackground'] = "cyan"
+            self.neg_button['bg'] = "turquoise1"
+            self.neg_button['activebackground'] = "turquoise1"
         else:    
             self.neg_button['relief'] = "raised"
             self.neg_button['bg'] = "lightblue"
