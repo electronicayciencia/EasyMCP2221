@@ -21,7 +21,7 @@ class Func_GPIO_IN_frame(tk.Frame):
         if self.value.get() == "1":
             self.status.config(text="HIGH", bg="red2", fg="white")
         else:
-            self.status.config(text="low", bg="green", fg="white")
+            self.status.config(text="LOW", bg="green", fg="white")
 
 
 
@@ -35,12 +35,14 @@ class Func_GPIO_OUT_frame(tk.Frame):
         self.status = sts["out"][pin]
         self.actual_status = sts["in"][pin]
 
-        self.t_button = tk.Button(self, text="Change", command=self.toggle)
+        self.t_button = tk.Button(self, text="Change", fg="white", activeforeground="white")
         self.t_button.pack(fill=tk.X, ipady=10, pady=10, padx=20)
 
-        self.m_button = tk.Button(self, text="Change")
+        self.m_button = tk.Button(self, text="Change", fg="white", activeforeground="white")
         self.m_button.pack(fill=tk.X, ipady=5, pady=10, padx=20)
 
+        self.t_button.bind("<ButtonPress-1>", self.toggle)
+        
         self.m_button.bind("<ButtonPress-1>", self.toggle)
         self.m_button.bind("<ButtonRelease-1>", self.toggle)
 
@@ -65,16 +67,15 @@ class Func_GPIO_OUT_frame(tk.Frame):
     def update_buttons(self, *args):
         # Toggle button
         if self.actual_status.get() == "1":
-            self.t_button.configure(relief="sunken", text="HIGH\nToggle to low", bg="red2", fg="white", activebackground="red2")
+            self.t_button.configure(relief="sunken", text="HIGH\nToggle to low", bg="red2", activebackground="red2")
         else:
-            self.t_button.configure(relief="raised", text="LOW\nToggle to high", bg="green", fg="white", activebackground="green")
+            self.t_button.configure(relief="raised", text="LOW\nToggle to high", bg="green", activebackground="green")
 
         # Momentary button
         if self.actual_status.get() == "1":
-            self.m_button.configure(text="HIGH", bg="red2", fg="white", activebackground="red2")
+            self.m_button.configure(text="HIGH", bg="red2", activebackground="red2")
         else:
-            self.m_button.configure(text="low", bg="green", fg="white", activebackground="green")
-
+            self.m_button.configure(text="LOW", bg="green", activebackground="green")
 
 
 
@@ -96,7 +97,7 @@ class Func_ADC_frame(tk.Frame):
         self.label = tk.Label(self,
             relief="ridge",
             text="-V",
-            fg="red",
+            fg="firebrick1",
             bg="gray10",
             anchor="center",
             font=('Lucida Console', 16),
@@ -144,7 +145,6 @@ class Func_ADC_frame(tk.Frame):
         else:
             v = val * 100 / 1024
             self.label["text"] = f'{v:2.1f}%'
-
 
 
 
@@ -302,7 +302,6 @@ class Func_CLK_OUT_frame(tk.Frame):
         self.freq.trace("w", self.update_freq_buttons)
         self.duty.trace("w", self.update_duty_buttons)
 
-
     def set_freq(self, freq):
         self.freq.set(freq)
         self.reconfig_clk()
@@ -324,8 +323,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.freq_buttons:
             if btn['text'] == f:
                 btn['relief'] = "sunken"
-                btn['bg'] = "turquoise1"
-                btn['activebackground'] = "turquoise1"
+                btn['bg'] = "green yellow"
+                btn['activebackground'] = "green yellow"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -338,8 +337,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.duty_buttons:
             if btn['text'] == f'{d}%':
                 btn['relief'] = "sunken"
-                btn['bg'] = "turquoise1"
-                btn['activebackground'] = "turquoise1"
+                btn['bg'] = "green yellow"
+                btn['activebackground'] = "green yellow"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -398,9 +397,9 @@ class Func_IOC_frame(tk.Frame):
 
     def update_label(self, *args):
         if self.int.get() == "1":
-            self.status.config(text="FIRED!", bg="red2", fg="white")
+            self.status.config(text="FIRED", bg="red2", fg="white")
         else:
-            self.status.config(text="waiting...", bg="lightgrey", fg="black")
+            self.status.config(text="waiting", bg="lightgrey", fg="black")
 
 
     def toogle_neg_edge(self):

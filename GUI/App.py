@@ -4,10 +4,11 @@ from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror, showwarning
 
 import logging
+logger = logging.getLogger(__name__)
 
-from GP_frame import GP_frame
-from Device_frame import Device_frame
-from Control_frame import Control_frame
+from .GP_frame import GP_frame
+from .Device_frame import Device_frame
+from .Control_frame import Control_frame
 
 import EasyMCP2221
 
@@ -83,7 +84,7 @@ class App(tk.Tk):
 
 
     def main_window(self):
-        self.title("EasyMCP2221 utility - Electronica y ciencia")
+        self.title("EasyMCP2221 utility v1.0 - Electronica y ciencia")
         #self.geometry("680x600")
 
         # Create 2x4 layout and frames
