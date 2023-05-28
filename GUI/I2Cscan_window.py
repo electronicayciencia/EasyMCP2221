@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import showinfo, showerror
 
-from EasyMCP2221.exceptions import NotAckError
+from EasyMCP2221.exceptions import NotAckError, TimeoutError, LowSCLError, LowSDAError
 from threading import Thread
 
 import logging
@@ -65,6 +65,10 @@ class I2Cscan_window(tk.Toplevel):
                 self.devices_msg.append("I2C slave found at address 0x%02X" % (i))
             except NotAckError:
                 pass
+            except (TimeoutError, LowSCLError, LowSDAError) as e:
+                showerror(title="I2C error", message=str(e))
+                logger.warning("Error reading I2C bus." + str(e))
+                break
             except RuntimeError as e:
                 showerror(title="I2C error", message="Error reading I2C bus.")
                 logger.warning("Error reading I2C bus." + str(e))
