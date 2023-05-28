@@ -28,7 +28,7 @@ class GP_frame(ttk.Labelframe):
         # Create and place function selector menus
         self.func = sts["func"][pin]
         self.out = sts["out"][pin]
-        
+
         # Trace var is broken on ttk.OptionMenu
         # See: https://stackoverflow.com/questions/53171384/tkinter-function-repeats-itself-twice-when-ttk-widgets-are-engaged
         tk.OptionMenu(self,

@@ -33,28 +33,48 @@ class Func_GPIO_OUT_frame(tk.Frame):
         self.pin = pin
         self.mcp = mcp
         self.status = sts["out"][pin]
+        self.actual_status = sts["in"][pin]
 
-        self.button = tk.Button(self, text="Change", command=self.toogle)
-        self.button.pack(fill=tk.X, ipady=10, pady=10, padx=20)
+        self.t_button = tk.Button(self, text="Change", command=self.toggle)
+        self.t_button.pack(fill=tk.X, ipady=10, pady=10, padx=20)
 
-        self.status.trace("w", self.update_button)
+        self.m_button = tk.Button(self, text="Change")
+        self.m_button.pack(fill=tk.X, ipady=5, pady=10, padx=20)
 
-    def toogle(self):
+        self.m_button.bind("<ButtonPress-1>", self.toggle)
+        self.m_button.bind("<ButtonRelease-1>", self.toggle)
+
+        self.actual_status.trace("w", self.update_buttons)
+
+
+    def call_mcp(self, v):
+        logger.info(f'Set pin {self.pin} to {v}')
+        if self.pin == 0: self.mcp.GPIO_write(gp0 = v)
+        if self.pin == 1: self.mcp.GPIO_write(gp1 = v)
+        if self.pin == 2: self.mcp.GPIO_write(gp2 = v)
+        if self.pin == 3: self.mcp.GPIO_write(gp3 = v)
+
+
+    def toggle(self):
         l = int(self.status.get())
         l ^= 1
+        self.call_mcp(l)
         self.status.set(l)
 
-        if self.pin == 0: self.mcp.GPIO_write(gp0 = l)
-        if self.pin == 1: self.mcp.GPIO_write(gp1 = l)
-        if self.pin == 2: self.mcp.GPIO_write(gp2 = l)
-        if self.pin == 3: self.mcp.GPIO_write(gp3 = l)
-        logger.info(f'Set pin {self.pin} to {l}')
 
-    def update_button(self, *args):
-        if self.status.get() == "1":
-            self.button.configure(relief="sunken", text="HIGH", bg="red2", fg="white", activebackground="red2")
+    def update_buttons(self, *args):
+        # Toggle button
+        if self.actual_status.get() == "1":
+            self.t_button.configure(relief="sunken", text="HIGH\nToggle to low", bg="red2", fg="white", activebackground="red2")
         else:
-            self.button.configure(relief="raised", text="low", bg="green", fg="white", activebackground="green")
+            self.t_button.configure(relief="raised", text="LOW\nToggle to high", bg="green", fg="white", activebackground="green")
+
+        # Momentary button
+        if self.actual_status.get() == "1":
+            self.m_button.configure(text="HIGH", bg="red2", fg="white", activebackground="red2")
+        else:
+            self.m_button.configure(text="low", bg="green", fg="white", activebackground="green")
+
 
 
 
@@ -215,7 +235,7 @@ class Func_DAC_frame(tk.Frame):
         elif self.ref.get() == "VDD (5V)":
             v = d * 5 / 32
             self.label["text"] = f'{v:1.2f}V'
-            
+
         elif self.ref.get() == "VDD (3.3V)":
             v = d * 3.3 / 32
             self.label["text"] = f'{v:1.3f}V'
@@ -350,7 +370,7 @@ class Func_IOC_frame(tk.Frame):
                     activebackground="lightblue",
                     padx=5,
                 )
-        
+
         self.neg_button = tk.Button(edge_frame,
                     text="Falling edge",
                     command=self.toogle_neg_edge,
@@ -386,18 +406,18 @@ class Func_IOC_frame(tk.Frame):
     def toogle_neg_edge(self):
         edge = self.edge.get()
         if   edge == "none"   : edge = "falling"
-        elif edge == "rising" : edge = "both" 
-        elif edge == "falling": edge = "none" 
-        elif edge == "both"   : edge = "rising" 
+        elif edge == "rising" : edge = "both"
+        elif edge == "falling": edge = "none"
+        elif edge == "both"   : edge = "rising"
         self.edge.set(edge)
         self.IOC_config()
 
     def toogle_pos_edge(self):
         edge = self.edge.get()
         if   edge == "none"   : edge = "rising"
-        elif edge == "rising" : edge = "none" 
-        elif edge == "falling": edge = "both" 
-        elif edge == "both"   : edge = "falling" 
+        elif edge == "rising" : edge = "none"
+        elif edge == "falling": edge = "both"
+        elif edge == "both"   : edge = "falling"
         self.edge.set(edge)
         self.IOC_config()
 
@@ -413,12 +433,12 @@ class Func_IOC_frame(tk.Frame):
             self.pos_button['relief'] = "raised"
             self.pos_button['bg'] = "lightblue"
             self.pos_button['activebackground'] = "lightblue"
-        
+
         if edge in ("falling", "both"):
             self.neg_button['relief'] = "sunken"
             self.neg_button['bg'] = "turquoise1"
             self.neg_button['activebackground'] = "turquoise1"
-        else:    
+        else:
             self.neg_button['relief'] = "raised"
             self.neg_button['bg'] = "lightblue"
             self.neg_button['activebackground'] = "lightblue"
