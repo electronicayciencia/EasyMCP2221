@@ -15,8 +15,7 @@ class Control_frame(ttk.Labelframe):
         self.dac_vref = sts["dac_ref"]
         self.power_mgmnt = sts["pwr"]
 
-        vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD")
-
+        vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD", "VDD (5V)", "VDD (3.3V)")
 
         ttk.Label(self,
                   text="ADC reference:").grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
@@ -41,7 +40,7 @@ class Control_frame(ttk.Labelframe):
                         command=self.power_mgmnt_updated,
                         variable=self.power_mgmnt,
                         onvalue='enabled',
-                        offvalue='disabled').grid(row=2, column=0, sticky=tk.W, columnspan=2, pady=5, padx=10)
+                        offvalue='disabled').grid(row=2, column=0, sticky=tk.W, columnspan=2, pady=5, padx=10, ipadx=20)
 
         tk.Button(self,
                   text="Save current configuration",
@@ -50,11 +49,17 @@ class Control_frame(ttk.Labelframe):
 
     def adc_vref_updated(self, value):
         print("New ADC vref is", value)
-        self.mcp.ADC_config(ref = value)
+        if "VDD" in value:
+            self.mcp.ADC_config(ref = "VDD")
+        else:
+            self.mcp.ADC_config(ref = value)
 
     def dac_vref_updated(self, value):
         print("New DAC vref is", value)
-        self.mcp.DAC_config(ref = value)
+        if "VDD" in value:
+            self.mcp.DAC_config(ref = "VDD")
+        else:
+            self.mcp.DAC_config(ref = value)
 
     def power_mgmnt_updated(self):
         pwr = self.power_mgmnt.get()

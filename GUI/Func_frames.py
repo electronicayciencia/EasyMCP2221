@@ -110,8 +110,16 @@ class Func_ADC_frame(tk.Frame):
             v = val * 4.096 / 1024
             self.label["text"] = f'{v:1.3f}V'
 
+        elif ref == "VDD (3.3V)":
+            v = val * 3.3 / 1024
+            self.label["text"] = f'{v:1.3f}V'
+
+        elif ref == "VDD (5V)":
+            v = val * 5 / 1024
+            self.label["text"] = f'{v:1.3f}V'
+
         else:
-            v = val / 1024 * 100
+            v = val * 100 / 1024
             self.label["text"] = f'{v:2.1f}%'
 
 
@@ -201,10 +209,17 @@ class Func_DAC_frame(tk.Frame):
             v = d * 4.096 / 32
             self.label["text"] = f'{v:1.2f}V'
 
+        elif self.ref.get() == "VDD (5V)":
+            v = d * 5 / 32
+            self.label["text"] = f'{v:1.2f}V'
+            
+        elif self.ref.get() == "VDD (3.3V)":
+            v = d * 3.3 / 32
+            self.label["text"] = f'{v:1.3f}V'
+
         elif self.ref.get() == "VDD":
             v = d * 100 / 32
             self.label["text"] = f'{v:3.1f}%'
-
         else:
             self.label["text"] = "OFF"
 
