@@ -1,7 +1,7 @@
 import sys
 import tkinter as tk
 from tkinter import ttk
-from tkinter.messagebox import showinfo, showerror, showwarning
+from tkinter.messagebox import showinfo, showerror, showwarning, askyesno
 
 import logging
 logger = logging.getLogger(__name__)
@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 from .GP_frame import GP_frame
 from .Device_frame import Device_frame
 from .Control_frame import Control_frame
+from .I2Cscan_window import I2Cscan_window
 
 import EasyMCP2221
 
@@ -18,7 +19,9 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
+        self.mcp = None
         self.reading_period = 100
+        self.i2c_scanning = False # ADC, GPIO and INT reading interferes with the I2C scan.
 
         self.connect()
 
@@ -88,10 +91,8 @@ class App(tk.Tk):
         #self.geometry("680x600")
 
         # Create 2x4 layout and frames
-        self.columnconfigure(0, weight=1, uniform="gpio")
-        self.columnconfigure(1, weight=1, uniform="gpio")
-        self.columnconfigure(2, weight=1, uniform="gpio")
-        self.columnconfigure(3, weight=1, uniform="gpio")
+        for i in (0,1,2,3):
+            self.columnconfigure(i, weight=1, uniform="gpio")
 
         gridding = {
             'sticky': "nsew",
@@ -136,6 +137,10 @@ class App(tk.Tk):
 
 
     def read_mcp_loop(self, *args):
+        if self.i2c_scanning:
+            self.after(self.reading_period, self.read_mcp_loop)
+            return
+
         try:
             io_read  = self.mcp.GPIO_read()
             adc_read = self.mcp.ADC_read()
@@ -146,14 +151,11 @@ class App(tk.Tk):
             self.destroy()
             return
 
-        self.sts["in"][0].set(io_read[0])
-        self.sts["in"][1].set(io_read[1])
-        self.sts["in"][2].set(io_read[2])
-        self.sts["in"][3].set(io_read[3])
+        for i in (0,1,2,3):
+            self.sts["in"][i].set(io_read[i])
 
-        self.sts["adc"][0].set(adc_read[0])
-        self.sts["adc"][1].set(adc_read[1])
-        self.sts["adc"][2].set(adc_read[2])
+        for i in (0,1,2):
+            self.sts["adc"][i].set(adc_read[i])
 
         self.sts["int"].set(int_read)
 
@@ -250,18 +252,8 @@ class App(tk.Tk):
     def i2cscan_click(self):
         logger.info("I2C Scan")
 
-
-
-if __name__ == "__main__":
-
-    logging.basicConfig(level=logging.WARNING)
-    logger = logging.getLogger(__name__)
-
-    app = App()
-
-    try:
-        from ctypes import windll
-        # For high DPI
-        #windll.shcore.SetProcessDpiAwareness(1)
-    finally:
-        app.mainloop()
+        # ADC, GPIO and INT reading interferes with the I2C scan.
+        self.i2c_scanning = True
+        i2cscan = I2Cscan_window(self, self.mcp)
+        self.wait_window(i2cscan)
+        self.i2c_scanning = False

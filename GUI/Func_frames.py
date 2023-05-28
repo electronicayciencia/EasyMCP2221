@@ -42,7 +42,7 @@ class Func_GPIO_OUT_frame(tk.Frame):
         self.m_button.pack(fill=tk.X, ipady=5, pady=10, padx=20)
 
         self.t_button.bind("<ButtonPress-1>", self.toggle)
-        
+
         self.m_button.bind("<ButtonPress-1>", self.toggle)
         self.m_button.bind("<ButtonRelease-1>", self.toggle)
 
@@ -470,4 +470,3 @@ class Func_GENERIC_frame(tk.Frame):
 
         l = tk.Label(self, text=description[kind], wraplength=100)
         l.pack(padx=10, pady=10, expand=True, anchor=tk.N, fill=tk.X)
-
