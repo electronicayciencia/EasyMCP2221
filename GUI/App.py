@@ -1,3 +1,4 @@
+import os
 import sys
 import tkinter as tk
 from tkinter import ttk
@@ -22,8 +23,6 @@ class App(tk.Tk):
         self.mcp = None
         self.reading_period = 100
         self.i2c_scanning = False # ADC, GPIO and INT reading interferes with the I2C scan.
-
-        self.connect()
 
         # Global status
         self.sts = {
@@ -75,6 +74,10 @@ class App(tk.Tk):
                 tk.StringVar(self, 0),
             ],
         }
+
+        self.iconbitmap(default=self.resource_path("icon-dvd.ico"))
+
+        self.connect()
 
         self.main_window()
         self.load_flash()
@@ -257,3 +260,13 @@ class App(tk.Tk):
         i2cscan = I2Cscan_window(self, self.mcp)
         self.wait_window(i2cscan)
         self.i2c_scanning = False
+
+
+    def resource_path(self, relative_path):
+        """ Resource path inside a pyinstaller exe """
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
