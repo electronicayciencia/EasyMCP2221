@@ -42,7 +42,7 @@ class GP_frame(ttk.Labelframe):
         cont = ttk.Frame(self)
         cont.columnconfigure(0, weight=1)
         cont.rowconfigure(0, weight=1)
-        cont.pack(expand=True, fill=tk.X, anchor=tk.N)
+        cont.pack(expand=True, fill=tk.BOTH, anchor=tk.N)
 
         self.subframes = {}
 

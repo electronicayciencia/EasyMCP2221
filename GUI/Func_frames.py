@@ -323,8 +323,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.freq_buttons:
             if btn['text'] == f:
                 btn['relief'] = "sunken"
-                btn['bg'] = "green yellow"
-                btn['activebackground'] = "green yellow"
+                btn['bg'] = "cyan2"
+                btn['activebackground'] = "cyan2"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -337,8 +337,8 @@ class Func_CLK_OUT_frame(tk.Frame):
         for btn in self.duty_buttons:
             if btn['text'] == f'{d}%':
                 btn['relief'] = "sunken"
-                btn['bg'] = "green yellow"
-                btn['activebackground'] = "green yellow"
+                btn['bg'] = "cyan2"
+                btn['activebackground'] = "cyan2"
             else:
                 btn['relief'] = "raised"
                 btn['bg'] = "lightblue"
@@ -384,20 +384,20 @@ class Func_IOC_frame(tk.Frame):
         self.edge.trace("w", self.update_edge_buttons)
 
         # Interrupt detector frame
-        self.status = tk.Label(int_frame, relief="ridge", text="Unknown", bg="yellow2", anchor="center")
-        self.status.pack(fill=tk.X, ipady=10, pady=10, padx=10)
-
-        tk.Button(int_frame,
-                    text="Clear",
+        self.status = tk.Button(int_frame,
+                    text="Unknown",
                     command=self.IOC_clear,
-                    padx=5).pack(fill=tk.X, padx=10, pady=2)
+                    bg="yellow2",
+                    anchor="center",  height=2)
+
+        self.status.pack(fill=tk.X, ipady=10, pady=0, padx=10)
 
         self.int.trace("w", self.update_label)
 
 
     def update_label(self, *args):
         if self.int.get() == "1":
-            self.status.config(text="FIRED", bg="red2", fg="white")
+            self.status.config(text="FIRED\n(push to clear)", bg="red2", fg="white")
         else:
             self.status.config(text="waiting", bg="lightgrey", fg="black")
 
@@ -426,8 +426,8 @@ class Func_IOC_frame(tk.Frame):
 
         if edge in ("rising", "both"):
             self.pos_button['relief'] = "sunken"
-            self.pos_button['bg'] = "turquoise1"
-            self.pos_button['activebackground'] = "turquoise1"
+            self.pos_button['bg'] = "cyan2"
+            self.pos_button['activebackground'] = "cyan2"
         else:
             self.pos_button['relief'] = "raised"
             self.pos_button['bg'] = "lightblue"
@@ -435,8 +435,8 @@ class Func_IOC_frame(tk.Frame):
 
         if edge in ("falling", "both"):
             self.neg_button['relief'] = "sunken"
-            self.neg_button['bg'] = "turquoise1"
-            self.neg_button['activebackground'] = "turquoise1"
+            self.neg_button['bg'] = "cyan2"
+            self.neg_button['activebackground'] = "cyan2"
         else:
             self.neg_button['relief'] = "raised"
             self.neg_button['bg'] = "lightblue"
