@@ -40,9 +40,9 @@ DAC - Analog output
 Interrupt On Change
 -------------------
 
-.. autofunction:: EasyMCP2221.Device.IOC_config()
-.. autofunction:: EasyMCP2221.Device.IOC_read()
-.. autofunction:: EasyMCP2221.Device.IOC_clear()
+.. autofunction:: EasyMCP2221.Device.IOC_config
+.. autofunction:: EasyMCP2221.Device.IOC_read
+.. autofunction:: EasyMCP2221.Device.IOC_clear
 
 
 Clock output

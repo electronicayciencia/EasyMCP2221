@@ -362,8 +362,8 @@ class Device:
                 If ``False``, return only parsed data (this is the default).
                 If ``True``, return all data unparsed.
             human (bool, optional):
-                If ``True``, return variable names in readable text. (this is the default).
-                If ``False``, return variable names untranslated, for API.
+                If ``False``, return variable names untranslated, for API (this is the default).
+                If ``True``, return variable names in readable text.
 
         Return:
             dict: Flash data (parsed or raw)
@@ -1316,7 +1316,7 @@ class Device:
         self.SRAM_config(int_conf = INT_FLAG_CLEAR)
 
 
-    def IOC_config(self, edge = "none"):
+    def IOC_config(self, edge = "both"):
         """ Configure Interruption On Change edge.
 
         Valid values for ``edge``:
@@ -1334,7 +1334,7 @@ class Device:
             ValueError: if edge detection value is not valid.
 
         Example:
-            >>> mcp.IOC_config("both")
+            >>> mcp.IOC_config(edge = "rising")
             >>>
 
         See also:
