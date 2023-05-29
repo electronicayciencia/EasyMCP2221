@@ -24,7 +24,13 @@ class I2Cscan_window(tk.Toplevel):
         self.devices_msg = []
 
         self.addr = tk.IntVar()
-        self.scan_done = tk.IntVar(self, 0)
+
+        # Scan status:
+        # -1 : in progress
+        #  0 : done, success
+        #  1 : done, error
+        self.scan_status = tk.IntVar()
+
 
         self.transient(root)
         self.grab_set()
@@ -35,7 +41,7 @@ class I2Cscan_window(tk.Toplevel):
         self.launch_scan()
 
         self.addr.trace("w", self.update_pb)
-        self.scan_done.trace("w", self.show_devices)
+        self.scan_status.trace("w", self.show_devices)
 
 
     def update_pb(self, *args):
@@ -43,15 +49,20 @@ class I2Cscan_window(tk.Toplevel):
 
 
     def launch_scan(self):
+        self.scan_status.set(-1)
         t = Thread(target=self.scan)
         t.start()
 
 
     def show_devices(self, *args):
-        if len(self.devices_msg) == 0:
-            showinfo("I2C Scan result","No devices found.")
-        else:
-            showinfo("I2C Scan result","\n".join(self.devices_msg))
+        if self.scan_status.get() == -1: # still in progress
+            return
+
+        if self.scan_status.get() == 0: # finished successfully
+            if len(self.devices_msg) == 0:
+                showinfo("I2C Scan result","No devices found.")
+            else:
+                showinfo("I2C Scan result","\n".join(self.devices_msg))
 
         self.destroy()
 
@@ -66,13 +77,15 @@ class I2Cscan_window(tk.Toplevel):
             except NotAckError:
                 pass
             except (TimeoutError, LowSCLError, LowSDAError) as e:
+                logger.warning("Error reading I2C bus." + str(e))
                 showerror(title="I2C error", message=str(e))
-                logger.warning("Error reading I2C bus." + str(e))
-                break
+                self.scan_status.set(1)
+                return
             except RuntimeError as e:
-                showerror(title="I2C error", message="Error reading I2C bus.")
                 logger.warning("Error reading I2C bus." + str(e))
-                break
+                showerror(title="I2C error", message="Error reading I2C bus.")
+                self.scan_status.set(1)
+                return
 
-        self.scan_done.set(1)
+        self.scan_status.set(0)
 
