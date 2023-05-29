@@ -1,5 +1,5 @@
 import logging
-from .App import App
+from App import App
 
 if __name__ == "__main__":
 

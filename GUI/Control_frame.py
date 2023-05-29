@@ -18,7 +18,7 @@ class Control_frame(ttk.Labelframe):
         self.dac_vref = sts["dac_ref"]
         self.power_mgmnt = sts["pwr"]
 
-        vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD", "VDD (5V)", "VDD (3.3V)")
+        vref_values = ("OFF", "1.024V", "2.048V", "4.096V", "VDD", "VDD (3.3V)", "VDD (5V)")
 
         ttk.Label(self,
                   text="ADC reference:").grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)

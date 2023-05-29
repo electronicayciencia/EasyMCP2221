@@ -4,7 +4,7 @@ from tkinter import ttk
 import logging
 logger = logging.getLogger(__name__)
 
-from .Func_frames import *
+from Func_frames import *
 
 class GP_frame(ttk.Labelframe):
     """Create each of the 4 GPIO frames."""
