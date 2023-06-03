@@ -52,6 +52,14 @@ First run:
     }
 
 
+GUI
+---
+
+*EasyMCP2221 Workbench* is a GUI to play with MCP2221 and MCP2221A chips based on EasyMCP2221 library.
+
+https://github.com/electronicayciencia/EasyMCP2221-GUI
+
+
 Documentation
 -------------
 

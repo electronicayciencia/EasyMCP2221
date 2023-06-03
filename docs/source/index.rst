@@ -70,6 +70,7 @@ SOFTWARE.
 
    install
    examples
+   gui
    api_reference
    i2c_slave
    smbus
