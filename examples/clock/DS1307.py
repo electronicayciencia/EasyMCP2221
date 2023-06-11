@@ -39,8 +39,8 @@ class DS1307():
 
 
     def __init__(self, bus, addr=0x68):
-        self._bus = bus
-        self._addr = addr
+        self.bus = bus
+        self.addr = addr
 
 
     def _bcd_to_int(self, bcd):
@@ -71,11 +71,14 @@ class DS1307():
 
 
     def _write(self, register, data):
-        self._bus.write_byte_data(self._addr, register, data)
+        print(f"write {data:02x}")
+        self.bus.write_byte_data(self.addr, register, data)
 
 
-    def _read(self, data):
-        return self._bus.read_byte_data(self._addr, data)
+    def _read(self, register):
+        r = self.bus.read_byte_data(self.addr, register)
+        print(f"read {r:02x}")
+        return r
 
 
     def _read_seconds(self):
@@ -91,7 +94,6 @@ class DS1307():
 
     def _read_hours(self):
         d = self._read(self._REG_HOURS)
-        print(f'{d:08b}')
         if d & 0x40:
             return self._bcd_to_int(d & 0x3F)
         else:
@@ -106,7 +108,10 @@ class DS1307():
     def halted(self):
         """Bit 8 of the seconds is CH (clock halted)"""
         h = self._read(self._REG_SECONDS)
-        return (h | 0b1000_0000)
+        if h | 0b1000_0000:
+            return True
+        else:
+            return False
 
 
     def _read_day(self):
