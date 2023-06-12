@@ -71,13 +71,11 @@ class DS1307():
 
 
     def _write(self, register, data):
-        print(f"write {data:02x}")
         self.bus.write_byte_data(self.addr, register, data)
 
 
     def _read(self, register):
         r = self.bus.read_byte_data(self.addr, register)
-        print(f"read {r:02x}")
         return r
 
 
@@ -108,7 +106,7 @@ class DS1307():
     def halted(self):
         """Bit 8 of the seconds is CH (clock halted)"""
         h = self._read(self._REG_SECONDS)
-        if h | 0b1000_0000:
+        if h & 0b1000_0000:
             return True
         else:
             return False
