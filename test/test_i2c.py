@@ -376,5 +376,18 @@ class I2C(unittest.TestCase):
         self.mcp.I2C_read(self.i2caddr, 1)
 
 
+    def test_i2c_speed_low_sdascl(self):
+        """Try to set i2c speed when i2c bus is not configured."""
+
+        self.mcp.GPIO_write(gp0 = False, gp1 = False)
+        self.mcp.save_config()
+        self.mcp.reset()
+
+        self.mcp.I2C_speed(100_000)
+
+        d = self.mcp._i2c_status()
+        self.assertEqual(d["div"], 118)
+
+
 if __name__ == '__main__':
     unittest.main()
