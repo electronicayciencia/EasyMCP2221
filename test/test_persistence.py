@@ -48,8 +48,8 @@ class Persistence(unittest.TestCase):
 
     def test_edge_detection(self):
         """ Change and persist IOC edge detection."""
-        for e in ("none", "raising", "falling", "both"):
-            self.mcp.wake_up_config(edge=e)
+        for e in ("none", "rising", "falling", "both"):
+            self.mcp.IOC_config(edge=e)
             self.mcp.save_config()
             data = json.loads(str(self.mcp))
             self.assertEqual(
