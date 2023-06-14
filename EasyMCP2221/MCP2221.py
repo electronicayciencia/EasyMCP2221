@@ -134,6 +134,9 @@ class Device:
         except:
             pass
 
+        # Set I2C speed to a safer value. In some device revision, default speed is 500kHz.
+        self.I2C_speed(100_000)
+
 
     def __repr__(self):
         import json
@@ -1361,7 +1364,7 @@ class Device:
     def I2C_speed(self, speed=100000):
         """ Set I2C bus speed.
 
-        Acceptable values for speed are between 47kHz and 400kHz.
+        Acceptable values are between 47kHz and 400kHz. This is not stored on the flash configuration.
 
         Parameters:
             speed (int): Bus clock frequency in Hz. Default bus speed is 100kHz.
@@ -1375,16 +1378,12 @@ class Device:
             >>>
 
         Note:
-            Between 47kHz and 400kHz is the recommended value. The minimum value is actually 46693, which corresponds to a clock of approximately 46.5kHz. And the maximum is 6000000, that generates about 522kHz clock.
+            The recommended values are between 47kHz and 400kHz. Out of this range, the minimum value is 46693, which corresponds to a clock of approximately 46.5kHz. And the maximum is 6000000, that generates about 522kHz clock.
         """
         bus_speed = round(12_000_000 / speed) - 2
 
         if bus_speed < 0 or bus_speed > 255:
             raise ValueError("Speed must be between 47kHz and 400kHz.")
-
-        # Try to clean last I2C error condition
-        if self.status["i2c_dirty"]:
-            self._i2c_release()
 
         buf = [0] * 5
         buf[0] = CMD_POLL_STATUS_SET_PARAMETERS
@@ -1394,6 +1393,13 @@ class Device:
         buf[4] = bus_speed
         rbuf = self.send_cmd(buf)
 
+        # On error, try to clean last I2C error condition and retry
+        if (rbuf[I2C_POLL_RESP_NEWSPEED_STATUS] != 0x20):
+            if self.status["i2c_dirty"]:
+                self._i2c_release()
+                rbuf = self.send_cmd(buf)
+
+        # If fails after cleaning attempt, croak
         if (rbuf[I2C_POLL_RESP_NEWSPEED_STATUS] != 0x20):
             self.status["i2c_dirty"] = True
             raise RuntimeError("I2C speed is not valid or bus is busy.")
