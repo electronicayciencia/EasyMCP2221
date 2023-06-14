@@ -1965,3 +1965,32 @@ class Device:
         self.status["i2c_dirty"] = False
         self.__init__()
 
+
+    #######################################################################
+    # Hardware and firmware revision
+    #######################################################################
+    def revision(self):
+        """ Get the hardware and firmware revision number.
+
+        Return:
+            dict: Value of mayor and minor revisions of hardware and software.
+
+        Example:
+            >>> mcp.revision()
+            {'firmware': {'mayor': 'A', 'minor': '6'},
+            'hardware': {'mayor': '1', 'minor': '2'}}
+        """
+        buf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
+
+        data = {
+            "firmware": {
+                "mayor": chr(buf[I2C_POLL_RESP_HARD_MAYOR]),
+                "minor": chr(buf[I2C_POLL_RESP_HARD_MINOR]),
+            },
+            "hardware": {
+                "mayor": chr(buf[I2C_POLL_RESP_FIRM_MAYOR]),
+                "minor": chr(buf[I2C_POLL_RESP_FIRM_MINOR]),
+            }
+        }
+
+        return data

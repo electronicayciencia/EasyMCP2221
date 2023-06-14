@@ -7,6 +7,13 @@ Changelog
 V1.7
 --------
 
+V1.7.1
+~~~~~~
+
+Misc:
+    * Add function :func:`revision` to get the mayor and minor hardware and software revision.
+
+
 V1.7.0
 ~~~~~~
 

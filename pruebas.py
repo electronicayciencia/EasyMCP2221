@@ -6,6 +6,10 @@ from EasyMCP2221.Constants import *
 
 mcp = EasyMCP2221.Device()
 
+print(mcp.revision())
+
+exit()
+
 mcp.set_pin_function(
     gp0 = "GPIO_IN",
     gp1 = "GPIO_OUT",
