@@ -14,7 +14,8 @@ I2C:
     * Set I2C default speed to 100kHz. In some chips, the default speed is 500kHz and can cause trouble with some slave devices or noisy buses. You can adjust it with :func:`I2C_speed` function.
 
 Misc:
-    * Add function :func:`revision` to get the mayor and minor hardware and software revision.
+    * Added function :func:`revision` to get the mayor and minor hardware and firmware revision.
+    * Fixed test about Interrupt On Change.
 
 
 V1.7.0
