@@ -17,10 +17,10 @@ ds = DS1307(bus, addr=0x68)
 bus.mcp.I2C_speed(100_000) # DS1307 only supports 100kHz
 
 bus.mcp.set_pin_function(
-    gp0 = "GPIO_OUT", # updating monitor
-    gp1 = "IOC",      # update LCD each second
-    gp2 = "GPIO_IN",  # unused
-    gp3 = "DAC")      # simulate backup battery
+    gp0 = "GPIO_IN",  # unused
+    gp1 = "IOC",      # trigger update LCD each second
+    gp2 = "DAC",      # simulate backup battery
+    gp3 = "LED_I2C")  # i2c traffic indicator
 
 bus.mcp.DAC_write(21) # about 3.28V with 5V Vcc
 bus.mcp.IOC_config(edge = "rising")
@@ -39,10 +39,7 @@ lcd.clear()
 while True:
     if bus.mcp.IOC_read():
         bus.mcp.IOC_clear()
-        bus.mcp.GPIO_write(gp0 = True) # updating start
         (year, month, day, dow, hours, minutes, seconds) = ds.read_all()
 
-        #print(year, month, day, dow, hours, minutes, seconds)
         lcd.display_string("%02d/%02d/20%02d" % (day, month, year), 1)
         lcd.display_string("%02d:%02d:%02d" % (hours, minutes, seconds), 2)
-        bus.mcp.GPIO_write(gp0 = False) # updating end
