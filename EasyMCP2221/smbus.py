@@ -16,11 +16,13 @@ class SMBus(object):
     :type force: boolean
     :param VID: Vendor Id (default to ``0x04D8``)
     :param PID: Product Id (default to ``0x00DD``)
+    :param clock: I2C clock frequency (default to ``100kHz``)
     """
 
-    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, devnum=0):
+    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, devnum=0, clock=100_000):
 
         self.mcp = EasyMCP2221.Device(VID, PID, devnum)
+        self.mcp.I2C_speed(clock)
 
 
     def _read_register(self, addr, register, length = 1, reg_bytes = 1, reg_byteorder = 'big'):
