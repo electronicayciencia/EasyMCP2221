@@ -1,6 +1,7 @@
 # Let's play with an AMG8833
 # "Grid-EYE" 8x8 Infrared Array Sensor
 import EasyMCP2221
+from time import sleep
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,15 +12,12 @@ mcp.set_pin_function(
     gp2 = "GPIO_IN",
     gp3 = "LED_I2C")
 
-mcp.I2C_speed(400_000)
 
+mcp.I2C_speed(400_000)
 sensor = mcp.I2C_Slave(0x69)
 
+
 img = None
-cbar = None
-
-sensor.write_register(0x07, 0x20) # moving average output
-
 while True:
     data = sensor.read_register(0x0E, 2)
     thr_tmp = int.from_bytes(data, byteorder="little", signed=True) * 0.0625
@@ -37,6 +35,6 @@ while True:
 
     else:
         img.set_data(T)
-        cbar.mappable.set_clim(vmin=25, vmax=30)
+        cbar.mappable.set_clim(vmin=27, vmax=33)
 
     plt.pause(0.01)
