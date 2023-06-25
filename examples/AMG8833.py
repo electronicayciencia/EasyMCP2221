@@ -1,25 +1,42 @@
-# Let's play with a AMG8833
-
+# Let's play with an AMG8833
+# "Grid-EYE" 8x8 Infrared Array Sensor
 import EasyMCP2221
-import os
-from time import sleep
-from binascii import hexlify
+import numpy as np
+import matplotlib.pyplot as plt
 
-def print_array(values):
-    for row in range(7, -1, -1):
-        for col in range(7,-1, -1):
-            by = values[row*(2*col):row*(2*col)+1]
-            p = int.from_bytes(by, "little")
-            
-            #print("% 4d" % p, end = "")
-            print("%s" % "*" if p > 110 else " ", end = "")
-        
-        print()
+mcp = EasyMCP2221.Device()
+mcp.set_pin_function(
+    gp0 = "GPIO_IN",
+    gp1 = "GPIO_IN",
+    gp2 = "GPIO_IN",
+    gp3 = "LED_I2C")
 
-sensor = EasyMCP2221.Device().I2C_Slave(0x69)
+mcp.I2C_speed(400_000)
+
+sensor = mcp.I2C_Slave(0x69)
+
+img = None
+cbar = None
+
+sensor.write_register(0x07, 0x20) # moving average output
 
 while True:
-    values = sensor.read_register(0x80, 128)
-    os.system("clear")
-    print_array(values)
-    sleep(0.1)
+    data = sensor.read_register(0x0E, 2)
+    thr_tmp = int.from_bytes(data, byteorder="little", signed=True) * 0.0625
+
+    data = sensor.read_register(0x80, 128)
+    T = 0.25 * np.frombuffer(data, dtype=np.int16).reshape(8,8)
+    T = np.flipud(T)
+    T = np.fliplr(T)
+
+    print("Min: %3.1fC  Max: %3.1fC  Thermistor temperature: %3.1fC" % (np.min(T), np.max(T), thr_tmp))
+
+    if img is None:
+        img = plt.imshow(T, cmap='jet', interpolation='sinc')
+        cbar = plt.colorbar()
+
+    else:
+        img.set_data(T)
+        cbar.mappable.set_clim(vmin=25, vmax=30)
+
+    plt.pause(0.01)
