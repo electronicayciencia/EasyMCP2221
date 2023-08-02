@@ -1,6 +1,6 @@
-# Play with a PCA9685
-import EasyMCP2221
-from time import sleep
+# Basic PCA9685 class
+# Uses EasyMCP2221's I2C Slave interface instead of SMBus.
+# Electronicayciencia 01/08/2023
 from struct import pack
 
 class PCA9685:
@@ -136,38 +136,12 @@ class PCA9685:
     def set_rate(self, rate, osc=INT_OSC_FREQ):
         """Set prescaler to get desired update rate"""
         presc = round(osc / (self.TIMER_COUNTS * rate)) - 1
-        
-        print(presc)
-        
+
         if presc < 0: presc = 0
         if presc > 255: presc = 255
-        
+
         mode = self.mode1
         self.pca.write_register(self.MODE1, mode | self.SLEEP)
         self.pca.write_register(self.PRE_SCALE, presc)
         self.pca.write_register(self.MODE1, mode)
-
-
-
-
-mcp = EasyMCP2221.Device()
-mcp.set_pin_function(
-    gp0 = "GPIO_IN",
-    gp1 = "GPIO_IN",
-    gp2 = "GPIO_IN",
-    gp3 = "LED_I2C")
-
-pca = PCA9685(mcp.I2C_Slave(0x40))
-
-pca.set_rate(200)
-
-pca.set_led(led=15, duty=0.5, delay=0, update=True)
-
-#for i in range(0,105,1):
-#    pca.set_led(led=15, duty=i/100, delay=0, update=True)
-#    #pca.update();
-#    sleep(1)
-
-
-
 
