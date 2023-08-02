@@ -1151,7 +1151,7 @@ class Device:
         self._reinforce_SRAM()
 
 
-    def ADC_read(self):
+    def ADC_read(self, norm=False):
         """ Read all Analog to Digital Converter (ADC) channels.
 
         Analog value is always available regardless of pin function (see :func:`set_pin_function`).
@@ -1159,8 +1159,11 @@ class Device:
 
         ADC is 10 bits, so the minimum value is 0 and the maximum value is 1023.
 
+        Parameters:
+            norm (bool, optional): Divide output values by 1024 and return output between 0 and 1. Default  is ``False``.
+
         Return:
-            tuple of int: Value of 3 channels (gp1, gp2, gp3).
+            tuple: Value of 3 channels (gp1, gp2, gp3).
 
         Examples:
             All three pins configured as ADC inputs.
@@ -1186,6 +1189,12 @@ class Device:
         adc1 = buf[I2C_POLL_RESP_ADC_CH0_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH0_MSB]
         adc2 = buf[I2C_POLL_RESP_ADC_CH1_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH1_MSB]
         adc3 = buf[I2C_POLL_RESP_ADC_CH2_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH2_MSB]
+
+        if norm:
+            adc1 = adc1 / 1024
+            adc2 = adc2 / 1024
+            adc3 = adc3 / 1024
+
         return (adc1, adc2, adc3)
 
 
@@ -1254,7 +1263,7 @@ class Device:
             dac_value = out)
 
 
-    def DAC_write(self, out):
+    def DAC_write(self, out, norm=False):
         """ Set the DAC output value.
 
         Valid ``out`` values are 0 to 31.
@@ -1265,6 +1274,7 @@ class Device:
 
         Parameters:
             out (int): Value to output (max. 32) referenced to DAC ref voltage.
+            norm (bool, optional): Accept input values as floats between 0 and 1. Default  is ``False``.
 
         Examples:
             >>> mcp.set_pin_function(gp2 = "DAC")
@@ -1277,8 +1287,16 @@ class Device:
             ...
             ValueError: Accepted values for out are from 0 to 31.
         """
-        if out not in range(0, 32):
-            raise ValueError("Accepted values for out are from 0 to 31.")
+        if norm:
+            if not 0 <= out <= 1:
+                raise ValueError("Accepted values for out when norm=True are from 0 to 1.")
+
+            out = out * 32
+            if out > 31: out = 31
+
+        else:
+            if out not in range(0, 32):
+                raise ValueError("Accepted values for out are from 0 to 31.")
 
         self.SRAM_config(dac_value = out)
 

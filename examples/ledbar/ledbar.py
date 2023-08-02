@@ -31,16 +31,6 @@ def update_led_bar(pca, brights):
     pca.update()
 
 
-def read_adc(mcp):
-    """Read MCP2221A ADC and normalize the value"""
-    (adc1, adc2, adc3) = mcp.ADC_read()
-    adc1 = adc1 / 1024
-    adc2 = adc2 / 1024
-    adc3 = adc3 / 1024
-    print("%2d%%, %2d%%, %2d%%" % (adc1*100, adc2*100, adc3*100))
-    return adc1, adc2, adc3
-
-
 def init():
     mcp = EasyMCP2221.Device()
     mcp.set_pin_function(
@@ -87,7 +77,7 @@ def main():
     while True:
 
         # Update adjustments
-        (adj_delay, adj_inertia, adj_bright) = read_adc(mcp)
+        (adj_delay, adj_inertia, adj_bright) = mcp.ADC_read(norm=True)
 
         # Once in a time, update final status
         # setting the current led to selected brightness and turning off the others

@@ -3,6 +3,13 @@ Changelog
 
 .. currentmodule:: EasyMCP2221.Device
 
+Latest (unreleased)
+-------------------
+
+ADC/DAC:
+    * Added ``norm`` parameter to :func:`ADC_read` and :func:`DAC_write`.
+    * Added LED bar example.
+
 
 V1.7
 --------
