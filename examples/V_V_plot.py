@@ -20,7 +20,6 @@ mcp.ADC_config() # set Vref = Vdd
 
 Vr = 32 * [0]
 Vd = 32 * [0]
-I  = 32 * [0]
 
 for step in range(0,32):
     mcp.DAC_write(step)
@@ -31,19 +30,19 @@ for step in range(0,32):
     # 10 bit, 5V ref
     Vr[step] = V1 / 1024 * 5
     Vd[step] = V3 / 1024 * 5
-    I[step]  = (V1 - V3) / 100000 * 1e6
 
-    print("Step: %2d of 32: Vr = %3.1fV,  Vd = %3.1fV,  I = %3.1fuA" %
-        (step+1, Vr[step], Vd[step]), I[step])
+    print("Step: %2d of 32: Vr = %3.2fV,  Vd = %3.2fV" %
+        (step+1, Vr[step], Vd[step]))
 
 
 mcp.DAC_write(0)
 
 plt.plot(Vr, Vd, 'o-')
+plt.axline((1,1), slope=1, color='g', linestyle='dotted')
 plt.axis([0,5,0,5])
 plt.xlabel("Vr (V)")
 plt.ylabel("Vd (V)")
-plt.title("Curve tracer")
+plt.title("Simple curve tracer")
 plt.grid()
 plt.show()
 
