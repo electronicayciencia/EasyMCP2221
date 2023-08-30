@@ -16,7 +16,6 @@ mcp.set_pin_function(
 
 mcp.ADC_config()
 
-
 V = []
 T = []
 
@@ -34,13 +33,13 @@ start = time.perf_counter()
 while time.perf_counter() - start <= capture_time:
 
     t = time.perf_counter()
-    V = mcp.ADC_read()[2]
+    Vc = mcp.ADC_read()[2]
 
     # 10 bit
-    V = V / 1024 * 100
+    Vc = Vc / 1024 * 100
 
     T.append(t - start)
-    V.append(V)
+    V.append(Vc)
 
 
 mcp.GPIO_write(gp2 = False)
