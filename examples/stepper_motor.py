@@ -41,7 +41,7 @@ def run(numsteps, mode = "full", delay = 0):
         phases = fullstep
     if mode == "wave":
         phases = wave
-    if mode == "half": # TODO: initial status = 2*step
+    if mode == "half":
         phases = halfstep
 
     nphases = len(phases)
