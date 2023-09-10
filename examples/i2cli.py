@@ -37,7 +37,8 @@ def help():
 
 
 def data_dump(data):
-    print(data)
+    print(data.hex(" "))
+
 
 
 while True:
