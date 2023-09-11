@@ -1765,25 +1765,35 @@ class Device:
 
 
 
-    def I2C_Slave(self, addr, force = False, speed = 100000):
+    def I2C_Slave(self, addr, force = False, speed = 100000, reg_bytes = 1, reg_byteorder = 'big'):
         """ Create a new I2C_Slave object.
 
         See :class:`EasyMCP2221.I2C_Slave.I2C_Slave` for detailed information.
 
         Parameters:
-            addr (int): Slave's I2C bus address
+            addr  (int) : Slave's I2C bus address
+            force (bool, optional): Create an I2C_Slave even if the target device does not answer. Default: False.
+            speed (int, optional): I2C bus speed. Valid values from 50000 to 400000. See :func:`EasyMCP2221.Device.I2C_speed`.
+            reg_bytes     (int, optional): How many bytes is the register, position or command to send (default 1 byte).
+            reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default 'big'.
 
         Return:
             I2C_Slave object.
 
         Example:
             >>> pcf    = mcp.I2C_Slave(0x48)
-            >>> eeprom = mcp.I2C_Slave(0x50)
+            >>> eeprom = mcp.I2C_Slave(0x50, reg_bytes = 2)
             >>> eeprom
             EasyMCP2221's I2C slave device at bus address 0x50.
 
         """
-        return I2C_Slave.I2C_Slave(self, addr, force, speed)
+        return I2C_Slave.I2C_Slave(
+            self,
+            addr = addr,
+            force = force,
+            speed = speed,
+            reg_bytes = reg_bytes,
+            reg_byteorder = reg_byteorder)
 
 
 

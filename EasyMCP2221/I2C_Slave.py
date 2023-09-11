@@ -12,6 +12,8 @@ class I2C_Slave:
         addr  (int) : Slave's I2C bus address
         force (bool, optional): Create an I2C_Slave even if the target device does not answer. Default: False.
         speed (int, optional): I2C bus speed. Valid values from 50000 to 400000. See :func:`EasyMCP2221.Device.I2C_speed`.
+        reg_bytes     (int, optional): How many bytes is the register, position or command to send (default 1 byte).
+        reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default 'big'.
 
     Raises:
         RuntimeError: If the device didn't acknowledge.
@@ -21,7 +23,7 @@ class I2C_Slave:
 
         >>> import EasyMCP2221
         >>> mcp = EasyMCP2221.Device()
-        >>> eeprom = mcp.I2C_Slave(0x50)
+        >>> eeprom = mcp.I2C_Slave(0x50, reg_bytes = 2)
         >>> eeprom
         EasyMCP2221's I2C slave device at bus address 0x50.
 
@@ -30,7 +32,7 @@ class I2C_Slave:
         >>> import EasyMCP2221
         >>> from EasyMCP2221 import I2C_Slave
         >>> mcp = EasyMCP2221.Device()
-        >>> eeprom = I2C_Slave.I2C_Slave(mcp, 0x50)
+        >>> eeprom = I2C_Slave.I2C_Slave(mcp, 0x50, reg_bytes = 2)
 
     Note:
         MCP2221 firmware exposes a subset of predefined I2C operations, but does not allow I2C primitives (i.e. start, stop, read + ack, read + nak, clock bus, etc.).
@@ -39,9 +41,11 @@ class I2C_Slave:
     mcp = None
     addr = None
 
-    def __init__(self, mcp, addr, force = False, speed = 100000):
+    def __init__(self, mcp, addr, force = False, speed = 100000, reg_bytes = 1, reg_byteorder = 'big'):
         self.mcp = mcp
         self.addr = addr
+        self.reg_bytes = reg_bytes
+        self.reg_byteorder = reg_byteorder
 
         mcp.I2C_speed(speed)
 
@@ -71,7 +75,7 @@ class I2C_Slave:
     #######################################################################
     # Read
     #######################################################################
-    def read_register(self, register, length = 1, reg_bytes = 1, reg_byteorder = 'big'):
+    def read_register(self, register, length = 1, reg_bytes = None, reg_byteorder = None):
         """ Read from a specific register, position or command.
 
         Sequence:
@@ -89,8 +93,8 @@ class I2C_Slave:
         Parameters:
             register      (int): Register to read, memory position or command.
             length        (int, optional): How many bytes is the answer to read (default read 1 byte).
-            reg_bytes     (int, optional): How many bytes is the register, position or command to send (default 1 byte).
-            reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default 'big'.
+            reg_bytes     (int, optional): How many bytes is the register, position or command to send (default is defined in the class constructor).
+            reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default is defined in the class constructor.
 
         Return:
             bytes string
@@ -103,9 +107,16 @@ class I2C_Slave:
 
             Read 10 bytes from I2C EEPROM (2 bytes memory position):
 
-            >>> eeprom.read_register(2000, 25, reg_bytes=2)
+            >>> eeprom = mcp.I2C_Slave(0x50, reg_bytes = 2)
+            >>> eeprom.read_register(2000, 25)
             >>> b'en muchas partes hallaba '
         """
+        if reg_bytes is None:
+            reg_bytes = self.reg_bytes
+
+        if reg_byteorder is None:
+            reg_byteorder = self.reg_byteorder
+
         self.mcp.I2C_write(
             self.addr,
             register.to_bytes(reg_bytes, byteorder = reg_byteorder),
@@ -140,7 +151,7 @@ class I2C_Slave:
     #######################################################################
     # Write
     #######################################################################
-    def write_register(self, register, data, reg_bytes = 1, reg_byteorder = 'big'):
+    def write_register(self, register, data,  reg_bytes = None, reg_byteorder = None):
         """ Write to a specific register, position or command.
 
         Sequence:
@@ -158,8 +169,8 @@ class I2C_Slave:
         Parameters:
             register      (int): Register to read, memory position or command.
             data        (bytes): Data to write. Bytes, int from 0 to 255, or list of ints from 0 to 255.
-            reg_bytes     (int, optional): How many bytes is the register, position or command to send (default 1 byte).
-            reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default 'big'.
+            reg_bytes     (int, optional): How many bytes is the register, position or command to send (default is defined in the class constructor.).
+            reg_byteorder (str, optional): Byte order of the register address. *'little'* or *'big'*. Default is defined in the class constructor.
 
         Examples:
             Set PCF8591's DAC output to 255. Command 0bx1xxxxxx.
@@ -168,10 +179,17 @@ class I2C_Slave:
 
             Write a stream of bytes to an EEPROM at position 0x1A00 (2 bytes memory position):
 
-            >>> eeprom.write_register(0x1A00, b'Testing 123...', reg_bytes=2)
-            >>> eeprom.read_register(0x1A00, 14, reg_bytes=2)
+            >>> eeprom = mcp.I2C_Slave(0x50, reg_bytes = 2)
+            >>> eeprom.write_register(0x1A00, b'Testing 123...')
+            >>> eeprom.read_register(0x1A00, 14)
             b'Testing 123...'
         """
+        if reg_bytes is None:
+            reg_bytes = self.reg_bytes
+
+        if reg_byteorder is None:
+            reg_byteorder = self.reg_byteorder
+
         if type(data) == int:
             data = bytes([data])
         elif type(data) == list:

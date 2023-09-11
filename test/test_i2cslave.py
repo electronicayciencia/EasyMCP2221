@@ -32,7 +32,7 @@ class I2C_Slave(unittest.TestCase):
 
         content = randbytes(memsize)
 
-        eeprom = self.mcp.I2C_Slave(self.i2caddr, speed=speed)
+        eeprom = self.mcp.I2C_Slave(self.i2caddr, reg_bytes=2, speed=speed)
 
         # Write EEPROM in blocks of pagesize bytes.
         start_write = time.perf_counter()
@@ -41,7 +41,7 @@ class I2C_Slave(unittest.TestCase):
             #print("reg: %d (%d - %d)" % (page * pagesize, 0+i, pagesize+i))
             buffer = content[0+i:pagesize+i]
 
-            eeprom.write_register(page * pagesize, buffer, reg_bytes=2)
+            eeprom.write_register(page * pagesize, buffer)
 
             page = page + 1
 
@@ -53,7 +53,7 @@ class I2C_Slave(unittest.TestCase):
 
         # Read EEPROM (65535 is the max I2C_read transfer)
         start_read = time.perf_counter()
-        buffer = eeprom.read_register(0, memsize, reg_bytes=2)
+        buffer = eeprom.read_register(0, memsize)
         end_read = time.perf_counter()
 
         w_time = end_write - start_write

@@ -10,6 +10,9 @@ ADC/DAC:
     * Added ``norm`` parameter to :func:`ADC_read` and :func:`DAC_write`.
     * Added LED bar example.
 
+I2C:
+    * In I2C Slave Helper class, *register bytes* and *register byte order* can be indicated in the class constructor.
+
 
 V1.7
 --------
