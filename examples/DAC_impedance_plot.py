@@ -15,12 +15,12 @@ mcp.set_pin_function(
     gp2 = "DAC")  # DAC output
 
 # Configure device pins ADC and DAC reference.
-mcp.DAC_config() # set Vref = Vdd
-mcp.ADC_config() # set Vref = Vdd
+mcp.DAC_config(ref = "VDD")
+mcp.ADC_config(ref = "VDD")
 
-ADCref = 5
 DACref = 5
-Rload = 19.7e3
+ADCref = 5
+Rload = 19930
 
 Vexp = 32 * [0]
 Vact = 32 * [0]
@@ -35,7 +35,7 @@ for step in range(0,32):
     Vexp[step] = step * DACref / 32
     Vact[step] = adc  * ADCref / 1024
 
-    if Vact[step] == 0:
+    if Vexp[step] == 0:
         Imp[step] = math.nan
     else:
         Imp[step] = (Vexp[step] / Vact[step] - 1) * Rload
@@ -49,7 +49,7 @@ mcp.DAC_write(0)
 plt.figure(figsize=(10,4))
 plt.plot(Vexp, Vact, 'o-')
 plt.axline((1,1), slope=1, color='g', linestyle='dotted')
-plt.axis([0,5,0,5])
+plt.axis([0,DACref,0,DACref])
 plt.xlabel("Expected output (V)")
 plt.ylabel("Actual output (V)")
 plt.title("DAC output with a 20k load")
