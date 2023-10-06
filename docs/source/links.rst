@@ -5,6 +5,10 @@ Source GitHub repository:
   https://github.com/electronicayciencia/EasyMCP2221
 
 
+[Spanish] Blog post about the MCP2221A. Description of the chip and interface project with schematics.
+  https://www.electronicayciencia.com/2023/09/integrado-mcp2221.html
+
+
 MCP2221 and MCP2221A - USB 2.0 to I2C/UART Protocol Converter with GPIO - Microchip Inc.
   https://www.microchip.com/en-us/product/MCP2221
 
