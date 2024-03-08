@@ -23,10 +23,10 @@ sensor = mcp.I2C_Slave(0x69)
 img = None
 while True:
     data = sensor.read_register(0x0E, 2)
-    thr_tmp = int.from_bytes(data, byteorder="little", signed=True) * 0.0625
+    thr_tmp =  0.0625 * int.from_bytes(data, byteorder="little", signed=True)
 
     data = sensor.read_register(0x80, 128)
-    T = 0.25/16 * (np.frombuffer(data, dtype=np.int16).reshape(8,8) << 4)
+    T = 0.25 * (np.frombuffer(data, dtype=np.int16).reshape(8,8) << 4) / 16
     T = np.flipud(T)
     T = np.fliplr(T)
 
