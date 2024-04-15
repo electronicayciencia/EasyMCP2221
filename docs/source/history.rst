@@ -3,8 +3,12 @@ Changelog
 
 .. currentmodule:: EasyMCP2221.Device
 
-Latest (unreleased)
--------------------
+
+V1.7
+--------
+
+V1.7.2
+~~~~~~
 
 ADC/DAC:
     * Added ``norm`` parameter to :func:`ADC_read` and :func:`DAC_write`.
@@ -13,9 +17,9 @@ ADC/DAC:
 I2C:
     * In I2C Slave Helper class, *register bytes* and *register byte order* can be indicated in the class constructor.
 
+Misc:
+    * Removed timeout parameter on USB HID read, introduced in V1.6.1. This parameter causes a delay in some systems (https://github.com/electronicayciencia/EasyMCP2221/issues/7) due to unknown reasons. The default timeout is now 1000 ms.
 
-V1.7
---------
 
 V1.7.1
 ~~~~~~

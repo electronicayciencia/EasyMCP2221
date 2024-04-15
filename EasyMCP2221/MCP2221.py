@@ -204,7 +204,9 @@ class Device:
 
             # Read response
             try:
-                r = self.hidhandler.read(PACKET_SIZE, 50)
+                # timeout 50 removed due to Issue
+                # https://github.com/electronicayciencia/EasyMCP2221/issues/7
+                r = self.hidhandler.read(PACKET_SIZE)
             except OSError:
                 if retry < self.cmd_retries:
                     continue
