@@ -3,6 +3,12 @@ Changelog
 
 .. currentmodule:: EasyMCP2221.Device
 
+Latest
+--------
+
+Misc:
+    * Allow to select a device by USB serial.
+
 
 V1.7
 --------

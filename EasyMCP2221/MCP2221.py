@@ -12,10 +12,12 @@ class Device:
         VID (int, optional): Vendor Id (default to ``0x04D8``)
         PID (int, optional): Product Id (default to ``0x00DD``)
         devnum (int, optional): Device index if multiple device found with the same PID and VID. Default is first device (index 0).
+        usbserial (str, optional): Device's USB serial to open.
+        open_timeout (int, optional): Open timeout. Default is 5s.
         trace_packets (bool, optional): For debug only. See :any:`trace_packets`.
 
     Raises:
-        RuntimeError: if no device found with given VID and PID.
+        RuntimeError: if no device found with given VID and PID, devnum or USB serial.
 
     Example:
         >>> import EasyMCP2221
@@ -76,11 +78,10 @@ class Device:
 
     VID = DEV_DEFAULT_VID
     PID = DEV_DEFAULT_PID
-    devnum = 0
-    device_open_timeout = 5
+    default_open_timeout = 5
 
 
-    def __init__(self, VID=None, PID=None, devnum=None, trace_packets=None):
+    def __init__(self, VID=None, PID=None, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
 
         if trace_packets is not None:
             self.trace_packets = trace_packets
@@ -91,21 +92,53 @@ class Device:
         if PID is not None:
             self.PID = PID
 
-        if devnum is not None:
-            self.devnum  = devnum
-
         self.hidhandler = hid.device()
 
-        timeout = time.perf_counter() + self.device_open_timeout
+        timeout = time.perf_counter() + open_timeout
+
+        # Try to open the device multiple times until timeout
         while True:
             try:
-                devices = hid.enumerate(self.VID, self.PID)
-                if not devices or len(devices) < self.devnum:
-                    raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
+                # Select by devnum
+                if devnum is not None:
+                    devices = hid.enumerate(self.VID, self.PID)
+                    if not devices or len(devices) - 1 < devnum:
+                        raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
 
-                self.hidhandler.open_path(hid.enumerate(self.VID, self.PID)[self.devnum]["path"])
-                break
+                    self.hidhandler.open_path(devices[devnum]["path"])
+                    break
 
+                # Fix Issue #8: Select by USB Serial
+                elif usbserial is not None:
+                    found = False
+                    for dev in hid.enumerate(self.VID, self.PID):
+                        try:
+                            self.hidhandler.open_path(dev["path"])
+
+                            if usbserial == self.read_flash_info()['USB_SERIAL']:
+                                found = True
+                                break
+                            else:
+                                self.hidhandler.close()
+
+                        except:
+                            pass
+
+                    if not found:
+                        raise ValueError("No device found with serial number %s or already in use." % usbserial)
+                    else:
+                        break
+
+                # Default to the first device found
+                else:
+                    devices = hid.enumerate(self.VID, self.PID)
+                    if not devices:
+                        raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
+
+                    self.hidhandler.open_path(devices[0]["path"])
+                    break
+
+            # Ignore any exceptions and keep trying until the timeout
             except:
                 if time.perf_counter() > timeout:
                     raise
