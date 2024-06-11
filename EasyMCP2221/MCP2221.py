@@ -45,22 +45,21 @@ class Device:
 
     def __init__(self, VID=None, PID=None, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
 
-        """int: Times to retry an USB command if it fails."""
         self.cmd_retries = 1
+        """int: Times to retry an USB command if it fails."""
 
-        """bool: Print all binary commands and responses."""
         self.trace_packets = False
+        """bool: Print all binary commands and responses."""
 
-        """bool: Print debugging messages."""
         self.debug_messages = False
+        """bool: Print debugging messages."""
 
+        self.unsaved_SRAM = {}
         """Some options, like USB power attributes, are read from Flash into SRAM at start-up
         and cannot be changed in SRAM at run time. So we must store them somewhere to save
         then in save_config.
         """
-        self.unsaved_SRAM = {}
 
-        """ Internal status """
         self.status = {
             "GPIO": {
                 "gp0": None,
@@ -74,6 +73,7 @@ class Device:
             # mark i2c bus as dirty, so to call cancel before then next operation
             "i2c_dirty": None
         }
+        """ Internal status """
 
 
         if trace_packets is not None:
