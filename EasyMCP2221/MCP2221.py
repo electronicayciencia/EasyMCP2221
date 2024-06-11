@@ -39,49 +39,42 @@ class Device:
         }
     """
 
-    cmd_retries = 1
-    """int: Times to retry an USB command if it fails."""
-
-    trace_packets = False
-    """bool: Print all binary commands and responses."""
-
-    debug_messages = False
-    """bool: Print debugging messages."""
-
-    unsaved_SRAM = {}
-    """Some options, like USB power attributes, are read from Flash into SRAM at start-up
-    and cannot be changed in SRAM at run time. So we must store them somewhere to save
-    then in save_config.
-    """
-
-    status = {
-        # 4   -> output value
-        # 3   -> direction
-        # 2:0 -> designation
-        "GPIO": {
-            "gp0": None,
-            "gp1": None,
-            "gp2": None,
-            "gp3": None
-        },
-        # 2:1 -> reference value,
-        # 0   -> reference source
-        "dac_ref": None,
-        "dac_value": None,
-        # 2:1 -> reference value,
-        # 0   -> reference source
-        "adc_ref": None,
-        # mark i2c bus as dirty, to call cancel before then next operation
-        "i2c_dirty": None
-    }
-    """ Internal status """
-
     VID = DEV_DEFAULT_VID
     PID = DEV_DEFAULT_PID
     default_open_timeout = 5
 
-
     def __init__(self, VID=None, PID=None, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
+
+        """int: Times to retry an USB command if it fails."""
+        self.cmd_retries = 1
+
+        """bool: Print all binary commands and responses."""
+        self.trace_packets = False
+
+        """bool: Print debugging messages."""
+        self.debug_messages = False
+
+        """Some options, like USB power attributes, are read from Flash into SRAM at start-up
+        and cannot be changed in SRAM at run time. So we must store them somewhere to save
+        then in save_config.
+        """
+        self.unsaved_SRAM = {}
+
+        """ Internal status """
+        self.status = {
+            "GPIO": {
+                "gp0": None,
+                "gp1": None,
+                "gp2": None,
+                "gp3": None
+            },
+            "dac_ref": None,
+            "dac_value": None,
+            "adc_ref": None,
+            # mark i2c bus as dirty, so to call cancel before then next operation
+            "i2c_dirty": None
+        }
+
 
         if trace_packets is not None:
             self.trace_packets = trace_packets

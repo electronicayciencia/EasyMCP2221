@@ -7,7 +7,8 @@ Latest
 --------
 
 Misc:
-    * Allow to select a device by USB serial.
+    * Allow selecting a device via USB serial.
+    * Fixed: State variables were defined as class variables. This can cause problems when working with multiple devices.
 
 
 V1.7
