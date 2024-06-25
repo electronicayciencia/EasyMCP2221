@@ -39,7 +39,7 @@ FLASH_DATA_CHIP_SERIALNUM         = 0x05
 FLASH_OFFSET_WRITE = 2
 FLASH_OFFSET_READ  = 4
 
-FLASH_CHIP_SETTINGS_CDC_SEC =  2 - 2
+FLASH_CHIP_SETTINGS_CDCSEC  =  2 - 2
 FLASH_CHIP_SETTINGS_CLOCK   =  3 - 2
 FLASH_CHIP_SETTINGS_DAC     =  4 - 2
 FLASH_CHIP_SETTINGS_INT_ADC =  5 - 2
@@ -66,7 +66,7 @@ FLASH_GP_SETTINGS_GP2       =  4 - 2
 FLASH_GP_SETTINGS_GP3       =  5 - 2
 
 # Bytes in Get SRAM Settings response (starting at 0)
-SRAM_CHIP_SETTINGS_CDC_SEC  =  4 - 4
+SRAM_CHIP_SETTINGS_CDCSEC   =  4 - 4
 SRAM_CHIP_SETTINGS_CLOCK    =  5 - 4
 SRAM_CHIP_SETTINGS_DAC      =  6 - 4
 SRAM_CHIP_SETTINGS_INT_ADC  =  7 - 4
@@ -88,6 +88,18 @@ SRAM_GP_SETTINGS_GP0        = 22 - 4
 SRAM_GP_SETTINGS_GP1        = 23 - 4
 SRAM_GP_SETTINGS_GP2        = 24 - 4
 SRAM_GP_SETTINGS_GP3        = 25 - 4
+
+# CHIP SETTINGS0 bits
+CDCSEC_CDCSNEN              = 1 << 7  # USB CDC Serial Number Enable bit
+CDCSEC_LEDURXINST           = 1 << 6  # LED UART RX Inactive State bit
+CDCSEC_LEDUTXINST           = 1 << 5  # LED UART TX Inactive State bit
+CDCSEC_LEDI2CINST           = 1 << 4  # LED I2C Inactive State bit
+CDCSEC_SSPNDINST            = 1 << 3  # SSPND Inactive State bit
+CDCSEC_USBCFGINST           = 1 << 2  # USBCFG Inactive State bit
+CDCSEC_CHIPPROT_RESERVED    = 0b11    # Chip protection
+CDCSEC_CHIPPROT_LOCKED      = 0b10
+CDCSEC_CHIPPROT_PROTECTED   = 0b01
+CDCSEC_CHIPPROT_UNPROTECTED = 0b00
 
 
 # GPIO constants

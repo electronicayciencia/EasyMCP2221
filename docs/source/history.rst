@@ -9,6 +9,7 @@ Latest
 Misc:
     * Allow selecting a device via USB serial.
     * Fixed: State variables were defined as class variables. This can cause problems when working with multiple devices.
+    * Added :func:`enable_cdc_serial` and a hint to locate the matching CDC interface.
 
 
 V1.7

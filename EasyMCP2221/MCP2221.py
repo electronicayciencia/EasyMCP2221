@@ -39,11 +39,9 @@ class Device:
         }
     """
 
-    VID = DEV_DEFAULT_VID
-    PID = DEV_DEFAULT_PID
     default_open_timeout = 5
 
-    def __init__(self, VID=None, PID=None, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
+    def __init__(self, VID=DEV_DEFAULT_VID, PID=DEV_DEFAULT_PID, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
 
         self.cmd_retries = 1
         """int: Times to retry an USB command if it fails."""
@@ -316,7 +314,7 @@ class Device:
         if self.debug_messages:
             print("OLD CHIP:", " ".join("%02x" % i for i in chip))
 
-        chip[FLASH_CHIP_SETTINGS_CDC_SEC] = sram[SRAM_CHIP_SETTINGS_CDC_SEC]
+        chip[FLASH_CHIP_SETTINGS_CDCSEC]  = sram[SRAM_CHIP_SETTINGS_CDCSEC]
         chip[FLASH_CHIP_SETTINGS_CLOCK]   = sram[SRAM_CHIP_SETTINGS_CLOCK]
         chip[FLASH_CHIP_SETTINGS_DAC]     = sram[SRAM_CHIP_SETTINGS_DAC]
         chip[FLASH_CHIP_SETTINGS_INT_ADC] = sram[SRAM_CHIP_SETTINGS_INT_ADC]
@@ -372,6 +370,7 @@ class Device:
         Write flash data.
         Data payload does not include command and register bytes.
         """
+        # Use hardcoded instead of symbolic constants to prevent errors
         if setting == FLASH_DATA_CHIP_SETTINGS and (data[0] & 0b11) != 0:
             raise AssertionError("Chip protection prevented!")
 
@@ -412,7 +411,8 @@ class Device:
                     "ma": 100,
                     "pid": "0x00DD",
                     "pwr": "disabled",
-                    "vid": "0x04D8"
+                    "vid": "0x04D8",
+                    "cdcsnen": "enabled"
                 },
                 "GP_SETTINGS": {
                     "GP0": {
@@ -502,6 +502,11 @@ class Device:
         else:
             pmo_str = "disabled"
 
+        if buf[FLASH_CHIP_SETTINGS_CDCSEC + FLASH_OFFSET_READ] & CDCSEC_CDCSNEN:
+            cdc_str = "enabled"
+        else:
+            cdc_str = "disabled"
+
         ide_bits = (buf[FLASH_CHIP_SETTINGS_INT_ADC + FLASH_OFFSET_READ] & 0b01100000) >> 5
         ide_str = ("both"    if ide_bits == 3 else
                    "falling" if ide_bits == 2 else
@@ -542,11 +547,13 @@ class Device:
 
         DACVAL = (buf[FLASH_CHIP_SETTINGS_DAC + FLASH_OFFSET_READ] & 0b00011111) >> 0
 
+
         data = {
             "vid": "0x{:04X}".format(vid),
             "pid": "0x{:04X}".format(pid),
             "ma": mA,
             "pwr": pmo_str,
+            "cdcsnen": cdc_str,
             "ioc": ide_str,
             "clk_duty": clk_dc_str,
             "clk_freq": clk_freq_str,
@@ -648,6 +655,7 @@ class Device:
             "USB_FACT_SERIAL" : "Factory Serial Number",
             "func"            : "Pin designated operation",
             "outval"          : "Default output value",
+            "cdcsnen"         : "CDC Serial Number Enumeration",
         }
 
         return strings.get(varname, varname)
@@ -1958,7 +1966,7 @@ class Device:
 
 
     #######################################################################
-    # Wake-up
+    # Advanced USB
     #######################################################################
     def enable_power_management(self, enable=True):
         """ Enable or disable USB Power Management options for this device.
@@ -2000,6 +2008,63 @@ class Device:
             USBPWRATTR &= 0b11011111
 
         self.unsaved_SRAM[FLASH_CHIP_SETTINGS_USBPWR] = USBPWRATTR
+
+
+    def enable_cdc_serial(self, enable=True):
+        """ Enable or disable USB CDC serial number enumeration.
+
+        Enabling this feature, this MCP2221 device will get a distinct serial device name.
+        Useful to match CDC interface with its HID interface when multiple MCP2221 are used.
+
+        USB attributes are only read while USB device enumeration. So :func:`reset`
+        (or power supply cycle) is needed in order for changes to take effect.
+
+        Parameters:
+            enable (bool): Enable or disable CDC Serial Number Enumeration.
+
+        Raises:
+            RuntimeError: If flash read command failed.
+
+        Example:
+            >>> mcp.enable_cdc_serial(True)
+            >>> mcp.save_config()
+            >>> print(mcp)
+            ...
+                "Chip settings": {
+                    "CDC Serial Number Enumeration": "disabled",
+            ...
+            >>> mcp.reset()
+
+        Hint:
+            You can use the following code to locate a suitable CDC interface. First using the serial
+            number and, if that fails, to get the first serial port that matches the default VID:PID.
+
+            .. code-block:: python
+
+                import EasyMCP2221
+                import serial
+                import serial.tools.list_ports
+
+                mcp = EasyMCP2221.Device()
+
+                sernum = mcp.read_flash_info()["USB_SERIAL"]
+                vidpid = "04D8:00DD"
+
+                com = next(serial.tools.list_ports.grep(sernum),      None) or \\
+                      next(serial.tools.list_ports.grep("04D8:00DD"), None)
+
+                print(com)
+
+        """
+        chip_settings = self._read_flash_raw(FLASH_DATA_CHIP_SETTINGS)
+        cdcsec = chip_settings[FLASH_CHIP_SETTINGS_CDCSEC + FLASH_OFFSET_READ]
+
+        if enable:
+            cdcsec |= CDCSEC_CDCSNEN
+        else:
+            cdcsec &= (~CDCSEC_CDCSNEN & 0xFF)
+
+        self.unsaved_SRAM[FLASH_CHIP_SETTINGS_CDCSEC] = cdcsec
 
 
     #######################################################################

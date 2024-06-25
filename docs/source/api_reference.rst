@@ -60,10 +60,11 @@ I2C bus
 .. autofunction:: EasyMCP2221.Device.I2C_speed
 
 
-USB wake-up
------------
+Advanced USB
+------------
 
 .. autofunction:: EasyMCP2221.Device.enable_power_management
+.. autofunction:: EasyMCP2221.Device.enable_cdc_serial
 
 
 Device reset
