@@ -2076,11 +2076,12 @@ class Device:
 
         Reboot the device and load stored configuration from flash.
 
-        This operation do not reset any I2C slave devices.
+        This operation resets only the MCP2221/A chip.
+        It won't reset any I2C slave devices connected.
 
-        Note:
-            The host needs to re-enumerate the device after a reset command.
-            After a reset, EasyMCP2221 will try to re-open the device for the next 5 seconds.
+        The reset function waits 0.5 seconds to complete.
+        Then it tries to re-open the device for the next 5 seconds.
+        If the chip does not respond after 5 seconds, an exception is generated.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
