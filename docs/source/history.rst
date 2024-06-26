@@ -15,6 +15,7 @@ Misc:
     * Added I2C scan code in :func:`I2C_read` documentation.
     * Removed open timeout unless in reset operation.
     * Fixed: Preserve non-default initialization parameters on reset.
+    * Removed the 5 seconds delay at initialization when no devices found (except when :func:`reset` is called).
 
 
 V1.7
