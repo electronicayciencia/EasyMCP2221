@@ -1680,21 +1680,21 @@ class Device:
                 b'En un lugar de la Mancha...'
 
         Hint:
-            You can use :func:`I2C_read` with size 1 to check if there is any device listening
-            with that address.
+            Use :func:`I2C_read` to write a very simple I2C scanner.
 
-            There is a device in ``0x50`` (EEPROM):
+            .. code-block:: python
 
-            >>> mcp.I2C_read(0x50)
-            b'1'
+                import EasyMCP2221
 
-            No device in ``0x60``:
+                mcp = EasyMCP2221.Device()
 
-            >>> mcp.I2C_read(0x60)
-            Traceback (most recent call last):
-            ...
-            EasyMCP2221.exceptions.NotAckError: Device did not ACK.
+                for addr in range(0, 0x80):
+                    try:
+                        mcp.I2C_read(addr)
+                        print("I2C slave found at address 0x%02X" % (addr))
 
+                    except EasyMCP2221.exceptions.NotAckError:
+                        pass
 
         Note:
             MCP2221 reads data in 60-byte chunks.
