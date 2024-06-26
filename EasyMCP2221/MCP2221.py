@@ -2036,13 +2036,15 @@ class Device:
             >>> mcp.reset()
 
         Hint:
-            You can use the following code to locate a suitable CDC interface. First using the serial
-            number and, if that fails, to get the first serial port that matches the default VID:PID.
+            Use the following code to select a suitable CDC interface (COM port).
+
+            Search by the serial number first (requires CDC serial enumeration to be
+            enabled for this device). If that fails, get the first serial port that matches
+            the default VID:PID.
 
             .. code-block:: python
 
                 import EasyMCP2221
-                import serial
                 import serial.tools.list_ports
 
                 mcp = EasyMCP2221.Device()
@@ -2050,8 +2052,8 @@ class Device:
                 sernum = mcp.read_flash_info()["USB_SERIAL"]
                 vidpid = "04D8:00DD"
 
-                com = next(serial.tools.list_ports.grep(sernum),      None) or \\
-                      next(serial.tools.list_ports.grep("04D8:00DD"), None)
+                com = next(serial.tools.list_ports.grep(sernum), None) or \\
+                      next(serial.tools.list_ports.grep(vidpid), None)
 
                 print(com)
 
