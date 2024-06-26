@@ -9,12 +9,14 @@ class Device:
     """ MCP2221(A) device
 
     Parameters:
-        VID (int, optional): Vendor Id (default to ``0x04D8``)
-        PID (int, optional): Product Id (default to ``0x00DD``)
+        VID (int, optional): Vendor Id (default is ``0x04D8``)
+        PID (int, optional): Product Id (default is ``0x00DD``)
         devnum (int, optional): Device index if multiple device found with the same PID and VID. Default is first device (index 0).
         usbserial (str, optional): Device's USB serial to open.
-        open_timeout (int, optional): Open timeout. Default is 5s.
-        trace_packets (bool, optional): For debug only. See :any:`trace_packets`.
+        open_timeout (int, optional): Open timeout. Default is quit immediately.
+        cmd_retries (int, optional): Times to retry an USB command if it fails.
+        debug_messages (bool, optional): Print debugging messages.
+        trace_packets (bool, optional): For debug only. Print all binary commands and responses.
 
     Raises:
         RuntimeError: if no device found with given VID and PID, devnum or USB serial.
@@ -39,24 +41,23 @@ class Device:
         }
     """
 
-    default_open_timeout = 5
+    def __init__(self,
+                    VID            = DEV_DEFAULT_VID,
+                    PID            = DEV_DEFAULT_PID,
+                    devnum         = None,
+                    usbserial      = None,
+                    open_timeout   = 0,
+                    cmd_retries    = 1,
+                    debug_messages = False,
+                    trace_packets  = False):
 
-    def __init__(self, VID=DEV_DEFAULT_VID, PID=DEV_DEFAULT_PID, devnum=None, usbserial=None, trace_packets=None, open_timeout=default_open_timeout):
-
-        self.cmd_retries = 1
-        """int: Times to retry an USB command if it fails."""
-
-        self.trace_packets = False
-        """bool: Print all binary commands and responses."""
-
-        self.debug_messages = False
-        """bool: Print debugging messages."""
-
-        self.unsaved_SRAM = {}
-        """Some options, like USB power attributes, are read from Flash into SRAM at start-up
-        and cannot be changed in SRAM at run time. So we must store them somewhere to save
-        then in save_config.
         """
+        Some options, like USB power attributes, are read from Flash into SRAM at start-up
+        and cannot be changed in SRAM at run time. So we must store them somewhere to save
+        them in save_config.
+        """
+        self.unsaved_SRAM = {}
+
 
         self.status = {
             "GPIO": {
@@ -71,17 +72,15 @@ class Device:
             # mark i2c bus as dirty, so to call cancel before then next operation
             "i2c_dirty": None
         }
-        """ Internal status """
 
-
-        if trace_packets is not None:
-            self.trace_packets = trace_packets
-
-        if VID is not None:
-            self.VID = VID
-
-        if PID is not None:
-            self.PID = PID
+        self.VID            = VID
+        self.PID            = PID
+        self.devnum         = devnum
+        self.usbserial      = usbserial
+        self.open_timeout   = open_timeout
+        self.cmd_retries    = cmd_retries
+        self.trace_packets  = trace_packets
+        self.debug_messages = debug_messages
 
         self.hidhandler = hid.device()
 
@@ -2081,7 +2080,7 @@ class Device:
 
         Note:
             The host needs to re-enumerate the device after a reset command.
-            There is a 5 seconds timeout to do that.
+            After a reset, EasyMCP2221 will try to re-open the device for the next 5 seconds.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
@@ -2092,7 +2091,15 @@ class Device:
         time.sleep(0.5)
 
         self.status["i2c_dirty"] = False
-        self.__init__()
+
+        self.__init__(
+            VID            = self.VID,
+            PID            = self.PID,
+            devnum         = self.devnum,
+            usbserial      = self.usbserial,
+            open_timeout   = 5,
+            debug_messages = self.debug_messages,
+            trace_packets  = self.trace_packets)
 
 
     #######################################################################

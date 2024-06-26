@@ -6,10 +6,15 @@ Changelog
 Latest
 --------
 
-Misc:
+Improvements for multiple devices:
     * Allow selecting a device via USB serial.
-    * Fixed: State variables were defined as class variables. This can cause problems when working with multiple devices.
-    * Added :func:`enable_cdc_serial` and a hint to locate the matching CDC interface.
+    * Added :func:`enable_cdc_serial` to locate the matching CDC interface.
+    * Fixed: State variables were defined as class variables.
+
+Misc:
+    * Added I2C scan code in :func:`I2C_read` documentation.
+    * Removed open timeout unless in reset operation.
+    * Fixed: Preserve non-default initialization parameters on reset.
 
 
 V1.7
