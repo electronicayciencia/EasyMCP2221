@@ -65,7 +65,7 @@ Documentation
 
 Read the Install Guide, Examples and full API Reference here: https://easymcp2221.readthedocs.io/
 
-Illustrative blog post with examples, pictures and schematics (spanish): `Electrónica y Ciencia - El integrado MCP2221(A) <https://www.electronicayciencia.com/2023/09/integrado-mcp2221.html>`_
+Illustrative blog post with examples, pictures and schematics (spanish): `El integrado MCP2221(A) <https://www.electronicayciencia.com/2023/09/integrado-mcp2221.html>`_
 
 
 Author
