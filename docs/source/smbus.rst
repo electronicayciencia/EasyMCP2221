@@ -24,12 +24,14 @@ or
     bus = smbus.SMBus()
 
 
-.. note::
+.. warning::
 
   To use other mcp functions in addition to SMBus, do not create a new MCP Device.
   It will interfere with existing bus resulting in unpredictable behavior.
   Always re-use ``bus.mcp`` object (see `example 2`).
 
+  The :class:`EasyMCP2221.Device` constructor will try to prevent conflicts by caching and returning
+  the same Object if the same initialization parameters are given, instead of two different objects.
 
 
 Example 1: Basic weather station

@@ -6,7 +6,13 @@ from . import I2C_Slave
 from .exceptions import NotAckError, TimeoutError, LowSCLError, LowSDAError
 
 class Device:
-    """ MCP2221(A) device
+    """ Creates a MCP2221(A) device instance.
+
+    Device selection flow:
+
+    * If **usbserial** parameter is present (not None): select only the device with given USB serial.
+    * In other case: enumerate all devices with given VID, PID (or default values) and select one
+      according to **devnum**.
 
     Parameters:
         VID (int, optional): Vendor Id (default is ``0x04D8``)
@@ -19,7 +25,14 @@ class Device:
         trace_packets (bool, optional): For debug only. Print all binary commands and responses.
 
     Raises:
-        RuntimeError: if no device found with given VID and PID, devnum or USB serial.
+        RuntimeError: if no device found with given VID and PID, devnum index or USB serial.
+
+    Hint:
+        Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
+        This happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class,
+        and a second one is created elsewhere in the main program to control GPIO.
+        To prevent this, :class:`EasyMCP2221.Device` will return the same object when identical
+        initialization parameters are used.
 
     Example:
         >>> import EasyMCP2221
@@ -41,15 +54,52 @@ class Device:
         }
     """
 
+    _cache = {}
+    """
+    Keep a cache of all initialized devices with its USB serial value.
+    This will return the same object and not two different objects driving the same physical device.
+    """
+
+    # Use __new__ instead of __init__ to allow returning an existing object.
+    def __new__(cls,
+                VID            = DEV_DEFAULT_VID,
+                PID            = DEV_DEFAULT_PID,
+                devnum         = 0,
+                usbserial      = None,
+                open_timeout   = 0,
+                cmd_retries    = 1,
+                debug_messages = 0,
+                trace_packets  = False):
+
+
+        ## Check if this is one of the already initialized devices.
+        if usbserial is not None:
+            cache_id = (VID, PID, usbserial)
+        else:
+            cache_id = (VID, PID, devnum)
+
+        if cache_id in Device._cache:
+            # Re-use object.
+            if debug_messages: print("Re-using cached device:", cache_id)
+            return Device._cache[cache_id]
+
+        else:
+            # Create a new device and cache it
+            if debug_messages: print("New device cached:", cache_id)
+            newdev = super().__new__(cls)
+            Device._cache[cache_id] = newdev
+            return newdev
+
+
     def __init__(self,
-                    VID            = DEV_DEFAULT_VID,
-                    PID            = DEV_DEFAULT_PID,
-                    devnum         = None,
-                    usbserial      = None,
-                    open_timeout   = 0,
-                    cmd_retries    = 1,
-                    debug_messages = False,
-                    trace_packets  = False):
+                 VID            = DEV_DEFAULT_VID,
+                 PID            = DEV_DEFAULT_PID,
+                 devnum         = 0,
+                 usbserial      = None,
+                 open_timeout   = 0,
+                 cmd_retries    = 1,
+                 debug_messages = 0,
+                 trace_packets  = False):
 
         """
         Some options, like USB power attributes, are read from Flash into SRAM at start-up
@@ -57,7 +107,6 @@ class Device:
         them in save_config.
         """
         self.unsaved_SRAM = {}
-
 
         self.status = {
             "GPIO": {
@@ -86,20 +135,14 @@ class Device:
 
         timeout = time.perf_counter() + open_timeout
 
-        # Try to open the device multiple times until timeout
+        # Try to find and open the device:
+        # If usbserial is present: use usbserial
+        # Else: enumerate all devices with given VID, PID (or default values) and select it according to devnum parameter.
+        # Re-try open multiple times until timeout
         while True:
             try:
-                # Select by devnum
-                if devnum is not None:
-                    devices = hid.enumerate(self.VID, self.PID)
-                    if not devices or len(devices) - 1 < devnum:
-                        raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
-
-                    self.hidhandler.open_path(devices[devnum]["path"])
-                    break
-
                 # Fix Issue #8: Select by USB Serial
-                elif usbserial is not None:
+                if usbserial is not None:
                     found = False
                     for dev in hid.enumerate(self.VID, self.PID):
                         try:
@@ -119,14 +162,24 @@ class Device:
                     else:
                         break
 
-                # Default to the first device found
+                # Select by devnum
                 else:
                     devices = hid.enumerate(self.VID, self.PID)
                     if not devices:
-                        raise RuntimeError("No device found with VID %04X and PID %04X." % (self.VID, self.PID))
+                        raise RuntimeError("No devices found with VID %04X and PID %04X." % (self.VID, self.PID))
 
-                    self.hidhandler.open_path(devices[0]["path"])
-                    break
+                    if devnum > 0:
+                        if not devices or len(devices) - 1 < devnum:
+                            raise RuntimeError("No device found with VID %04X and PID %04X and index %d." %
+                                (self.VID, self.PID, self.devnum))
+
+                        self.hidhandler.open_path(devices[devnum]["path"])
+                        break
+
+                    # Default to the first device found
+                    else:
+                        self.hidhandler.open_path(devices[0]["path"])
+                        break
 
             # Ignore any exceptions and keep trying until the timeout
             except:
@@ -134,6 +187,7 @@ class Device:
                     raise
                 else:
                     continue
+
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])

@@ -5,24 +5,49 @@ I2C_SMBUS_BLOCK_MAX = 255  # len is one byte only
 
 class SMBus(object):
 
+    """ Initialize and open an I2C bus connection. See :class:`EasyMCP2221.Device` initialization for details.
+
+    Parameters:
+        bus (int, optional): Device index **starting by 1**. Default is to use the first device (index 1).
+        force (bool, optional): For compatibility only, not used.
+        VID (int, optional): Vendor Id (default is ``0x04D8``)
+        PID (int, optional): Product Id (default is ``0x00DD``)
+        usbserial (str, optional): Device's USB serial ID to open.
+        clock (int, optional): I2C clock frequency (default to ``100kHz``).
+        mcp (EasyMCP2221 object, optional): An already initialized :class:`EasyMCP2221.Device` object to use.
+
+    Return:
+        SMBus object.
+
+    Example:
+    
+        .. code-block:: python
+        
+            from EasyMCP2221 import SMBus
+
+            bus = SMBus()
+
+        or
+
+        .. code-block:: python
+
+            from EasyMCP2221 import smbus
+
+            bus = smbus.SMBus()
+
     """
-    Initialize and open an i2c bus connection.
 
-    :param bus: (for compatibility only, not used) i2c bus number (e.g. 0 or 1)
-        or an absolute file path (e.g. `/dev/i2c-42`).
-        If not given, a subsequent  call to ``open()`` is required.
-    :type bus: int or str
-    :param force: (for compatibility only, not used) force using the slave address even when driver is already using it.
-    :type force: boolean
-    :param VID: Vendor Id (default to ``0x04D8``)
-    :param PID: Product Id (default to ``0x00DD``)
-    :param clock: I2C clock frequency (default to ``100kHz``)
-    """
+    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, usbserial=None, clock=100_000, mcp=None):
 
-    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, devnum=0, clock=100_000):
-
-        self.mcp = EasyMCP2221.Device(VID, PID, devnum)
-        self.mcp.I2C_speed(clock)
+        if mcp:
+            self.mcp = mcp
+        
+        else:
+            if bus is not None:
+                bus = bus - 1  # first device should be 0
+            
+            self.mcp = EasyMCP2221.Device(VID, PID, devnum=bus, usbserial=usbserial)
+            self.mcp.I2C_speed(clock)
 
 
     def _read_register(self, addr, register, length = 1, reg_bytes = 1, reg_byteorder = 'big'):

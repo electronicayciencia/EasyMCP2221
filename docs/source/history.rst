@@ -6,7 +6,20 @@ Changelog
 Latest (unreleased)
 -------------------
 
-Nothing new.
+Misc:
+    * New feature: Device instance reuse.
+      Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
+      This happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class,
+      and a second one is created elsewhere in the main program to control GPIO.
+      This will be detected and the same object will be returned for both.
+    * Improved device selection flow.
+
+I2C:
+    * Added serial number to :class:`EasyMCP2221.SMBus` initialization parameters.
+
+Documentation:
+    * Examples with ADS1115 ADC.
+    * Improved device selection flow explanation.
 
 
 V1.8 (last release)
