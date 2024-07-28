@@ -12,6 +12,7 @@ Misc:
       EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It tries to detect when
       double initialization happens and return the same object to prevent conflicts.
     * Improved device selection flow.
+    * Test for device selection and catalog.
 
 I2C:
     * Added serial number to :class:`EasyMCP2221.SMBus` initialization parameters.
