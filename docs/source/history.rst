@@ -7,11 +7,10 @@ Latest (unreleased)
 -------------------
 
 Misc:
-    * New feature: Device instance reuse.
+    * New feature: Device instance catalog.
       Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
-      This happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class,
-      and a second one is created elsewhere in the main program to control GPIO.
-      This will be detected and the same object will be returned for both.
+      EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It tries to detect when
+      double initialization happens and return the same object to prevent conflicts.
     * Improved device selection flow.
 
 I2C:

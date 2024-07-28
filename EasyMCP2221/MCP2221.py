@@ -29,10 +29,11 @@ class Device:
 
     Hint:
         Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
-        This happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class,
-        and a second one is created elsewhere in the main program to control GPIO.
-        To prevent this, :class:`EasyMCP2221.Device` will return the same object when identical
-        initialization parameters are used.
+        EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It tries to detect when
+        double initialization happens and return the same object to prevent conflicts.
+
+        This usually happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class;
+        and a second one is created elsewhere in the main program to control GPIO, or by another library also using SMBus class.
 
     Example:
         >>> import EasyMCP2221
@@ -54,9 +55,9 @@ class Device:
         }
     """
 
-    _cache = {}
+    _catalog = {}
     """
-    Keep a cache of all initialized devices with its USB serial value.
+    Keep a catalog of all initialized devices with its USB serial value.
     This will return the same object and not two different objects driving the same physical device.
     """
 
@@ -74,21 +75,17 @@ class Device:
 
         ## Check if this is one of the already initialized devices.
         if usbserial is not None:
-            cache_id = (VID, PID, usbserial)
+            catalog_id = (VID, PID, usbserial)
         else:
-            cache_id = (VID, PID, devnum)
+            catalog_id = (VID, PID, devnum)
 
-        if cache_id in Device._cache:
+        if catalog_id in Device._catalog:
             # Re-use object.
-            if debug_messages: print("Re-using cached device:", cache_id)
-            return Device._cache[cache_id]
+            if debug_messages: print("Cataloged device found:", catalog_id)
+            return Device._catalog[catalog_id]
 
-        else:
-            # Create a new device and cache it
-            if debug_messages: print("New device cached:", cache_id)
-            newdev = super().__new__(cls)
-            Device._cache[cache_id] = newdev
-            return newdev
+        # Create a new device, init will catalog it
+        return super().__new__(cls)
 
 
     def __init__(self,
@@ -144,12 +141,14 @@ class Device:
                 # Fix Issue #8: Select by USB Serial
                 if usbserial is not None:
                     found = False
-                    for dev in hid.enumerate(self.VID, self.PID):
+                    for idx, dev in enumerate(hid.enumerate(self.VID, self.PID)):
                         try:
                             self.hidhandler.open_path(dev["path"])
 
                             if usbserial == self.read_flash_info()['USB_SERIAL']:
                                 found = True
+                                self.usbserial = usbserial # for caching
+                                self.devnum = idx
                                 break
                             else:
                                 self.hidhandler.close()
@@ -158,7 +157,7 @@ class Device:
                             pass
 
                     if not found:
-                        raise ValueError("No device found with serial number %s or already in use." % usbserial)
+                        raise RuntimeError("No device found with serial number %s or already in use." % usbserial)
                     else:
                         break
 
@@ -174,11 +173,15 @@ class Device:
                                 (self.VID, self.PID, self.devnum))
 
                         self.hidhandler.open_path(devices[devnum]["path"])
+                        self.usbserial = self.read_flash_info()['USB_SERIAL']
+                        self.devnum = devnum
                         break
 
                     # Default to the first device found
                     else:
                         self.hidhandler.open_path(devices[0]["path"])
+                        self.usbserial = self.read_flash_info()['USB_SERIAL']
+                        self.devnum = 0
                         break
 
             # Ignore any exceptions and keep trying until the timeout
@@ -188,6 +191,10 @@ class Device:
                 else:
                     continue
 
+        # Device selected, catalog it by index and by serial
+        if debug_messages: print("New device cataloged:", catalog_id)
+        Device._catalog[(VID, PID, self.usbserial)] = self
+        Device._catalog[(VID, PID, self.devnum)]    = self
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])

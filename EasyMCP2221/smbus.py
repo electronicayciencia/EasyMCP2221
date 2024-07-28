@@ -20,9 +20,9 @@ class SMBus(object):
         SMBus object.
 
     Example:
-    
+
         .. code-block:: python
-        
+
             from EasyMCP2221 import SMBus
 
             bus = SMBus()
@@ -37,15 +37,13 @@ class SMBus(object):
 
     """
 
-    def __init__(self, bus=None, force=False, VID=0x04D8, PID=0x00DD, usbserial=None, clock=100_000, mcp=None):
+    def __init__(self, bus=1, force=False, VID=0x04D8, PID=0x00DD, usbserial=None, clock=100_000, mcp=None):
 
         if mcp:
             self.mcp = mcp
-        
+
         else:
-            if bus is not None:
-                bus = bus - 1  # first device should be 0
-            
+            bus = bus - 1  # first device should be 0
             self.mcp = EasyMCP2221.Device(VID, PID, devnum=bus, usbserial=usbserial)
             self.mcp.I2C_speed(clock)
 

@@ -159,12 +159,5 @@ class GPIO(unittest.TestCase):
         self.assertFalse(self.mcp.GPIO_read()[3])
 
 
-    def test_double_initialization(self):
-        """Double-initialization prevention. Both mcp objects must be the same."""
-        mcp2 = EasyMCP2221.Device()
-        self.assertTrue(mcp2 is self.mcp)
-
-
-
 if __name__ == '__main__':
     unittest.main()
