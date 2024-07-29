@@ -35,6 +35,28 @@ Depending on your USB polling rate, each of these commands can take 2ms or more.
 
 I2C speed (100kHz / 400kHz) only matters when you are transmitting a lot of bytes in a row. For a few bytes interaction, speed is limited by the USB polling rate.
 
+.. list-table:: Expected I2C performance
+   :widths: 50 25 25
+   :header-rows: 1
+
+   * - Operation
+     - 100kHz bus
+     - 400kHz bus
+   * - Read
+     - 167 operations / s
+     - 167 operations / s
+   * - Write
+     - 167 operations / s
+     - 167 operations / s
+   * - Write register address & read
+     - 84 operations / s
+     - 84 operations / s
+   * - Read multiple bytes
+     - 5980 bytes / s
+     - 14872 bytes / s
+   * - Write multiple bytes
+     - 7485 bytes / s
+     - 14933 bytes / s
 
 
 Internal reference reset

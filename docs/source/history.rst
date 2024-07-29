@@ -20,6 +20,7 @@ I2C:
 Documentation:
     * Examples with ADS1115 ADC.
     * Improved device selection flow explanation.
+    * Add I2C expected performance table in :doc:`limitations_bugs`
 
 
 V1.8 (last release)
