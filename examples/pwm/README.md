@@ -11,7 +11,7 @@ Set GP0 On in 4 out of 100 slots in a row. Off the rest.
 - Noticeable ripple
 - Fixed frequency
 
-[Pure PWM output and LP filtered](pwm.png)
+![Pure PWM output and LP filtered](pwm.png)
 
 
 ## Random PWM
@@ -23,7 +23,7 @@ GP0 has 4% chance of being On, and Off the rest.
 - No ripple
 - Random frequency
 
-[Random PWM output and LP filtered](pwm_random.png)
+![Random PWM output and LP filtered](pwm_random.png)
 
 
 ## Averaged PWM
@@ -35,4 +35,4 @@ Calculate moving average. If below 4% turn GP0 On.
 - Minimum ripple
 - Frequency depends on PWM setting
 
-[Averaged PWM output and LP filtered](pwm_average.png)
+![Averaged PWM output and LP filtered](pwm_average.png)
