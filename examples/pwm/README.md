@@ -33,6 +33,6 @@ Calculate moving average. If below 4% turn GP0 On.
 - *On* slots evenly distributed
 - Output is stable
 - Minimum ripple
-- Frequency depends on PWM setting
+- Actual frequency depends on output voltage
 
 ![Averaged PWM output and LP filtered](pwm_average.png)
