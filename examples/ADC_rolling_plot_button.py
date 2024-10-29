@@ -58,7 +58,7 @@ def toggle_gp0(i):
     gp0 = not gp0
     mcp.GPIO_write(gp0)
 
-ax_gp0 = fig.add_axes([0.15, 0.77, 0.2, 0.075])
+ax_gp0 = fig.add_axes([0.1, 0.8, 0.15, 0.075])
 b_gp0 = Button(ax_gp0, 'Toggle GP0')
 b_gp0.on_clicked(toggle_gp0)
 
