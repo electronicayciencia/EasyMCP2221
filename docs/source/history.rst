@@ -6,6 +6,15 @@ Changelog
 Latest (unreleased)
 -------------------
 
+Nothing changed.
+
+V1.8
+--------
+
+
+V1.8.1 (last release)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 Misc:
     * New feature: Device instance catalog.
       Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
@@ -23,8 +32,6 @@ Documentation:
     * Add I2C expected performance table in :doc:`limitations_bugs`
 
 
-V1.8 (last release)
--------------------
 
 V1.8.0
 ~~~~~~
