@@ -1,3 +1,6 @@
+# Drive a 16x02 LCD with an I2C interface via PCF8574.
+# Using a custom driver.
+
 from EasyMCP2221 import SMBus
 from lcd_driver import LCD
 

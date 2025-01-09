@@ -9,6 +9,8 @@ Latest (unreleased)
 I2C:
     * Fixed: some I2C states are not handled correctly.
 
+Documentation:
+    * Added an example of LCD drive using :class:`EasyMCP2221.SMBus` with the Luma library.
 
 
 V1.8
