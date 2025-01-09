@@ -6,7 +6,10 @@ Changelog
 Latest (unreleased)
 -------------------
 
-Nothing changed.
+I2C:
+    * Fixed: some I2C states are not handled correctly.
+
+
 
 V1.8
 --------

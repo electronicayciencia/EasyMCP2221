@@ -1530,7 +1530,8 @@ class Device:
             restart
                 It will send **repeated start**, *data*, **stop**
             nonstop
-                It will send **start**, data to write, (no stop). Please note that you must use 'restart' mode to read or write after a *nonstop* write.
+                It will send **start**, data to write, (no stop). Please note that you must use
+                'restart' mode to read or write after a *nonstop* write.
 
         Parameters:
             addr (int): I2C slave device **base** address.
@@ -1619,8 +1620,12 @@ class Device:
 
                 # data not sent, why?
                 else:
-                    # temporary error, try again until timeout
+                    # MCP2221 state machine is busy, try again until timeout
                     if rbuf[I2C_INTERNAL_STATUS_BYTE] in (
+                        I2C_ST_WRADDRL,
+                        I2C_ST_WRADDRL_WAITSEND,
+                        I2C_ST_WRADDRL_ACK,
+                        I2C_ST_WRADDRL_NACK_STOP_PEND,
                         I2C_ST_WRITEDATA,
                         I2C_ST_WRITEDATA_WAITSEND,
                         I2C_ST_WRITEDATA_ACK):
@@ -1665,11 +1670,17 @@ class Device:
 
             # data not sent, why?
             else:
-                # temporary error, try again until timeout
+                # MCP2221 state machine is busy, try again until timeout
                 if i2c_status["st"] in (
+                    I2C_ST_WRADDRL,
+                    I2C_ST_WRADDRL_WAITSEND,
+                    I2C_ST_WRADDRL_ACK,
+                    I2C_ST_WRADDRL_NACK_STOP_PEND,
                     I2C_ST_WRITEDATA,
                     I2C_ST_WRITEDATA_WAITSEND,
-                    I2C_ST_WRITEDATA_ACK):
+                    I2C_ST_WRITEDATA_ACK,
+                    I2C_ST_STOP,
+                    I2C_ST_STOP_WAIT):
                     continue
 
                 # internal timeout condition
@@ -1738,6 +1749,23 @@ class Device:
                 >>> mcp.I2C_write(0x50, position, 'nonstop')
                 >>> mcp.I2C_read(0x50, length, 'restart')
                 b'En un lugar de la Mancha...'
+
+        Hint:
+            You can use :func:`I2C_read` with size 1 to check if there is any device listening
+            with that address.
+
+            There is a device in ``0x50`` (EEPROM):
+
+            >>> mcp.I2C_read(0x50)
+            b'1'
+
+            No device in ``0x60``:
+
+            >>> mcp.I2C_read(0x60)
+            Traceback (most recent call last):
+            ...
+            EasyMCP2221.exceptions.NotAckError: Device did not ACK.
+
 
         Hint:
             Use :func:`I2C_read` to write a very simple I2C scanner.
@@ -1832,6 +1860,10 @@ class Device:
 
             # still reading...
             if rbuf[I2C_INTERNAL_STATUS_BYTE] in (
+                I2C_ST_WRADDRL,
+                I2C_ST_WRADDRL_WAITSEND,
+                I2C_ST_WRADDRL_ACK,
+                I2C_ST_WRADDRL_NACK_STOP_PEND,
                 I2C_ST_READDATA,
                 I2C_ST_READDATA_ACK,
                 I2C_ST_STOP_WAIT):
@@ -1851,7 +1883,7 @@ class Device:
                 data += rbuf[4:4+chunk_size]
                 return bytes(data)
 
-            elif rbuf[I2C_INTERNAL_STATUS_BYTE] == I2C_ST_WRADDRL_NACK_STOP:
+            elif rbuf[I2C_INTERNAL_STATUS_BYTE] in (I2C_ST_WRADDRL_NACK_STOP, I2C_ST_WRADDRL_TOUT):
                 self._i2c_release()
                 raise NotAckError("Device did not ACK read command.")
 
