@@ -121,7 +121,6 @@ class GPIO(unittest.TestCase):
             self.mcp.GPIO_write(gp0 = 1)
 
 
-
     def test_gpio_read_gp2_3_on(self):
         """GP2 output, GP3 input, write and read."""
         self.mcp.set_pin_function(
@@ -139,6 +138,42 @@ class GPIO(unittest.TestCase):
         self.assertEqual(
             self.mcp.GPIO_read()[3],
             True)
+
+
+    def test_gpio_poll_gp2_3(self):
+        """GP2 output, GP3 input, write and read in poll mode."""
+        self.mcp.set_pin_function(
+            gp2 = "GPIO_OUT",
+            gp3 = "GPIO_IN")
+
+        self.mcp.GPIO_write(gp2 = 0)
+
+        self.assertEqual(
+            self.mcp.GPIO_read()[3],
+            False)
+
+        # Setup poll, empty array
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 0)
+
+        # Rise GP2
+        self.mcp.GPIO_write(gp2 = 1)
+
+        # Must be 2 changes, for GPIO2 and GPIO3
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(changes[0]["id"], "GPIO2_RISE")
+        self.assertEqual(changes[1]["id"], "GPIO3_RISE")
+
+        # Fall GP2
+        self.mcp.GPIO_write(gp2 = 0)
+
+        # Must be 2 changes, for GPIO2 and GPIO3
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(changes[0]["id"], "GPIO2_FALL")
+        self.assertEqual(changes[1]["id"], "GPIO3_FALL")
+
 
     def test_gpio_sram_preserve_gpio(self):
         """SRAM_config must preserve GPIO_write values."""

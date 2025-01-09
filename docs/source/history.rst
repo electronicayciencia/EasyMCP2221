@@ -6,6 +6,9 @@ Changelog
 Latest (unreleased)
 -------------------
 
+GPIO:
+    * Added :func:`GPIO_poll` to read GPIO changes easier.
+
 I2C:
     * Fixed: some I2C states are not handled correctly.
 

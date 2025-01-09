@@ -221,6 +221,9 @@ class Device:
         # Set I2C speed to a safer value. In some device revision, default speed is 500kHz.
         self.I2C_speed(100_000)
 
+        # GPIO_poll function has not been used.
+        self.poll_data = None
+
 
     def __repr__(self):
         import json
@@ -962,6 +965,97 @@ class Device:
         gp3 = r[8] if r[8] != 0xEE else None
 
         return (gp0, gp1, gp2, gp3)
+
+
+    def GPIO_poll(self):
+        """ List all GPIO changes.
+
+        Read all GPIO pins logic state and return an event for each change since the last call.
+
+        Event fields:
+            - **id** (string): Event identifier. `GPIOx_RISE` or `GPIOx_FALL` where x is the GPIO pin that changed.
+            - **gpio** (int): the GPIO pin number that changed (0 to 3).
+            - **type** (string): Event type, RISE or FALL.
+            - **time** (float): Time of this measure.
+            - **last_time** (float): Time of last measure.
+
+        Return:
+            list of events: A list with all the changes since the last call. It may be empty if no changes. Always empty on the first run.
+
+        Examples:
+
+            No changes (also on first call). Empy array:
+
+            >>> mcp.GPIO_poll()
+            []
+
+            If something changes:
+
+            >>> mcp.GPIO_poll()
+            [
+              {'id': 'GPIO0_FALL',
+              'gpio': 0,
+              'type': 'FALL',
+              'time': 1736455965.9743724,
+              'last_time': 1736455957.9661214},
+              {'id': 'GPIO2_RISE',
+              'gpio': 2,
+              'type': 'RISE',
+              'time': 1736455965.9743724,
+              'last_time': 1736455957.9661214}
+            ]
+
+            In a loop:
+
+            >>> for ev in mcp.GPIO_poll():
+            ...   print("%s at %f" % (ev["id"], ev["time"]))
+            ...
+            GPIO0_RISE at 1736456796.371102
+            GPIO1_RISE at 1736456796.371102
+
+        """
+        events = []
+
+        gpio_status = self.GPIO_read()
+        current_time = time.time()
+
+        if self.poll_data is None:
+            self.poll_data = {
+                "last_status": gpio_status,
+                "last_time": current_time
+            }
+
+        for i in range(4):
+            # Not GPIO pin
+            if gpio_status[i] is None or self.poll_data["last_status"][i] is None:
+                continue
+
+            # No changes
+            elif gpio_status[i] == self.poll_data["last_status"][i]:
+                continue
+
+            # 0 -> 1
+            elif not self.poll_data["last_status"][i] and gpio_status[i]:
+                event_type = "RISE"
+
+            # 1 -> 0
+            elif self.poll_data["last_status"][i] and not gpio_status[i]:
+                event_type = "FALL"
+
+            events.append({
+                "id": "GPIO%d_%s" % (i, event_type),
+                "gpio": i,
+                "type": event_type,
+                "time": current_time,
+                "last_time": self.poll_data["last_time"],
+                })
+
+        self.poll_data = {
+            "last_status": gpio_status,
+            "last_time": current_time
+        }
+
+        return events
 
 
     def set_pin_function(

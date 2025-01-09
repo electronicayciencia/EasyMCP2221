@@ -21,6 +21,7 @@ GPIO
 
 .. autofunction:: EasyMCP2221.Device.GPIO_read
 .. autofunction:: EasyMCP2221.Device.GPIO_write
+.. autofunction:: EasyMCP2221.Device.GPIO_poll
 
 
 ADC - Analog input
