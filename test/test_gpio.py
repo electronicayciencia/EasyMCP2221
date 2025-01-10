@@ -141,7 +141,7 @@ class GPIO(unittest.TestCase):
 
 
     def test_gpio_poll_gp2_3(self):
-        """GP2 output, GP3 input, write and read in poll mode."""
+        """Poll mode, default behavior."""
         self.mcp.set_pin_function(
             gp2 = "GPIO_OUT",
             gp3 = "GPIO_IN")
@@ -173,6 +173,60 @@ class GPIO(unittest.TestCase):
         self.assertEqual(len(changes), 2)
         self.assertEqual(changes[0]["id"], "GPIO2_FALL")
         self.assertEqual(changes[1]["id"], "GPIO3_FALL")
+
+
+    def test_gpio_poll_filtered_gp2_3(self):
+        """Poll mode, filtered behavior."""
+        self.mcp.set_pin_function(
+            gp2 = "GPIO_OUT",
+            gp3 = "GPIO_IN")
+
+        self.mcp.GPIO_write(gp2 = 0)
+
+        self.assertEqual(
+            self.mcp.GPIO_read()[3],
+            False)
+
+        # Setup poll and filter, return empty array
+        changes = self.mcp.GPIO_poll(["GPIO3_RISE"])
+        self.assertEqual(len(changes), 0)
+
+        # Rise GP2
+        self.mcp.GPIO_write(gp2 = 1)
+
+        # Must be 2 changes, for GPIO2 and GPIO3. But only GPIO3_RISE must be returned.
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]["id"], "GPIO3_RISE")
+
+        # Fall GP2
+        self.mcp.GPIO_write(gp2 = 0)
+
+        # Poll with a new filter, must be 2 changes, for GPIO2 and GPIO3
+        changes = self.mcp.GPIO_poll(["GPIO2_FALL", "GPIO3_FALL"])
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(changes[0]["id"], "GPIO2_FALL")
+        self.assertEqual(changes[1]["id"], "GPIO3_FALL")
+
+        # Rise GP2, nothing must be returned
+        self.mcp.GPIO_write(gp2 = 1)
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 0)
+
+        # Fall GP2
+        self.mcp.GPIO_write(gp2 = 0)
+
+        # Set all changes
+        changes = self.mcp.GPIO_poll([])
+
+        # Rise GP2
+        self.mcp.GPIO_write(gp2 = 1)
+
+        # Poll with latest filter, must be 2 changes, for GPIO2 and GPIO3
+        changes = self.mcp.GPIO_poll()
+        self.assertEqual(len(changes), 2)
+        self.assertEqual(changes[0]["id"], "GPIO2_RISE")
+        self.assertEqual(changes[1]["id"], "GPIO3_RISE")
 
 
     def test_gpio_sram_preserve_gpio(self):

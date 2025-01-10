@@ -967,24 +967,48 @@ class Device:
         return (gp0, gp1, gp2, gp3)
 
 
-    def GPIO_poll(self):
-        """ List all GPIO changes.
+    def GPIO_poll(self, id=None):
+        """ List GPIO changes in list format.
 
-        Read all GPIO pins logic state and return an event for each change since the last call.
+        Read GPIO pins logic state and return an array of 'events' with all the changes since the last call.
 
-        Event fields:
-            - **id** (string): Event identifier. `GPIOx_RISE` or `GPIOx_FALL` where x is the GPIO pin that changed.
+        Fields of the event:
+            - **id** (string): Event identifier. `GPIOx_RISE` or `GPIOx_FALL` where x is the GPIO pin that changed. See below.
             - **gpio** (int): the GPIO pin number that changed (0 to 3).
             - **type** (string): Event type, RISE or FALL.
             - **time** (float): Time of this measure.
             - **last_time** (float): Time of last measure.
+
+        List of possible events ID:
+        
+        .. list-table::
+            :header-rows: 1
+
+            * - GPIO pin
+              - Low to High
+              - High to Low
+            * - GPIO 0
+              - GPIO0_RISE
+              - GPIO0_FALL
+            * - GPIO 1
+              - GPIO1_RISE
+              - GPIO1_FALL
+            * - GPIO 2
+              - GPIO2_RISE
+              - GPIO2_FALL
+            * - GPIO 3
+              - GPIO3_RISE
+              - GPIO3_FALL
+
+        Parameters:
+            id  (list of strings, optional): Return only this type of events, ignoring the others. Can be changed at any time. If **omitted**, preserve the last selection. An **empty list** means all events. Default: empty list (return all events).
 
         Return:
             list of events: A list with all the changes since the last call. It may be empty if no changes. Always empty on the first run.
 
         Examples:
 
-            No changes (also on first call). Empy array:
+            No changes (also on first call). Empty array:
 
             >>> mcp.GPIO_poll()
             []
@@ -1013,17 +1037,39 @@ class Device:
             GPIO0_RISE at 1736456796.371102
             GPIO1_RISE at 1736456796.371102
 
+            Wait for specific event to happen:
+            
+            >>> while not mcp.GPIO_poll(["GPIO0_RISE"]):
+            ...    pass
+
+            Listen for specific events:
+            
+            >>> mcp.GPIO_poll(["GPIO0_FALL", "GPIO1_FALL"])
+            >>> while True:
+            ...    events = mcp.GPIO_poll()
+            ...    ...
+
+            Disable the last filter (now listen to all events):
+            
+            >>> mcp.GPIO_poll([])
+
         """
         events = []
 
         gpio_status = self.GPIO_read()
         current_time = time.time()
 
+        # Initialize
         if self.poll_data is None:
             self.poll_data = {
                 "last_status": gpio_status,
-                "last_time": current_time
+                "last_time": current_time,
+                "filter": id if id is not None else []
             }
+            return []
+
+        if id is not None:
+            self.poll_data["filter"] = id
 
         for i in range(4):
             # Not GPIO pin
@@ -1042,18 +1088,22 @@ class Device:
             elif self.poll_data["last_status"][i] and not gpio_status[i]:
                 event_type = "FALL"
 
+            event_id = "GPIO%d_%s" % (i, event_type)
+            
+            # Ignore events not in the list
+            if self.poll_data["filter"] != [] and event_id not in self.poll_data["filter"]:
+                continue
+
             events.append({
-                "id": "GPIO%d_%s" % (i, event_type),
+                "id": event_id,
                 "gpio": i,
                 "type": event_type,
                 "time": current_time,
                 "last_time": self.poll_data["last_time"],
                 })
 
-        self.poll_data = {
-            "last_status": gpio_status,
-            "last_time": current_time
-        }
+        self.poll_data["last_status"] = gpio_status
+        self.poll_data["last_time"] = current_time
 
         return events
 
