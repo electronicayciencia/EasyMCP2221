@@ -115,6 +115,7 @@ class Device:
             "dac_ref": None,
             "dac_value": None,
             "adc_ref": None,
+            "vdd_voltage": None,
             # mark i2c bus as dirty, so to call cancel before then next operation
             "i2c_dirty": None
         }
@@ -980,7 +981,7 @@ class Device:
             - **last_time** (float): Time of last measure.
 
         List of possible events ID:
-        
+
         .. list-table::
             :header-rows: 1
 
@@ -1038,19 +1039,19 @@ class Device:
             GPIO1_RISE at 1736456796.371102
 
             Wait for specific event to happen:
-            
+
             >>> while not mcp.GPIO_poll(["GPIO0_RISE"]):
             ...    pass
 
             Listen for specific events:
-            
+
             >>> mcp.GPIO_poll(["GPIO0_FALL", "GPIO1_FALL"])
             >>> while True:
             ...    events = mcp.GPIO_poll()
             ...    ...
 
             Disable the last filter (now listen to all events):
-            
+
             >>> mcp.GPIO_poll([])
 
         """
@@ -1089,7 +1090,7 @@ class Device:
                 event_type = "FALL"
 
             event_id = "GPIO%d_%s" % (i, event_type)
-            
+
             # Ignore events not in the list
             if self.poll_data["filter"] != [] and event_id not in self.poll_data["filter"]:
                 continue
@@ -1336,10 +1337,10 @@ class Device:
     #######################################################################
     # ADC
     #######################################################################
-    def ADC_config(self, ref = "VDD"):
-        """ Configure ADC reference voltage.
+    def ADC_config(self, ref = "VDD", vdd = None):
+        """ Configure ADC reference voltage source.
 
-        ``ref`` values:
+        Valid ``ref`` sources:
             - "OFF"
             - "1.024V"
             - "2.048V"
@@ -1348,9 +1349,11 @@ class Device:
 
         Parameters:
             ref (str, optional): ADC reference value. Default to supply voltage (Vdd).
+            vdd (float, optional): Value of the supply voltage. Must be positive.
 
         Raises:
-            ValueError: if ``ref`` value is not valid.
+            ValueError: if ``ref`` value is not a valid source.
+            ValueError: if ``vdd`` is not valid.
 
         Examples:
 
@@ -1390,8 +1393,14 @@ class Device:
         # When GP1, 2 and 3 are ADC and ADC_REF is Vdd. If Vrm ref is selected, ADC stop working.
         self._reinforce_SRAM()
 
+        if vdd is not None:
+            if vdd > 0:
+                self.status["vdd_voltage"] = vdd
+            else:
+                raise ValueError("Supply voltage must be positive.")
 
-    def ADC_read(self, norm=False):
+
+    def ADC_read(self, norm = False, volts = False):
         """ Read all Analog to Digital Converter (ADC) channels.
 
         Analog value is always available regardless of pin function (see :func:`set_pin_function`).
@@ -1399,11 +1408,22 @@ class Device:
 
         ADC is 10 bits, so the minimum value is 0 and the maximum value is 1023.
 
+        In order to use the ``volts`` parameter when the ADC reference is ``VDD``, you must specify the
+        supply voltage in :func:`ADC_config` or :func:`DAC_config`.
+
         Parameters:
-            norm (bool, optional): Divide output values by 1024 and return output between 0 and 1. Default  is ``False``.
+            norm (bool, optional): Divide output values by 1024 and return output between 0 and 1.
+                Default  is ``False``.
+            volts (bool, optional): Calculate and return the value in Volts instead of the raw ADC value.
+                Default is ``False``.
 
         Return:
             tuple: Value of 3 channels (gp1, gp2, gp3).
+
+        Raises:
+            ValueError: If ``volts`` parameter is used with VDD reference source, but no Vdd value has
+                been provided in :func:`ADC_config` or :func:`DAC_config`.
+            ValueError: If both ``volts`` and ``norm`` parameter are used at the same time.
 
         Examples:
             All three pins configured as ADC inputs.
@@ -1417,14 +1437,27 @@ class Device:
             (185, 136, 198)
 
             Reading the ADC value of a digital output gives the actual voltage in the pin.
-            For a logic output ``1`` is equal to ``Vdd`` unless something is pulling that pin low (i.e. a LED).
+            For a logic output ``1`` is equal to ``Vdd`` unless something is pulling that pin low
+            (like, for example, a LED).
 
             >>> mcp.set_pin_function(
             ...    gp1 = "GPIO_OUT", out1 = True,
             ...    gp2 = "GPIO_OUT", out2 = False)
             >>> mcp.ADC_read()
             (1023, 0, 198)
+
+            Volts parameter requires first calling :func:`ADC_config` to set the supply voltage:
+
+            >>> mcp.ADC_config(vdd = 5.0)
+            >>> mcp.ADC_read(volts = True)
+            (0.5126953125, 4.8291015625, 4.833984375)
+            >>> mcp.ADC_read(volts = False)
+            (179, 989, 991)
         """
+        if norm and volts:
+            raise ValueError("Parameters 'norm' and 'volt' cannot be used at the same time.")
+
+
         buf = self.send_cmd([CMD_POLL_STATUS_SET_PARAMETERS])
         adc1 = buf[I2C_POLL_RESP_ADC_CH0_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH0_MSB]
         adc2 = buf[I2C_POLL_RESP_ADC_CH1_LSB] + 256*buf[I2C_POLL_RESP_ADC_CH1_MSB]
@@ -1435,16 +1468,30 @@ class Device:
             adc2 = adc2 / 1024
             adc3 = adc3 / 1024
 
+        elif volts:
+            v_ref =   0 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_OFF  else \
+                  1.024 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_1024 else \
+                  2.048 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_2048 else \
+                  4.096 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_4096 else \
+                  self.status["vdd_voltage"]
+
+            if v_ref is None:
+                raise ValueError("To use 'volts' with Vdd as reference, the supply voltage must be indicated.")
+
+            adc1 = adc1 / 1024 * v_ref
+            adc2 = adc2 / 1024 * v_ref
+            adc3 = adc3 / 1024 * v_ref
+
         return (adc1, adc2, adc3)
 
 
     #######################################################################
     # DAC
     #######################################################################
-    def DAC_config(self, ref = "VDD", out = None):
+    def DAC_config(self, ref = "VDD", out = None, vdd = None):
         """ Configure Digital to Analog Converter (DAC) reference.
 
-        ``ref`` values:
+        Valid ``ref`` sources:
             - "OFF"
             - "1.024V"
             - "2.048V"
@@ -1457,11 +1504,12 @@ class Device:
         Use :func:`DAC_write` to set the DAC output value.
 
         Parameters:
-            ref (str, optional): Reference voltage for DAC. Default to supply voltage (Vdd).
+            ref (str, optional): Reference voltage source for DAC. Default to supply voltage (Vdd).
             out (int, optional): value to output. Default is last value.
+            vdd (float, optional): Value of the supply voltage. Must be positive.
 
         Raises:
-            ValueError: if ``ref`` or ``out`` values are not valid.
+            ValueError: if ``ref``, ``out`` or ``vdd`` values are not valid.
 
         Examples:
 
@@ -1501,6 +1549,12 @@ class Device:
         self.SRAM_config(
             dac_ref = ref | vrm,
             dac_value = out)
+
+        if vdd is not None:
+            if vdd > 0:
+                self.status["vdd_voltage"] = vdd
+            else:
+                raise ValueError("Supply voltage must be positive.")
 
 
     def DAC_write(self, out, norm=False):

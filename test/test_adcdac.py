@@ -134,8 +134,57 @@ class ADC_DAC(unittest.TestCase):
                     error = (adc-expected)/expected
 
                     self.assertLess(abs(error), max_error,
-                        msg = "ADC_ref: %s, DAC_ref: %s, Expected: %d, Got: %d (%+.2f)%%" % 
+                        msg = "ADC_ref: %s, DAC_ref: %s, Expected: %d, Got: %d (%+.2f)%%" %
                             (adc_ref, dac_ref, expected, adc, error*100))
+
+
+    def test_adc_volts(self):
+        """Test ADC volts for all Vref."""
+        self.mcp.set_pin_function(
+            gp2 = "ADC",
+            gp3 = "DAC")
+
+        self.mcp.status["vdd_voltage"] = None
+
+        self.mcp.DAC_config(ref = "1.024V", out = 31)
+        expected = 1.024 / 32 * 31
+        error = 0.1  # 10% error
+        vmin = expected * (1 - error)
+        vmax = expected * (1 + error)
+
+        # Vref = OFF
+        self.mcp.ADC_config(ref = "OFF")
+        v = self.mcp.ADC_read(volts = True)[2]
+        self.assertTrue(v == 0)
+
+        # Vref = "1.024V"
+        self.mcp.ADC_config(ref = "1.024V")
+        v = self.mcp.ADC_read(volts = True)[2]
+        self.assertTrue(vmin <= v <= vmax)
+
+        # Vref = "2.048V"
+        self.mcp.ADC_config(ref = "2.048V")
+        v = self.mcp.ADC_read(volts = True)[2]
+        self.assertTrue(vmin <= v <= vmax)
+
+        # Vref = "4.096V"
+        self.mcp.ADC_config(ref = "4.096V")
+        v = self.mcp.ADC_read(volts = True)[2]
+        self.assertTrue(vmin <= v <= vmax)
+
+        # Vref = "VDD", but no vdd indicated
+        self.mcp.ADC_config(ref = "VDD")
+        with self.assertRaises(ValueError):
+            self.mcp.ADC_read(volts = True)
+
+        # Vref = "VDD", vdd = 5
+        self.mcp.ADC_config(ref = "VDD", vdd = 5)
+        v = self.mcp.ADC_read(volts = True)[2]
+        self.assertTrue(vmin <= v <= vmax)
+
+        # norm and volts at the same time
+        with self.assertRaises(ValueError):
+            self.mcp.ADC_read(volts = True, norm = True)
 
 
 if __name__ == '__main__':
