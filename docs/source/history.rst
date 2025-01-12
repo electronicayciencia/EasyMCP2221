@@ -10,7 +10,7 @@ GPIO:
     * Added :func:`GPIO_poll` to read GPIO changes easier.
 
 ADC/DAC:
-    * :func:`ADC_read` and :func:`DAC_write` return and accept values in volts.
+    * :func:`ADC_write` and :func:`DAC_read` accept and return values in volts.
     * :func:`DAC_write` returns the expected DAC output.
 
 I2C:

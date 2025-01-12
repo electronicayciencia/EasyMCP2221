@@ -187,5 +187,46 @@ class ADC_DAC(unittest.TestCase):
             self.mcp.ADC_read(volts = True, norm = True)
 
 
+    def test_adc_dac_volts(self):
+        """ADC and DAC in volts. Match DAC return with ADC read value."""
+        self.mcp.set_pin_function(
+            gp2 = "ADC",
+            gp3 = "DAC")
+
+        error = 0.05  # Max 5% error tolerated
+
+        # Vref = "1.024V"
+        self.mcp.ADC_config(ref = "1.024V")
+        self.mcp.DAC_config(ref = "1.024V")
+        expected = self.mcp.DAC_write(out = 0.5, volts = True)
+        read = self.mcp.ADC_read(volts = True)[2]
+        self.assertLess(abs(expected - read)/expected, error)
+
+        # Vref = "2.048V"
+        self.mcp.ADC_config(ref = "2.048V")
+        self.mcp.DAC_config(ref = "2.048V")
+        expected = self.mcp.DAC_write(out = 1.5, volts = True)
+        read = self.mcp.ADC_read(volts = True)[2]
+        self.assertLess(abs(expected - read)/expected, error)
+
+        # Vref = "4.096V"
+        self.mcp.ADC_config(ref = "4.096V")
+        self.mcp.DAC_config(ref = "4.096V")
+        expected = self.mcp.DAC_write(out = 3, volts = True)
+        read = self.mcp.ADC_read(volts = True)[2]
+        self.assertLess(abs(expected - read)/expected, error)
+
+        # Vref = "2.048V"
+        self.mcp.ADC_config(ref = "VDD")
+        self.mcp.DAC_config(ref = "VDD", vdd = 5)
+        expected = self.mcp.DAC_write(out = 3.33, volts = True)
+        read = self.mcp.ADC_read(volts = True)[2]
+        self.assertLess(abs(expected - read)/expected, error)
+
+        # norm and volts at the same time
+        with self.assertRaises(ValueError):
+            self.mcp.DAC_write(1, volts = True, norm = True)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1423,7 +1423,7 @@ class Device:
         Raises:
             ValueError: If ``volts`` parameter is used with VDD reference source, but no Vdd value has
                 been provided in :func:`ADC_config` or :func:`DAC_config`.
-            ValueError: If both ``volts`` and ``norm`` parameter are used at the same time.
+            ValueError: If both ``volts`` and ``norm`` parameters are used at the same time.
 
         Examples:
             All three pins configured as ADC inputs.
@@ -1469,18 +1469,18 @@ class Device:
             adc3 = adc3 / 1024
 
         elif volts:
-            v_ref =   0 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_OFF  else \
-                  1.024 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_1024 else \
-                  2.048 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_2048 else \
-                  4.096 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_4096 else \
-                  self.status["vdd_voltage"]
+            vref =   0 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_OFF  else \
+                 1.024 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_1024 else \
+                 2.048 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_2048 else \
+                 4.096 if self.status["adc_ref"] == ADC_REF_VRM | ADC_VRM_4096 else \
+                 self.status["vdd_voltage"]
 
-            if v_ref is None:
+            if vref is None:
                 raise ValueError("To use 'volts' with Vdd as reference, the supply voltage must be indicated.")
 
-            adc1 = adc1 / 1024 * v_ref
-            adc2 = adc2 / 1024 * v_ref
-            adc3 = adc3 / 1024 * v_ref
+            adc1 = adc1 / 1024 * vref
+            adc2 = adc2 / 1024 * vref
+            adc3 = adc3 / 1024 * vref
 
         return (adc1, adc2, adc3)
 
@@ -1557,42 +1557,133 @@ class Device:
                 raise ValueError("Supply voltage must be positive.")
 
 
-    def DAC_write(self, out, norm=False):
+    def DAC_write(self, out, norm=False, volts=False):
         """ Set the DAC output value.
-
-        Valid ``out`` values are 0 to 31.
 
         To use a GP pin as DAC, you must assign the function "DAC" (see :func:`set_pin_function`).
         MCP2221 only have 1 DAC. So if you assign to "DAC" GP2 and GP3 you will
         see the same output value in both.
 
+        Valid values for ``out`` depends on ``norm`` and ``volts`` parameters:
+
+        .. list-table::
+            :header-rows: 1
+
+            * - `norm`
+              - `volts`
+              - `out` range
+              - Output
+            * - ``False``
+              - ``False``
+              - 0 to 31
+              - Raw 5-bit DAC value
+            * - ``True``
+              - ``False``
+              - 0 to 1
+              - Nearest fraction (%) of DAC Reference voltage
+            * - ``False``
+              - ``True``
+              - 0 to Vref
+              - Nearest voltage using current DAC Reference
+            * - ``True``
+              - ``True``
+              - n/a
+              - ValueError exception
+
+        In order to use the ``volts`` parameter when the DAC reference is ``VDD``, you must specify the
+        supply voltage in :func:`ADC_config` or :func:`DAC_config`.
+
         Parameters:
-            out (int): Value to output (max. 32) referenced to DAC ref voltage.
-            norm (bool, optional): Accept input values as floats between 0 and 1. Default  is ``False``.
+            out (int or float): Set the DAC output value referenced to the DAC reference voltage
+                (see :func:`DAC_config`).
+            norm (bool, optional): Treat ``out`` as a fraction instead of raw value.
+                Accept input values as floats between 0 and 1. Default  is ``False``.
+            volts (bool, optional): Treat ``out`` as desired output voltage and output the nearest
+                available. Default is ``False``.
+
+        Return:
+            float: actual DAC value (in the same input units).
+                Same as input argument if no `norm` or `volts` selected.
+
+        Raises:
+            ValueError: if ``out`` is out of range.
+            ValueError: If ``volts`` parameter is used with VDD reference source, but no Vdd value has
+                been provided in :func:`ADC_config` or :func:`DAC_config`.
+            ValueError: If both ``volts`` and ``norm`` parameters are used at the same time.
 
         Examples:
             >>> mcp.set_pin_function(gp2 = "DAC")
             >>> mcp.DAC_config(ref = "VDD")
             >>> mcp.DAC_write(31)
+            31
             >>>
 
             >>> mcp.DAC_write(32)
             Traceback (most recent call last):
             ...
             ValueError: Accepted values for out are from 0 to 31.
+
+            Normalized output (fraction of reference voltage).
+            Note you can get 50% exactly, but the nearest value to 33% is 34.4%:
+
+            >>> mcp.DAC_write(0.5, norm=True)
+            0.5
+            >>> mcp.DAC_write(0.33, norm=True)
+            0.34375
+
+            Volts parameter requires first calling :func:`DAC_config` to set the supply voltage:
+
+            >>> mcp.DAC_config(vdd = 5)
+            >>> mcp.DAC_write(3, volts=True)
+            2.96875
+
+            Max output value is always a little below Vref:
+
+            >>> mcp.DAC_write(5, volts=True)
+            4.84375
         """
+        if norm and volts:
+            raise ValueError("Parameters 'norm' and 'volt' cannot be used at the same time.")
+
+        # dac: DAC setting (to config)
+        # v: actual DAC expected output (to return value)
         if norm:
             if not 0 <= out <= 1:
                 raise ValueError("Accepted values for out when norm=True are from 0 to 1.")
 
-            out = out * 32
-            if out > 31: out = 31
+            dac = round(out * 32)
+            if dac < 0:  dac = 0
+            if dac > 31: dac = 31
+            v = dac / 32
+
+        elif volts:
+            vref =   0 if self.status["dac_ref"] == DAC_REF_VRM | DAC_VRM_OFF  else \
+                 1.024 if self.status["dac_ref"] == DAC_REF_VRM | DAC_VRM_1024 else \
+                 2.048 if self.status["dac_ref"] == DAC_REF_VRM | DAC_VRM_2048 else \
+                 4.096 if self.status["dac_ref"] == DAC_REF_VRM | DAC_VRM_4096 else \
+                 self.status["vdd_voltage"]
+
+            if vref is None:
+                raise ValueError("To use 'volts' with Vdd as reference, the supply voltage must be indicated.")
+
+            if not 0 <= out <= vref:
+                raise ValueError("Accepted values for out when volts=True are from 0 to Vref.")
+
+            dac = round(32 * out / vref)
+            if dac < 0:  dac = 0
+            if dac > 31: dac = 31
+            v = dac / 32 * vref
 
         else:
             if out not in range(0, 32):
                 raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.SRAM_config(dac_value = out)
+            dac = out
+            v = dac
+
+
+        self.SRAM_config(dac_value = dac)
+        return v
 
 
     #######################################################################
