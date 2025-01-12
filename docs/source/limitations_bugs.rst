@@ -69,6 +69,26 @@ From MCP2221A's datasheet (section 1.8):
 This is compensated by software. But, due to the calling interval, there will be always a 2ms gap in the DAC output if it is using internal reference (not Vdd) when you change any pin function.
 
 
+ADC/DAC VDD to 1.024V crash
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For unknown reasons, if DAC reference source is switched from VDD to 1.024V while GP2 is configured as DAC and GP3 as ADC (or viceversa), and DAC output is above 26, the chip crashes.
+
+The following code will trigger an ``OSError: read error`` exception in `hidhandler.read`.
+
+.. code-block:: python
+
+    mcp.set_pin_function(
+        gp2 = "DAC",
+        gp3 = "ADC")
+
+    mcp.DAC_config(ref="VDD", out=27)
+    mcp.DAC_config(ref="1.024V", out=27)
+
+
+It is recommended to **set the DAC output to 0** before switching voltage reference sources.
+
+
 I2C crashes
 ~~~~~~~~~~~
 

@@ -18,6 +18,7 @@ I2C:
 
 Documentation:
     * Added an example of LCD drive using :class:`EasyMCP2221.SMBus` with the Luma library.
+    * Documented a weird crash when switching between DAC voltage reference sources (see :doc:`limitations_bugs`).
 
 
 V1.8
