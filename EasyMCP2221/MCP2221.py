@@ -1521,6 +1521,10 @@ class Device:
             ...
             ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
 
+        Note:
+            It is recommended to **set the DAC output to 0** before switching voltage reference sources.
+            See `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs`.
+
         Hint:
             DAC configuration is saved when you call :func:`save_config` and reloaded at power-up.
             You only need to call this function if you want to change it.
