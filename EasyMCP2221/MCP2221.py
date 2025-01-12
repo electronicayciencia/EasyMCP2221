@@ -1669,10 +1669,15 @@ class Device:
             if not 0 <= out <= vref:
                 raise ValueError("Accepted values for out when volts=True are from 0 to Vref.")
 
-            dac = round(32 * out / vref)
-            if dac < 0:  dac = 0
-            if dac > 31: dac = 31
-            v = dac / 32 * vref
+            # Prevent division by 0
+            if vref == 0:
+                dac = 0
+                v = 0
+            else:
+                dac = round(32 * out / vref)
+                if dac < 0:  dac = 0
+                if dac > 31: dac = 31
+                v = dac / 32 * vref
 
         else:
             if out not in range(0, 32):
@@ -1680,7 +1685,6 @@ class Device:
 
             dac = out
             v = dac
-
 
         self.SRAM_config(dac_value = dac)
         return v
