@@ -1525,6 +1525,8 @@ class Device:
             It is recommended to **set the DAC output to 0** before switching voltage reference sources.
             See `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs`.
 
+            >>> mcp.DAC_config(ref = ..., out = 0)
+
         Hint:
             DAC configuration is saved when you call :func:`save_config` and reloaded at power-up.
             You only need to call this function if you want to change it.
