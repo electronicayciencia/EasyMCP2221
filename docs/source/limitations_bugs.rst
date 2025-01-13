@@ -85,8 +85,7 @@ The following code will trigger an ``OSError: read error`` exception in `hidhand
     mcp.DAC_config(ref="VDD", out=27)
     mcp.DAC_config(ref="1.024V", out=27)
 
-
-It is recommended to **set the DAC output to 0** before switching voltage reference sources.
+As a workaround, since version 1.8.2, :func:`DAC_config` always turn off DAC before selecting a new reference.
 
 
 I2C crashes

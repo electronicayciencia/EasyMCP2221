@@ -229,18 +229,16 @@ class ADC_DAC(unittest.TestCase):
 
 
     def test_adc_dac_vrm_crash(self):
-        """ADC/DAC VDD to 1.024V crash"""
+        """ADC/DAC VDD to 1.024V crash workaround"""
         self.mcp.set_pin_function(
             gp2 = "DAC",
             gp3 = "ADC")
 
         self.mcp.DAC_config(ref="VDD", out=27) # any value above 26
         
-        # Switching from VDD to 1.024V will trigger the crash
-        with self.assertRaises(OSError):
-            self.mcp.DAC_config(ref="1.024V", out=27)
-        
-        self.mcp.reset()
+        # Switching from VDD to 1.024V when out > 26 will trigger OSError exception.
+        # The workaround must prevent that.
+        self.mcp.DAC_config(ref="1.024V", out=27)
 
 
 

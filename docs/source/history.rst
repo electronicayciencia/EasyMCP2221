@@ -12,6 +12,7 @@ GPIO:
 ADC/DAC:
     * :func:`ADC_write` and :func:`DAC_read` accept and return values in volts.
     * :func:`DAC_write` returns the expected DAC output.
+    * :func:`DAC_config` will turn Off DAC before selecting a new reference voltage.
 
 I2C:
     * Fixed: some I2C states are not handled correctly.

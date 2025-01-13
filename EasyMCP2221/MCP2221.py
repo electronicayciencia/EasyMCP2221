@@ -1522,10 +1522,9 @@ class Device:
             ValueError: Accepted values for ref are 'OFF', '1.024V', '2.048V', '4.096V' and 'VDD'.
 
         Note:
-            It is recommended to **set the DAC output to 0** before switching voltage reference sources.
-            See `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs`.
-
-            >>> mcp.DAC_config(ref = ..., out = 0)
+            This function always turn off DAC before select a new voltage reference.
+            See the section `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs` page 
+            for more information.
 
         Hint:
             DAC configuration is saved when you call :func:`save_config` and reloaded at power-up.
@@ -1552,9 +1551,15 @@ class Device:
         if out is not None and out not in range(0, 32):
             raise ValueError("Accepted values for out are from 0 to 31.")
 
-        self.SRAM_config(
-            dac_ref = ref | vrm,
-            dac_value = out)
+        # Turn off DAC before switching to a new reference in order to prevent a crash.
+        if self.status["dac_ref"] != (ref | vrm):
+            self.SRAM_config(
+                dac_ref = DAC_REF_VRM | DAC_VRM_OFF,
+                dac_value = 0)
+
+            self.SRAM_config(
+                dac_ref = ref | vrm,
+                dac_value = out)
 
         if vdd is not None:
             if vdd > 0:
