@@ -6,6 +6,15 @@ Changelog
 Latest (unreleased)
 -------------------
 
+No changes.
+
+
+V1.8
+--------
+
+V1.8.2 (last release)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 GPIO:
     * Added :func:`GPIO_poll` to read GPIO changes easier.
 
@@ -22,12 +31,8 @@ Documentation:
     * Documented a weird crash when switching between DAC voltage reference sources (see :doc:`limitations_bugs`).
 
 
-V1.8
---------
-
-
-V1.8.1 (last release)
-~~~~~~~~~~~~~~~~~~~~~~~~
+V1.8.1
+~~~~~~
 
 Misc:
     * New feature: Device instance catalog.
