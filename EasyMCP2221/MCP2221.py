@@ -193,7 +193,8 @@ class Device:
                     continue
 
         # Device selected, catalog it by index and by serial
-        if debug_messages: print("New device cataloged:", catalog_id)
+        if debug_messages:
+            print("New device cataloged:", (VID, PID, self.usbserial), (VID, PID, self.devnum))
         Device._catalog[(VID, PID, self.usbserial)] = self
         Device._catalog[(VID, PID, self.devnum)]    = self
 
@@ -1523,7 +1524,7 @@ class Device:
 
         Note:
             This function always turn off DAC before select a new voltage reference.
-            See the section `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs` page 
+            See the section `ADC/DAC VDD to 1.024V crash` in :doc:`limitations_bugs` page
             for more information.
 
         Hint:
@@ -2050,6 +2051,8 @@ class Device:
 
             .. code-block:: python
 
+                >>> position = b'\x00\x00'
+                >>> length = 100
                 >>> mcp.I2C_write(0x50, position, 'nonstop')
                 >>> mcp.I2C_read(0x50, length, 'restart')
                 b'En un lugar de la Mancha...'

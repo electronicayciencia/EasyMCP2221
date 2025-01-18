@@ -6,7 +6,8 @@ Changelog
 Latest (unreleased)
 -------------------
 
-No changes.
+Misc:
+    * Fixed bug in debug messages.
 
 
 V1.8
