@@ -27,14 +27,6 @@ class Device:
     Raises:
         RuntimeError: if no device found with given VID and PID, devnum index or USB serial.
 
-    Hint:
-        Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
-        EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It tries to detect when
-        double initialization happens and return the same object to prevent conflicts.
-
-        This usually happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class;
-        and a second one is created elsewhere in the main program to control GPIO, or by another library also using SMBus class.
-
     Example:
         >>> import EasyMCP2221
         >>> mcp = EasyMCP2221.Device()
@@ -54,39 +46,6 @@ class Device:
             "USB Serial": "0000000000"
         }
     """
-
-    _catalog = {}
-    """
-    Keep a catalog of all initialized devices with its USB serial value.
-    This will return the same object and not two different objects driving the same physical device.
-    """
-
-    # Use __new__ instead of __init__ to allow returning an existing object.
-    def __new__(cls,
-                VID            = DEV_DEFAULT_VID,
-                PID            = DEV_DEFAULT_PID,
-                devnum         = 0,
-                usbserial      = None,
-                open_timeout   = 0,
-                cmd_retries    = 1,
-                debug_messages = 0,
-                trace_packets  = False):
-
-
-        ## Check if this is one of the already initialized devices.
-        if usbserial is not None:
-            catalog_id = (VID, PID, usbserial)
-        else:
-            catalog_id = (VID, PID, devnum)
-
-        if catalog_id in Device._catalog:
-            # Re-use object.
-            if debug_messages: print("Cataloged device found:", catalog_id)
-            return Device._catalog[catalog_id]
-
-        # Create a new device, init will catalog it
-        return super().__new__(cls)
-
 
     def __init__(self,
                  VID            = DEV_DEFAULT_VID,
@@ -191,12 +150,6 @@ class Device:
                     raise
                 else:
                     continue
-
-        # Device selected, catalog it by index and by serial
-        if debug_messages:
-            print("New device cataloged:", (VID, PID, self.usbserial), (VID, PID, self.devnum))
-        Device._catalog[(VID, PID, self.usbserial)] = self
-        Device._catalog[(VID, PID, self.devnum)]    = self
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
