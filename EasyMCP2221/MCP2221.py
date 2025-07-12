@@ -685,7 +685,7 @@ class Device:
             if pin == 3: data["func"] = "reserved"
 
         else:
-            data["func"] == "reserved"
+            data["func"] = "reserved"
 
         return data
 

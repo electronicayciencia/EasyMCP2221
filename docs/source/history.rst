@@ -8,6 +8,7 @@ Latest (unreleased)
 
 Misc:
     * Fixed bug in debug messages.
+    * Fixed initialization bug when any pin function value is not valid and documented as "reserved".
 
 
 V1.8
