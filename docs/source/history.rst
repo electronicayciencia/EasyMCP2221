@@ -6,16 +6,22 @@ Changelog
 Latest (unreleased)
 -------------------
 
-Misc:
-    * Fixed bug in debug messages.
-    * Fixed initialization bug when any pin function value is not valid and documented as "reserved".
+No changes.
 
 
 V1.8
 --------
 
-V1.8.2 (last release)
+V1.8.3 (last release)
 ~~~~~~~~~~~~~~~~~~~~~~~~
+
+Misc:
+    * Fixed bug in debug messages.
+    * Fixed initialization bug when a pin function value is not valid, so documented as "reserved".
+
+
+V1.8.2
+~~~~~~
 
 GPIO:
     * Added :func:`GPIO_poll` to read GPIO changes easier.
