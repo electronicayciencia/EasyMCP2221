@@ -6,7 +6,12 @@ Changelog
 Latest (unreleased)
 -------------------
 
-No changes.
+Improvements for multiple devices:
+    * Add ``scan_serial`` parameter to :class:`EasyMCP2221.Device` to prevent 
+      interference with other MCP2221 when searching for some Serial number.
+    * Tests for corner cases in device selection with :func:`enable_cdc_serial` both enabled and disabled.
+    * Improved catalog now make sure no device with the same USB system path is open twice in the same program.
+    * Fully rewrite device selection code.
 
 
 V1.8

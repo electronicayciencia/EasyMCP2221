@@ -8,17 +8,23 @@ from .exceptions import NotAckError, TimeoutError, LowSCLError, LowSDAError
 class Device:
     """ Creates a MCP2221(A) device instance.
 
-    Device selection flow:
+    Device selection is done by VID/PID/devnum or by VID/PID/usbserial.
 
-    * If **usbserial** parameter is present (not None): select only the device with given USB serial.
-    * In other case: enumerate all devices with given VID, PID (or default values) and select one
-      according to **devnum**.
+    To use Serial Number you should enable serial USB enumeration. See :func:`enable_cdc_serial()`. This ensures the
+    device informs its serial number to the operating system, both for the CDC and the HID interfaces.
+
+    You still can select by Serial Number a device with disabled serial enumeration using ``scan_serial`` parameter.
+    This will open every device and reads the flash one by one looking for the serial.
+    However, this may interfere with any other MCP2221 working in the system.
+
+    If more than one device with the same Serial is found, the first one will be selected.
 
     Parameters:
         VID (int, optional): Vendor Id (default is ``0x04D8``)
         PID (int, optional): Product Id (default is ``0x00DD``)
         devnum (int, optional): Device index if multiple device found with the same PID and VID. Default is first device (index 0).
-        usbserial (str, optional): Device's USB serial to open.
+        usbserial (str, optional): Device's USB serial to open. Default is not to use Serial Number (``None``).
+        scan_serial (bool, optional): Look for a given USB serial even if the device does not use serial USB enumeration. Default is ``False``.
         open_timeout (int, optional): Open timeout. Default is quit immediately.
         cmd_retries (int, optional): Times to retry an USB command if it fails.
         debug_messages (bool, optional): Print debugging messages.
@@ -29,11 +35,13 @@ class Device:
 
     Hint:
         Multiple :class:`EasyMCP2221.Device` instances pointing to the same physical device can cause conflict.
-        EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It tries to detect when
-        double initialization happens and return the same object to prevent conflicts.
+        EasyMCP2221 keeps an internal catalog of devices initialized in the same program. It detect when the same
+        device is opened twice in the same program.
 
-        This usually happens when one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class;
+        For example, one instance is created by some imported library via :class:`EasyMCP2221.SMBus` class;
         and a second one is created elsewhere in the main program to control GPIO, or by another library also using SMBus class.
+
+        In this case, the same object will be returned instead of create a second instance of the class.
 
     Example:
         >>> import EasyMCP2221
@@ -87,7 +95,7 @@ class Device:
                         scan_serial = False,
                         debug_messages = debug_messages)
 
-        # not interested in errors at this point, only to know if we must 
+        # not interested in errors at this point, only to know if we must
         # create a new object or return an existing one
         except RuntimeError:
             usbpath = None
@@ -222,7 +230,7 @@ class Device:
                        debug_messages):
         """
         Try to get the device path from initialization parameters.
-        
+
         Enumerate all devices with given VID/PID
         If usbserial is present: select the first that matches the serial
         If none matches, (serial enumeration not active) look in the catalog for some device with that serial number already open.
@@ -294,7 +302,7 @@ class Device:
             raise RuntimeError("No device found with serial number %s or cannot open it." % usbserial)
 
         else:
-            raise RuntimeError("No device found with serial number %s, enable USB enumeration in the device." % usbserial)
+            raise RuntimeError("No device found with serial number %s. Enable USB serial enumeration in the device or set scan_serial parameter." % usbserial)
 
 
 
@@ -2551,8 +2559,8 @@ class Device:
         This operation resets only the MCP2221/A chip.
         It won't reset any I2C slave devices connected.
 
-        The reset function waits 0.5 seconds to complete.
-        If the chip does not respond after timeout, an exception is generated.
+        The reset function waits 0.5 seconds after the command.
+        You may need to sleep additional time on your device for USB re-enumeration.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
