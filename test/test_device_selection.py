@@ -3,6 +3,8 @@ import unittest
 import EasyMCP2221
 from EasyMCP2221.exceptions import *
 from EasyMCP2221 import SMBus
+from time import sleep
+
 
 SERIAL_OK="0002596888"
 SERIAL_WRONG="9999999999"
@@ -206,6 +208,54 @@ class DevSelect(unittest.TestCase):
         mcp1 = bus.mcp
 
         self.assertTrue(mcp1 is mcp2)
+
+
+#----- selection corner cases ---------------
+
+    def test_select_serial_scan_enum(self):
+        """Select by serial, serial enumeration disabled/enabled, scan devices disabled/enabled."""
+        debug_messages = False
+
+        # Disable serial enumeration in the device
+        mcp = EasyMCP2221.Device()
+        mcp.enable_cdc_serial(False)
+        mcp.save_config()
+        mcp.reset()
+        # Clear the catalog
+        EasyMCP2221.Device._catalog = {}
+        sleep(1)
+
+        # Try to find it in the USB list
+        with self.assertRaises(RuntimeError):
+            mcp = EasyMCP2221.Device(usbserial=SERIAL_OK, debug_messages = debug_messages)
+
+        # Try to find it scanning all
+        mcp1 = EasyMCP2221.Device(usbserial=SERIAL_OK, scan_serial = True, debug_messages = debug_messages)
+
+        serial = mcp1.read_flash_info()['USB_SERIAL']
+        self.assertEqual(serial, SERIAL_OK)
+
+        # Try to find it again, no scan, must be found in the catalog
+        mcp2 = EasyMCP2221.Device(usbserial = SERIAL_OK, scan_serial = False, debug_messages = debug_messages)
+
+        self.assertTrue(mcp1 is mcp2)
+
+
+        # Enable serial enumeration in the device
+        mcp = EasyMCP2221.Device()
+        mcp.enable_cdc_serial(True)
+        mcp.save_config()
+        mcp.reset()
+        # Clear the catalog
+        EasyMCP2221.Device._catalog = {}
+        sleep(1)
+
+        # Try to find it by USB enumeration
+        mcp1 = EasyMCP2221.Device(usbserial=SERIAL_OK, debug_messages = debug_messages)
+
+        serial = mcp1.read_flash_info()['USB_SERIAL']
+        self.assertEqual(serial, SERIAL_OK)
+
 
 
 if __name__ == '__main__':

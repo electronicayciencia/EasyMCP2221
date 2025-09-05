@@ -76,16 +76,23 @@ class Device:
 
 
         ## Check if this is one of the already initialized devices.
-        usbpath = cls._select_device(
-                    self        = cls,
-                    VID         = VID,
-                    PID         = PID,
-                    devnum      = devnum,
-                    usbserial   = usbserial,
-                    scan_serial = scan_serial,
-                    debug_messages = debug_messages)
+        ## scan_serial won't work here because it needs the class to be instantiated
+        try:
+            usbpath = cls._select_device(
+                        self        = cls,
+                        VID         = VID,
+                        PID         = PID,
+                        devnum      = devnum,
+                        usbserial   = usbserial,
+                        scan_serial = False,
+                        debug_messages = debug_messages)
 
-        if usbpath in Device._catalog:
+        # not interested in errors at this point, only to know if we must 
+        # create a new object or return an existing one
+        except RuntimeError:
+            usbpath = None
+
+        if usbpath and usbpath in Device._catalog:
             # Re-use object.
             if debug_messages: print("Cataloged device found:", usbpath)
             return Device._catalog[usbpath]
@@ -214,7 +221,8 @@ class Device:
                        scan_serial,
                        debug_messages):
         """
-        Try to find the device.
+        Try to get the device path from initialization parameters.
+        
         Enumerate all devices with given VID/PID
         If usbserial is present: select the first that matches the serial
         If none matches, (serial enumeration not active) look in the catalog for some device with that serial number already open.
@@ -264,13 +272,13 @@ class Device:
             self.hidhandler = hid.device()
 
             for device in devices:
-
                 if device["path"] in Device._catalog:
                     continue
 
                 try:
                     self.hidhandler.open_path(device["path"])
                     serial = self.read_flash_info()['USB_SERIAL']
+                    if debug_messages: print("Scanned. Device %s: serial %s" % (device["path"], serial))
                     self.hidhandler.close()
 
                     if usbserial == serial:
@@ -283,7 +291,7 @@ class Device:
 
             del self.hidhandler
 
-            raise RuntimeError("No device found with serial number %s or already in use." % usbserial)
+            raise RuntimeError("No device found with serial number %s or cannot open it." % usbserial)
 
         else:
             raise RuntimeError("No device found with serial number %s, enable USB enumeration in the device." % usbserial)
@@ -298,8 +306,9 @@ class Device:
 
     def __del__(self):
         """ Releases the device. """
-        self.hidhandler.close()
-        del self.hidhandler
+        if hasattr(self, 'hidhandler'):
+            self.hidhandler.close()
+            del self.hidhandler
 
 
     def send_cmd(self, buf):
@@ -2543,8 +2552,7 @@ class Device:
         It won't reset any I2C slave devices connected.
 
         The reset function waits 0.5 seconds to complete.
-        Then it tries to re-open the device for the next 5 seconds.
-        If the chip does not respond after 5 seconds, an exception is generated.
+        If the chip does not respond after timeout, an exception is generated.
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
