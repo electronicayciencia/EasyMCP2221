@@ -59,6 +59,7 @@ class Device:
     """
     Keep a catalog of all initialized devices with its USB serial value.
     This will return the same object and not two different objects driving the same physical device.
+    Catalog index is the USB path
     """
 
     # Use __new__ instead of __init__ to allow returning an existing object.
@@ -67,6 +68,7 @@ class Device:
                 PID            = DEV_DEFAULT_PID,
                 devnum         = 0,
                 usbserial      = None,
+                scan_serial    = False,
                 open_timeout   = 0,
                 cmd_retries    = 1,
                 debug_messages = 0,
@@ -74,15 +76,19 @@ class Device:
 
 
         ## Check if this is one of the already initialized devices.
-        if usbserial is not None:
-            catalog_id = (VID, PID, usbserial)
-        else:
-            catalog_id = (VID, PID, devnum)
+        usbpath = cls._select_device(
+                    self        = cls,
+                    VID         = VID,
+                    PID         = PID,
+                    devnum      = devnum,
+                    usbserial   = usbserial,
+                    scan_serial = scan_serial,
+                    debug_messages = debug_messages)
 
-        if catalog_id in Device._catalog:
+        if usbpath in Device._catalog:
             # Re-use object.
-            if debug_messages: print("Cataloged device found:", catalog_id)
-            return Device._catalog[catalog_id]
+            if debug_messages: print("Cataloged device found:", usbpath)
+            return Device._catalog[usbpath]
 
         # Create a new device, init will catalog it
         return super().__new__(cls)
@@ -93,6 +99,7 @@ class Device:
                  PID            = DEV_DEFAULT_PID,
                  devnum         = 0,
                  usbserial      = None,
+                 scan_serial    = False,
                  open_timeout   = 0,
                  cmd_retries    = 1,
                  debug_messages = 0,
@@ -120,70 +127,39 @@ class Device:
             "i2c_dirty": None
         }
 
-        self.VID            = VID
-        self.PID            = PID
-        self.devnum         = devnum
-        self.usbserial      = usbserial
-        self.open_timeout   = open_timeout
-        self.cmd_retries    = cmd_retries
-        self.trace_packets  = trace_packets
+        # Save init() parameters for the reset() function
+        self.parm_VID            = VID
+        self.parm_PID            = PID
+        self.parm_devnum         = devnum
+        self.parm_usbserial      = usbserial
+        self.parm_scan_serial    = scan_serial
+        self.parm_open_timeout   = open_timeout
+        self.parm_cmd_retries    = cmd_retries
+        self.parm_trace_packets  = trace_packets
+        self.parm_debug_messages = debug_messages
+
+        # Save some parameters for ourselves
         self.debug_messages = debug_messages
+        self.trace_packets  = trace_packets
+        self.cmd_retries    = cmd_retries
+
+        # must to find a way to pass this path from __new__ to __init__ to prevent call _select_device twice
+        usbpath = self._select_device(
+                    VID         = VID,
+                    PID         = PID,
+                    devnum      = devnum,
+                    usbserial   = usbserial,
+                    scan_serial = scan_serial,
+                    debug_messages = debug_messages)
 
         self.hidhandler = hid.device()
 
+        # Try to open the selected device. Re-try multiple times until timeout
         timeout = time.perf_counter() + open_timeout
-
-        # Try to find and open the device:
-        # If usbserial is present: use usbserial
-        # Else: enumerate all devices with given VID, PID (or default values) and select it according to devnum parameter.
-        # Re-try open multiple times until timeout
         while True:
             try:
-                # Fix Issue #8: Select by USB Serial
-                if usbserial is not None:
-                    found = False
-                    for idx, dev in enumerate(hid.enumerate(self.VID, self.PID)):
-                        try:
-                            self.hidhandler.open_path(dev["path"])
-
-                            if usbserial == self.read_flash_info()['USB_SERIAL']:
-                                found = True
-                                self.usbserial = usbserial # for caching
-                                self.devnum = idx
-                                break
-                            else:
-                                self.hidhandler.close()
-
-                        except:
-                            pass
-
-                    if not found:
-                        raise RuntimeError("No device found with serial number %s or already in use." % usbserial)
-                    else:
-                        break
-
-                # Select by devnum
-                else:
-                    devices = hid.enumerate(self.VID, self.PID)
-                    if not devices:
-                        raise RuntimeError("No devices found with VID %04X and PID %04X." % (self.VID, self.PID))
-
-                    if devnum > 0:
-                        if not devices or len(devices) - 1 < devnum:
-                            raise RuntimeError("No device found with VID %04X and PID %04X and index %d." %
-                                (self.VID, self.PID, self.devnum))
-
-                        self.hidhandler.open_path(devices[devnum]["path"])
-                        self.usbserial = self.read_flash_info()['USB_SERIAL']
-                        self.devnum = devnum
-                        break
-
-                    # Default to the first device found
-                    else:
-                        self.hidhandler.open_path(devices[0]["path"])
-                        self.usbserial = self.read_flash_info()['USB_SERIAL']
-                        self.devnum = 0
-                        break
+                self.hidhandler.open_path(usbpath)
+                break
 
             # Ignore any exceptions and keep trying until the timeout
             except:
@@ -192,11 +168,14 @@ class Device:
                 else:
                     continue
 
-        # Device selected, catalog it by index and by serial
+        # get the serial number stored in flash: useful to identify a cataloged device that
+        # has not serial enumeration enabled but has been previously opened
+        self.usbserial = self.read_flash_info()['USB_SERIAL']
+
+        # Device opened, catalog it by its path
         if debug_messages:
-            print("New device cataloged:", (VID, PID, self.usbserial), (VID, PID, self.devnum))
-        Device._catalog[(VID, PID, self.usbserial)] = self
-        Device._catalog[(VID, PID, self.devnum)]    = self
+            print("New device cataloged: %s with serial number %s" % (usbpath, self.usbserial))
+        Device._catalog[usbpath] = self
 
         # Initialize current GPIO settings
         settings = self.send_cmd([CMD_GET_SRAM_SETTINGS])
@@ -225,6 +204,90 @@ class Device:
 
         # GPIO_poll function has not been used.
         self.poll_data = None
+
+
+    def _select_device(self,
+                       VID,
+                       PID,
+                       devnum,
+                       usbserial,
+                       scan_serial,
+                       debug_messages):
+        """
+        Try to find the device.
+        Enumerate all devices with given VID/PID
+        If usbserial is present: select the first that matches the serial
+        If none matches, (serial enumeration not active) look in the catalog for some device with that serial number already open.
+        If not: select in enumeration order according to devnum parameter.
+
+        If usbserial and also scan_serial is True:
+            Open each device, read its RAM contents and test serial number.
+            (may break any other devices in use)
+
+        Return: device path to open.
+
+        Always return a path or raise an exception.
+        """
+
+        devices = hid.enumerate(VID, PID)
+
+        if not devices:
+            raise RuntimeError("No devices found with VID %04X and PID %04X." % (VID, PID))
+
+        # Select by order
+        if usbserial is None:
+            if devnum > len(devices) - 1:
+                raise RuntimeError("No device found with VID %04X and PID %04X and index %d." %
+                    (VID, PID, devnum))
+
+            else:
+                if debug_messages: print("Device found by VID/PID enumeration.")
+                return devices[devnum]["path"]
+
+        # Serial is not none
+
+        # Select by serial in USB enumeration
+        for device in devices:
+            if device["serial_number"] == usbserial:
+                if debug_messages: print("Device found by serial enumeration.")
+                return device["path"]
+
+
+        # explore the devices in catalog
+        for path, obj in Device._catalog.items():
+            if obj.usbserial == usbserial:
+                if debug_messages: print("Device found by serial in the catalog.")
+                return path
+
+        # Last resort. Select by serial, but scanning the flash.
+        if scan_serial:
+            self.hidhandler = hid.device()
+
+            for device in devices:
+
+                if device["path"] in Device._catalog:
+                    continue
+
+                try:
+                    self.hidhandler.open_path(device["path"])
+                    serial = self.read_flash_info()['USB_SERIAL']
+                    self.hidhandler.close()
+
+                    if usbserial == serial:
+                        del self.hidhandler
+                        if debug_messages: print("Device found by scanning all devices.")
+                        return device["path"]
+
+                except:
+                    pass
+
+            del self.hidhandler
+
+            raise RuntimeError("No device found with serial number %s or already in use." % usbserial)
+
+        else:
+            raise RuntimeError("No device found with serial number %s, enable USB enumeration in the device." % usbserial)
+
 
 
     def __repr__(self):
@@ -2494,13 +2557,15 @@ class Device:
         self.status["i2c_dirty"] = False
 
         self.__init__(
-            VID            = self.VID,
-            PID            = self.PID,
-            devnum         = self.devnum,
-            usbserial      = self.usbserial,
-            open_timeout   = 5,
-            debug_messages = self.debug_messages,
-            trace_packets  = self.trace_packets)
+            VID            = self.parm_VID,
+            PID            = self.parm_PID,
+            devnum         = self.parm_devnum,
+            usbserial      = self.parm_usbserial,
+            scan_serial    = self.parm_scan_serial,
+            open_timeout   = self.parm_open_timeout,
+            cmd_retries    = self.parm_cmd_retries,
+            trace_packets  = self.parm_trace_packets,
+            debug_messages = self.parm_debug_messages)
 
 
     #######################################################################
