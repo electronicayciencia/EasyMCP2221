@@ -272,8 +272,11 @@ class Device:
         # explore the devices in catalog
         for path, obj in Device._catalog.items():
             if obj.usbserial == usbserial:
-                if debug_messages: print("Device found by serial in the catalog.")
-                return path
+                if any(device.get("path") == path for device in devices):
+                    if debug_messages: print("Device found by serial in the catalog and is still connected.")
+                    return path
+                else:
+                    if debug_messages: print("Device found by serial in the catalog, but moved.")
 
         # Last resort. Select by serial, but scanning the flash.
         if scan_serial:
@@ -286,7 +289,7 @@ class Device:
                 try:
                     self.hidhandler.open_path(device["path"])
                     serial = self.read_flash_info()['USB_SERIAL']
-                    if debug_messages: print("Scanned. Device %s: serial %s" % (device["path"], serial))
+                    if debug_messages: print("Scanned device %s: serial %s" % (device["path"], serial))
                     self.hidhandler.close()
 
                     if usbserial == serial:
