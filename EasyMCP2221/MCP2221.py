@@ -26,6 +26,7 @@ class Device:
         usbserial (str, optional): Device's USB serial to open. Default is not to use Serial Number (``None``).
         scan_serial (bool, optional): Look for a given USB serial even if the device does not use serial USB enumeration. Default is ``False``.
         open_timeout (int, optional): Open timeout. Default is quit immediately.
+        read_timeout (int, optional): Read timeout. Default is block indefinitely.
         cmd_retries (int, optional): Times to retry an USB command if it fails.
         debug_messages (bool, optional): Print debugging messages.
         trace_packets (bool, optional): For debug only. Print all binary commands and responses.
@@ -78,6 +79,7 @@ class Device:
                 usbserial      = None,
                 scan_serial    = False,
                 open_timeout   = 0,
+                read_timeout   = -1,
                 cmd_retries    = 1,
                 debug_messages = 0,
                 trace_packets  = False):
@@ -116,6 +118,7 @@ class Device:
                  usbserial      = None,
                  scan_serial    = False,
                  open_timeout   = 0,
+                 read_timeout   = -1,
                  cmd_retries    = 1,
                  debug_messages = 0,
                  trace_packets  = False):
@@ -149,6 +152,7 @@ class Device:
         self.parm_usbserial      = usbserial
         self.parm_scan_serial    = scan_serial
         self.parm_open_timeout   = open_timeout
+        self.parm_read_timeout   = read_timeout
         self.parm_cmd_retries    = cmd_retries
         self.parm_trace_packets  = trace_packets
         self.parm_debug_messages = debug_messages
@@ -157,6 +161,7 @@ class Device:
         self.debug_messages = debug_messages
         self.trace_packets  = trace_packets
         self.cmd_retries    = cmd_retries
+        self.read_timeout   = read_timeout
 
         # must to find a way to pass this path from __new__ to __init__ to prevent call _select_device twice
         usbpath = self._select_device(
@@ -376,9 +381,9 @@ class Device:
 
             # Read response
             try:
-                # timeout 50 removed due to Issue
-                # https://github.com/electronicayciencia/EasyMCP2221/issues/7
-                r = self.hidhandler.read(PACKET_SIZE)
+                r = self.hidhandler.read(PACKET_SIZE, self.read_timeout)
+                if len(r) == 0:
+                    raise TimeoutError("Timeout.")
             except OSError:
                 if retry < self.cmd_retries:
                     continue
@@ -2582,6 +2587,7 @@ class Device:
             usbserial      = self.parm_usbserial,
             scan_serial    = self.parm_scan_serial,
             open_timeout   = self.parm_open_timeout,
+            read_timeout   = self.parm_read_timeout,
             cmd_retries    = self.parm_cmd_retries,
             trace_packets  = self.parm_trace_packets,
             debug_messages = self.parm_debug_messages)
