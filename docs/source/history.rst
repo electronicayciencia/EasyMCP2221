@@ -14,6 +14,10 @@ Improvements for multiple devices:
     * The catalog takes into account that the device may have been changed to another port or disconnected.
     * Fully rewrite device selection code.
 
+Misc:
+    * Re-introduce timeout parameter on USB HID read removed on V1.7.2.
+      Now as an optional parameter. Default is no timeout (read forever).
+
 
 V1.8
 --------

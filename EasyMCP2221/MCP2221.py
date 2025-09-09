@@ -26,7 +26,7 @@ class Device:
         usbserial (str, optional): Device's USB serial to open. Default is not to use Serial Number (``None``).
         scan_serial (bool, optional): Look for a given USB serial even if the device does not use serial USB enumeration. Default is ``False``.
         open_timeout (int, optional): Open timeout. Default is quit immediately.
-        read_timeout (int, optional): Read timeout. Default is block indefinitely.
+        read_timeout (int, optional): Read timeout (ms). Default is no timeout (block indefinitely).
         cmd_retries (int, optional): Times to retry an USB command if it fails.
         debug_messages (bool, optional): Print debugging messages.
         trace_packets (bool, optional): For debug only. Print all binary commands and responses.
@@ -381,10 +381,11 @@ class Device:
 
             # Read response
             try:
+                # timeout removed due to Issue #7 and added again in #23.
                 r = self.hidhandler.read(PACKET_SIZE, self.read_timeout)
                 if len(r) == 0:
-                    raise TimeoutError("Timeout.")
-            except OSError:
+                    raise TimeoutError("HID read timeout.")
+            except (OSError, TimeoutError):
                 if retry < self.cmd_retries:
                     continue
                 else:
