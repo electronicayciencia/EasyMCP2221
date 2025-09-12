@@ -16,7 +16,7 @@ Improvements for multiple devices:
 
 Misc:
     * Re-introduce timeout parameter on USB HID read removed on V1.7.2.
-      Now as an optional parameter. Default is no timeout (read forever).
+      Now as an optional parameter ``read_timeout`` on :class:`EasyMCP2221.Device`. Default is no timeout (read forever).
 
 
 V1.8
