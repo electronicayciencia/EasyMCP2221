@@ -6,6 +6,15 @@ Changelog
 Latest (unreleased)
 -------------------
 
+No changes.
+
+
+V1.8
+--------
+
+V1.8.4 (last release)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
 Improvements for multiple devices:
     * Add ``scan_serial`` parameter to :class:`EasyMCP2221.Device` to prevent
       interference with other MCP2221 when searching for some Serial number.
@@ -18,12 +27,8 @@ Misc:
     * Re-introduce timeout parameter on USB HID read removed on V1.7.2.
       Now as an optional parameter. Default is no timeout (read forever).
 
-
-V1.8
---------
-
-V1.8.3 (last release)
-~~~~~~~~~~~~~~~~~~~~~~~~
+V1.8.3
+~~~~~~
 
 Misc:
     * Fixed bug in debug messages.
