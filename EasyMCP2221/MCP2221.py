@@ -2570,6 +2570,10 @@ class Device:
 
         The reset function waits the specified seconds (default = 0.5) after the command.
         You may need to sleep additional time on your device for USB re-enumeration.
+
+        Parameters:
+            wait (float, optional) Time in seconds to wait before reinitializing (default 0.5 seconds).
+
         """
         buf = [0] * 4
         buf[0] = CMD_RESET_CHIP
