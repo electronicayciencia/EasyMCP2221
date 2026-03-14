@@ -7,7 +7,7 @@ Latest (unreleased)
 -------------------
 
 Misc:
-    * Optional ``wait`` parameter on :func:`reset`.
+    * Add optional ``wait`` parameter on :func:`reset`.
 
 
 V1.8
