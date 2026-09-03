@@ -9,14 +9,10 @@ Source GitHub repository:
   https://www.electronicayciencia.com/2023/09/integrado-mcp2221.html
 
 
-MCP2221 and MCP2221A - USB 2.0 to I2C/UART Protocol Converter with GPIO - Microchip Inc.
-  https://www.microchip.com/en-us/product/MCP2221
+C and C++ port. libeasymcp2221 by Tobias Vogel.
+  https://tobiasvogel.github.io/libeasymcp2221/
 
-  https://www.microchip.com/en-us/product/MCP2221A
-
-
-24LC128 - 128Kb I2C compatible 2-wire Serial EEPROM - Microchip Inc.
-  https://www.microchip.com/en-us/product/24LC128
+  https://github.com/tobiasvogel/libeasymcp2221
 
 
 CircuitPython Libraries on any Computer with MCP2221.
@@ -25,6 +21,16 @@ CircuitPython Libraries on any Computer with MCP2221.
   https://learn.adafruit.com/circuitpython-libraries-on-any-computer-with-mcp2221
 
   https://github.com/adafruit/Adafruit_Blinka/blob/main/src/adafruit_blinka/microcontroller/mcp2221/mcp2221.py
+
+
+MCP2221 and MCP2221A - USB 2.0 to I2C/UART Protocol Converter with GPIO - Microchip Inc.
+  https://www.microchip.com/en-us/product/MCP2221
+
+  https://www.microchip.com/en-us/product/MCP2221A
+
+
+24LC128 - 128Kb I2C compatible 2-wire Serial EEPROM - Microchip Inc.
+  https://www.microchip.com/en-us/product/24LC128
 
 
 Another breakout board: Artekit AK-MCP2221

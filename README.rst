@@ -68,6 +68,12 @@ Read the Install Guide, Examples and full API Reference here: https://easymcp222
 Illustrative blog post with examples, pictures and schematics (spanish): `El integrado MCP2221(A) <https://www.electronicayciencia.com/2023/09/integrado-mcp2221.html>`_
 
 
+C and C++ port
+--------------
+
+libeasymcp2221 by Tobias Vogel (https://tobiasvogel.github.io/libeasymcp2221/).
+
+
 Author
 ----------------------------------------------------
 
