@@ -6,7 +6,8 @@ Changelog
 Latest (unreleased)
 -------------------
 
-No changes.
+Misc:
+    * Add optional ``wait`` parameter on :func:`reset`.
 
 
 V1.8
